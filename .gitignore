@@ -1,0 +1,6 @@
+# Local dev-server config for the Claude Code preview — not part of the app.
+.claude/
+
+# macOS noise
+.DS_Store
+**/.DS_Store

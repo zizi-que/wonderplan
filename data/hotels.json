@@ -1,0 +1,411 @@
+{
+  "version": "1.0",
+  "note": "DVC global resort seed only (household_id: null). Per DATA-MODEL.md §2/§5b — ids match data/dvc-canonical.json's dues_history.resorts[].id so the two datasheets join without a lookup table. Non-DVC WDW resorts (value/moderate/deluxe/off_property) are Trips-side seeding, tracked separately (TODO.md P2 Infrastructure) — not added here to keep this file DVC-scoped. 2026-07-27 (the design director): added CFW, PIT and LSL — 18 selling properties plus Lakeshore Lodge, which is under construction for mid-2027 and is listed so a pre-opening contract can be recorded. PIT and LSL carry NO dues entry (see dues_history.excluded); a contract on either shows no dues until rates are published.",
+  "hotels": [
+    {
+      "id": "DLH",
+      "name": "Disneyland Hotel",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "dlr",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "GCH",
+      "name": "Disney's Grand Californian Hotel & Spa",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "dlr",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "PPH",
+      "name": "Pixar Place Hotel",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "dlr",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "VDH",
+      "household_id": null,
+      "name": "Villas at Disneyland Hotel",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "dlr",
+      "active": true
+    },
+    {
+      "id": "VGC",
+      "household_id": null,
+      "name": "Grand Californian Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "dlr",
+      "active": true
+    },
+    {
+      "id": "AUL",
+      "household_id": null,
+      "name": "Aulani",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "other",
+      "active": true
+    },
+    {
+      "id": "HHI",
+      "household_id": null,
+      "name": "Hilton Head",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "other",
+      "active": true
+    },
+    {
+      "id": "VB",
+      "household_id": null,
+      "name": "Vero Beach",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "other",
+      "active": true
+    },
+    {
+      "id": "AKL",
+      "name": "Animal Kingdom Lodge",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "BC",
+      "name": "Beach Club",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "BWI",
+      "name": "BoardWalk Inn",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "CR",
+      "name": "Contemporary",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "DOL",
+      "name": "Walt Disney World Dolphin",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true,
+      "points_eligible": false,
+      "seed_rev": 2
+    },
+    {
+      "id": "GF",
+      "name": "Grand Floridian",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "POLY",
+      "name": "Polynesian Village",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "RIVH",
+      "name": "Riviera Resort (hotel rooms)",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": false,
+      "seed_rev": 2
+    },
+    {
+      "id": "SOG",
+      "name": "Shades of Green",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true,
+      "points_eligible": false,
+      "seed_rev": 2
+    },
+    {
+      "id": "SWA",
+      "name": "Walt Disney World Swan",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true,
+      "points_eligible": false,
+      "seed_rev": 2
+    },
+    {
+      "id": "SWR",
+      "name": "Swan Reserve",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true,
+      "points_eligible": false
+    },
+    {
+      "id": "WL",
+      "name": "Wilderness Lodge",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "YC",
+      "name": "Yacht Club",
+      "category": "deluxe",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "AKV",
+      "household_id": null,
+      "name": "Animal Kingdom Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "BCV",
+      "household_id": null,
+      "name": "Beach Club Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "BLT",
+      "household_id": null,
+      "name": "Bay Lake Tower",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "BRV",
+      "household_id": null,
+      "name": "Boulder Ridge",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "BWV",
+      "household_id": null,
+      "name": "BoardWalk Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "CCV",
+      "household_id": null,
+      "name": "Copper Creek",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "CFW",
+      "household_id": null,
+      "name": "The Cabins at Fort Wilderness",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "LSL",
+      "household_id": null,
+      "name": "Lakeshore Lodge",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "OKW",
+      "household_id": null,
+      "name": "Old Key West",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "PIT",
+      "household_id": null,
+      "name": "Polynesian Island Tower",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "PVB",
+      "household_id": null,
+      "name": "Polynesian Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "RIV",
+      "household_id": null,
+      "name": "Riviera",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true,
+      "seed_rev": 3
+    },
+    {
+      "id": "SSR",
+      "household_id": null,
+      "name": "Saratoga Springs",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "VGF",
+      "household_id": null,
+      "name": "Grand Floridian Villas",
+      "category": "dvc_villa",
+      "is_dvc": true,
+      "resort_area": "wdw",
+      "active": true
+    },
+    {
+      "id": "CBR",
+      "name": "Caribbean Beach",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "CSR",
+      "name": "Coronado Springs",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "POFQ",
+      "name": "Port Orleans French Quarter",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "POR",
+      "name": "Port Orleans Riverside",
+      "category": "moderate",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "AOA",
+      "name": "Art of Animation",
+      "category": "value",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "ASMO",
+      "name": "All-Star Movies",
+      "category": "value",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "ASMU",
+      "name": "All-Star Music",
+      "category": "value",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "ASSP",
+      "name": "All-Star Sports",
+      "category": "value",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    },
+    {
+      "id": "POP",
+      "name": "Pop Century",
+      "category": "value",
+      "is_dvc": false,
+      "resort_area": "wdw",
+      "household_id": null,
+      "active": true
+    }
+  ]
+}

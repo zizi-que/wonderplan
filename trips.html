@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<!--
+  Trips — real screen. Visual truth: Figma Trips section (6:675), read via
+  figwright 2026-07-26.
+
+  Frames (all five exist and are variable-bound):
+    Trips / Spec                  58:6938
+    01. Zero                      5:4085    ← built
+    02. Active                    5:4602    ← built  (next-trip + coming-up)
+    02a. Active                   58:7315   ← built  (next-trip + planning)
+    03. Add & Edit Trips          59:1729   ← built  (form card, 335x1666)
+    03a. Add & Edit Trips-scroll  6:594     ← the SAME card at scrollTop 970
+    04. Form initial state        179:4569  ← built  (same card, 335x848)
+    04a. Form initial state       179:4784  ← the SAME card at scrollTop 170
+
+  TRANSLATION NOTES
+  - Like Home, the top level is placed by coordinate: the Background, the Zero
+    CTA, the 02/02a `container` and the form card all carry literal x/y on the
+    375x812 page. Everything inside those boxes is real auto-layout and is
+    built as flex/grid.
+  - 03 and 03a are not two layouts. One 1672-tall card scrolls inside the
+    726.198 active area; 03a is that card at scrollTop 987 (24.14 -> -962.86).
+    The scroll region carries a bottom pad equal to its top inset so 987 is
+    reachable, per the Insights law "give the slack to the scroll region".
+  - Figma rules/spacers are ZERO height. The 80x0 `spacer` above the delete
+    link costs no layout; only the two 12px gaps around it show.
+  - `strokeAlign: INSIDE` becomes an inset ring (box-shadow), never a border —
+    borders grow an auto-height box and every fieldset here is hug-height.
+  - Text boxes use `text-box: trim-both cap alphabetic` so element heights
+    equal Figma's cap boxes (SemiBold 19/135% -> 14, SemiBold 17/120% -> 12,
+    SemiBold 15/120% -> 11, Regular 12/120% -> 9, Bold 23/145% -> 17).
+  - Figma's hug width excludes a trailing space, so the board's "days until "
+    ships as "days until" (88px box either way).
+
+  Vectors are exact Figma SVG exports with bound fills swapped for tokens:
+    #bg-trips   58:7120 — the Background component: the white horizon sweep
+                (color/surface) plus five color/deco sparkles. NOT Home's
+                castle; Trips has its own ground.
+    #pencil     61:2434 / 61:2427 / 61:2430 — the 24px card-header edit
+                button. One symbol, three variants via --pen-bg / --pen-ink.
+                Symbol starts at 0 0 with the offset on an inner <g>: a
+                non-zero viewBox origin is double-applied by <use>.
+    #chev       57:3731 `arrows / menu pull down` — the pulldown chevron.
+    #box-on     59:1476 / 59:1477 — the 22px checkbox, on and off.
+
+  BOARD FACTS THAT OVERRIDE THE REPO SPECS (spec follows board — frozen):
+  1. The add-trip control is a 185x48 pill reading "ADD MORE TRIPS", not the
+     52px round FAB the old TRIPS-SPEC wireframe drew.
+  2. The form band is color/dvc-primary, not color/primary.
+  3. Dining chips are Budget / Balanced / Signature (schema values
+     save / balanced / treat_yourself are unchanged — labels only).
+  4. Discount chips are AP / DVC / Military / FL Resident / CM.
+  5. The nights/budget row is Budget ($) / Auto forecast. There is no derived
+     "nights" display on the board.
+  6. 01. Zero carries NO empty-state copy — Background + one CTA, nothing else.
+  7. Past trips leave the module (board Spec text), so there is no completed
+     card variant and none is built.
+
+  DELIBERATE DEVIATIONS FROM THE BOARD — both reported, neither silent:
+  1. The next-trip card title uses --header-ink where the board binds
+     color/surface, and all three filled CTAs use --on-primary where two of
+     them bind color/surface. Identical (#FFFFFF) in all 16 themes, so zero
+     pixel difference; these are the tokens contracted to stay legible on
+     their grounds. Same call Home made.
+  2. The board's Trips-variant footer paints the inactive SPEND label
+     color/dvc-primary while Home / DVC / Insights labels are color/ink. That
+     reads as an authoring slip in one variant, so the build keeps every
+     inactive label on --ink, as every other screen already ships. Raised for
+     the board audit rather than encoded here.
+
+  INITIAL STATE (the design director, 2026-07-26) — the form's shipped default, drawn on
+  boards 04 / 04a. Bare bones: nothing selected in "What's in this trip?" so
+  every conditional card is ABSENT (the board hides those instances outright),
+  0 adults and 0 kids, **Balanced** dining, no discounts, 0 budget, both dates
+  empty on their YYYY-MM-DD hint. Card 848px, so it still scrolls ~146px.
+  Balanced rather than Budget is deliberate (the design director, 2026-07-27): the dining
+  style is easy to skip, and defaulting to the middle tier means a forgotten
+  choice is less likely to under-state the forecast than the cheapest one
+  would. It is the one initial value chosen to protect a *number*, not to
+  stay neutral.
+  **SAVE and CONFIRM are inactive until the minimum is met — a date range set
+  AND adults > 0.** The board states that as `opacity: 0.5` on the whole
+  cta-row (`opacity/disabled`), not as a recoloured button. The gate is
+  deliberately narrower than full validation: trip name and "at least one
+  component" are still checked on press, not before.
+  ⚠ `adults` is `>= 1` in Schema Freeze v1, so the initial 0 is an
+  invalid-until-edited value — which is now exactly what the gate enforces.
+
+  PADDING PASS (the design director, 2026-07-26): the three fieldsets that carried gap 16
+  (Adventures by Disney, Dining Style, Discounts) are gap 8 like every other,
+  which is what shortened the populated card 1672 → 1648 and the initial card
+  to 848. The change lives in the shared component, so both sets of frames
+  moved together.
+
+  AUTO FORECAST is `—` here, not the `0` board 04 draws. the design director ruled for the
+  build 2026-07-27: a frozen decision outranks the board (Project Memory,
+  operating rule 6) — "a missing benchmark renders — … never a fake number",
+  and an untouched form has nothing to forecast. Budget ($) `0` IS honoured;
+  that one is a user input with a real value, not a computed one.
+  On the populated boards Auto forecast reads 24,000 — a real computed number
+  for a fully specified trip. The build still shows `—` there because the
+  forecast engine is wired in the assembly pass, not in this mockup.
+
+  NOT BUILT — no board exists, and nothing here is invented:
+  - The "This trip uses DVC points" reminder dialog (DATA-MODEL §4, fires on
+    CONFIRM only) and the delete confirm dialog. Both need frames.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — Trips</title>
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS is the platform this matters on. Safari evicts IndexedDB after 7 days
+     without a visit, and a Home Screen app is exempt — so these tags are not
+     polish, they are what stops a tester losing their ledger by not opening
+     the app for a week. `apple-mobile-web-app-capable` is still required:
+     iOS only began honouring the manifest's display mode in 16.4. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=42dot+Sans:wght@800&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
+<script src="js/theme.js"></script>
+<style>
+/* ══ Theme tokens live in css/theme.css — ONE copy for all five screens ══ */
+
+/* ══ Structural tokens — Figma variables, values verified in the frame reads ══ */
+:root {
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-count: "42dot Sans", var(--font);   /* next-trip countdown only */
+  --radius-card: 14px;                 /* radius/card */
+  --radius-input: 10px;                /* radius/input */
+  --radius-chip: 7px;                  /* radius/chip */
+  --radius-check: 4px;                 /* checkbox, unbound 4 on the board */
+  --border-default: 1px;               /* border/default */
+  --border-strong: 1.5px;              /* border/strong */
+  --space-1: 8px; --space-2: 12px; --space-3: 16px; --space-page: 20px;
+  --cta-h: 48px;                       /* size/cta-height */
+  --input-h: 48px;                     /* size/input-min-height */
+  --mini-h: 32px;                      /* size/mini-cta-chip */
+  --footer-h: 85.802238px;
+  --shadow-card: 0 1px 3px rgba(30,30,30,0.10);
+  --col: 335px;                        /* content column, 375 − 20 − 20 */
+}
+
+/* ══ Base ══ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+/* <fieldset> ships a 2px groove border and a min-content floor; both would
+   eat 4px of every fieldset's width and add 4px to its height. */
+fieldset { border: 0; min-inline-size: 0; }
+html, body { height: 100%; }
+/* ══ The app frame (the design director, 2026-07-27) ══════════════════════════════════
+   The five screens used to disagree above 375px: Home and Trips pinned their
+   content left (states positioned at literal board coordinates), while Spend,
+   DVC and Insights centred theirs. the design director chose centred for all.
+
+   The whole frame is capped and centred — content AND footer together — so a
+   wide window shows one phone-width column, not a narrow column sitting on a
+   full-width bar. html carries the page colour so the margins match.
+
+   At 375 and below this is completely inert, which is why it changes no
+   audited pixel: 375 is the drawn width and the QA viewport.
+
+   Home and Trips keep literal board coordinates INSIDE the frame — those are
+   the drawn Figma values, and re-expressing them as flex gaps would mean
+   inventing spacing nobody drew. Centring the frame achieves the chosen
+   behaviour without touching them. */
+html { background: var(--bg); }
+body { font-family: var(--font); background: var(--bg); color: var(--ink);
+  width: 100%;
+  display: flex; flex-direction: column; overflow: hidden; }
+button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; display: block; }
+input { font: inherit; color: inherit; background: none; border: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.txt { text-box: trim-both cap alphabetic; }
+
+/* ══ Text styles — Figma text styles, verbatim (height = pinned cap box) ══ */
+.t-23b { font-weight: 700; font-size: 23px; line-height: 145%; min-height: 17px; }
+.t-19b { font-weight: 600; font-size: 19px; line-height: 135%; min-height: 14px; }
+.t-17b { font-weight: 600; font-size: 17px; line-height: 120%; min-height: 12px; }
+.t-17  { font-weight: 400; font-size: 17px; line-height: 120%; min-height: 12px; }
+.t-15b { font-weight: 600; font-size: 15px; line-height: 120%; min-height: 11px; }
+.t-15  { font-weight: 400; font-size: 15px; line-height: 120%; min-height: 11px; }
+.t-13  { font-weight: 600; font-size: 13px; line-height: 120%; }  /* footer */
+.t-12  { font-weight: 400; font-size: 12px; line-height: 120%; min-height: 9px; }
+.t-9   { font-weight: 400; font-size: 9px;  line-height: 120%; }
+
+/* ══ Active Frame — 812 − footer. States sit at literal page coordinates. ══ */
+/* The app column is 375 and the FOOTER BAND is not (the design director 2026-08-01,
+   option 1). The constraint used to sit on `body`, so the white band ended
+   with the app: at any window wider than 375 the column centred and theme
+   background showed on BOTH sides of the band, which read as the footer
+   stopping short. The column now lives on `main`, and `body` is free to be as
+   wide as the window — so the band spans it while the five 75px tabs stay
+   centred on 375 by the footer's own `justify-content: center`.
+   Nothing drawn moves: `main` is the positioned ancestor on Home and Trips,
+   so every absolute coordinate inside it is unchanged. */
+main { flex: 1; min-height: 0; position: relative; overflow: hidden;
+  width: 100%; max-width: 375px; margin-inline: auto; }
+.state { display: none; position: absolute; inset: 0; }
+.state.on { display: block; }
+
+/* ══ Background (58:7109) — the horizon sweep + five deco sparkles ══
+   FULL-BLEED 2026-08-02 (the design director, reported on the live beta): `main` is capped
+   at 375 and centred, and this layer was 375 wide to match — so on any phone
+   wider than the drawn 375 the theme colour showed down both sides and the
+   white sky read as a framed panel.
+
+   The sweep was ALREADY drawn with bleed: its path runs x −154 → 719, and the
+   old `viewBox="0 0 375 726"` was simply cropping it. Widening the box to the
+   artwork's own extent (873) and centring the layer on the viewport reveals
+   what the board draws — at 1:1, so not one drawn pixel moves and the horizon sits
+   exactly where it sat against the CTA. Nothing is invented; the crop is
+   lifted. The five sparkles are drawn inside 0–375 and stay there.
+
+   Beyond 873px the theme colour returns at the edges. That is a desktop
+   window, where the app is a centred phone column anyway.
+
+   Widening the box alone did nothing: the layer lived INSIDE `main`, which
+   clips at `overflow: hidden`, so it was still cropped to 375. It is now one
+   `position: fixed` layer at body level — outside that clip, and shared by
+   all four states instead of repeated in each. State 03 already pinned its
+   copy `fixed` so the sweep would hold still while the form scrolls; every
+   state now behaves that way, which is the same thing, consistently.
+
+   REGISTRATION (corrected 2026-08-02, caught on a phone): centring
+   the ELEMENT is wrong. The box spans −154…719, whose midpoint is 282.5, while
+   the drawn 375 column's midpoint is 187.5 — so `left: 50%` put the artwork
+   95px left of where it belongs and pushed the leftmost sparkle off screen.
+   Only two of the drawn 375 belong on the phone's centre line, so the offset
+   is measured from the DRAWN origin: half the column (187.5) plus the bleed
+   that precedes it (154). Drawn x=0 then lands exactly on main's left edge at
+   every width, which is the invariant this layer has to hold.
+
+   TOP: the sweep bleeds 82.3px above y=0 as well, so anchoring the element
+   that far above main's top fills the status-bar band while viewBox y=0 still
+   lands on main's top — the horizon keeps its drawn distance from the CTA. A
+   device whose top inset exceeded 82.3 would show the theme colour again;
+   no current iPhone does (Dynamic Island is 59, the notch 47–50). */
+.bg { position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) - 82.3px);
+      left: calc(50% - 341.5px);          /* 187.5 (half column) + 154 (bleed) */
+      width: 873px; height: 808.3px; overflow: hidden; }
+
+/* ══════ 01. Zero (5:4085) ══════
+   No copy at all: Background + one 188x48 CTA at its drawn coordinate. */
+.zero-cta { position: absolute; left: 93.5px; top: 382.2px; width: 188px; }
+
+/* ══════ 02. Active (5:4602) · 02a. Active (58:7315) ══════
+   `container` is one bottom-anchored auto-layout column (VERTICAL,
+   padding 32/20/16/20, gap 16, primary MAX, counter CENTER). The trailing
+   Frame 2 grows, so the cards sit at the top and the CTA rides 64px below
+   the last card. 02's container is at y=0, 02a's at y=0.2 — drawn, kept. */
+/* AMENDED 2026-08-02 (the design director): the trip card is centred on the screen, and the
+   CTA follows it. The board pinned the column to a fixed 726 with the cards at
+   its top; on a phone in standalone the screen gives `main` 673, so the card
+   read as jammed against the header with a field of empty colour under it.
+   Chosen over centring the card+CTA group as one — that leaves the card ~64px
+   high of centre, which is the thing she was reacting to.
+
+   Grid rather than flex because a 1fr/auto/1fr track split centres the CARD
+   exactly, whatever its height, while flex `auto` margins can only centre the
+   whole group. `.add-wrap` rides in the trailing track, aligned to its start,
+   so it still sits 16 + 64 below the last card exactly as drawn.
+
+   The column now fills `main` instead of asserting 726. Cards land 8px below
+   main's true centre — the drawn 32/16 vertical padding is asymmetric and is
+   kept, since it is what guarantees the minimum inset on a short screen. */
+.container { position: absolute; left: 0; width: 375px; height: 100%;
+  display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center;
+  padding: 32px 20px 16px; gap: 16px; }
+[data-state="02"]  .container { top: 0; }
+[data-state="02a"] .container { top: 0.2px; }
+
+.cards { grid-row: 2; }
+.add-wrap { grid-row: 3; align-self: start; width: 185px; display: flex;
+  justify-content: center; align-items: flex-start; padding-top: 64px; }
+
+/* ══ cards · category=trips ══
+   booked-next-trip 61:2405 · booked-coming-up 61:2507 · planning-not-booked
+   61:2539. Same skeleton, three gaps, three countdown faces, three inks.
+   Unlike Home, Trips DOES show the forecast/budget line: money lives here. */
+.tcard { width: var(--col); border-radius: var(--radius-card);
+  background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden;
+  display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: flex-start; padding-bottom: 16px; }
+.tcard--next     { gap: 12px; }
+.tcard--coming   { gap: 6px; }
+.tcard--planning { gap: 0; }
+
+.tcard__head { align-self: stretch; display: flex; align-items: center;
+  justify-content: space-between; padding: 12px 20px 6px; }
+.tcard--next .tcard__head { background: var(--header-bg); }
+/* The board pins this box to 12 while the glyphs are a 14 cap box, so it must
+   not clip. Next-trip's title is a FIXED 156 box (res=NONE); the other two
+   FILL the row. */
+.tcard__title { height: 12px; white-space: nowrap; }
+.tcard--next     .tcard__title { width: 156px; flex: none; color: var(--header-ink); }
+.tcard--coming   .tcard__title { flex: 1 1 auto; min-width: 0; color: var(--primary); }
+.tcard--planning .tcard__title { flex: 1 1 auto; min-width: 0; color: var(--ink); }
+
+/* icon-edit 24px — three variants of one symbol. The board's drop shadow
+   rides the CSS filter (the dvc.html convention). */
+.tcard__edit { width: 24px; height: 24px; flex: none; padding: 0; }
+/* 24x24 with 227px of clear space — full 44, nothing drawn moves (2026-08-01). */
+.tcard__edit { position: relative; }
+.tcard__edit::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px; }
+.tcard__edit svg { width: 24px; height: 24px; display: block;
+  filter: drop-shadow(0 1px 1.5px rgba(30,30,30,0.10)); }
+.tcard--next     .tcard__edit svg { --pen-bg: var(--surface); --pen-ink: var(--primary); }
+.tcard--coming   .tcard__edit svg { --pen-bg: var(--primary); --pen-ink: var(--on-primary); }
+.tcard--planning .tcard__edit svg { --pen-bg: var(--ink);     --pen-ink: var(--on-primary); }
+
+/* The three text lines sit at the trip name's OWN line rhythm (the design director,
+   2026-07-28: "too wide … about the same amount to the trip name"). Measured
+   first, because the two gaps she compared were already identical — 12.7px of
+   white each: name→dates and dates→money. What is tighter is the 8.4px
+   between the wrapped name's own two lines, so that is the rhythm the block
+   is matched to. 11.7 = 8.4 + the 3.3px descender overhang a cap-trimmed box
+   paints below itself.
+   ⚠ Then tightened twice on sight (the design director, 2026-07-28): 11.7 → 9.945 (85%) →
+   a flat **9**, which leaves 5.7px of white between the lines. The derivation
+   above is kept because it is why the block reads as one group at all; 9 is
+   the design director's eye on top of it, and a round number rather than a computed one.
+   The count-row keeps the drawn 16, so its compensator tracks the gap. */
+.tcard__body { align-self: stretch; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 9px; padding-left: 20px; }
+.tcard__body .trip-name { margin-top: 7px; }   /* 9 + 7 = the drawn 16 */
+.count-row { display: flex; align-items: flex-end; }   /* counter MAX */
+/* the countdown is a pinned cap box like every other text node here */
+.count { text-box: trim-both cap alphabetic; }
+.tcard--next     .count { font-family: var(--font-count); font-weight: 800;
+  font-size: 104.75px; line-height: 199.56883px; height: 74px; }
+.tcard--coming   .count { font-weight: 700; font-size: 80px; line-height: 120%; height: 58px; }
+.tcard--planning .count { font-weight: 700; font-size: 64px; line-height: 120%; height: 46px; }
+.trip-name, .trip-dates, .trip-money { width: 308.380920px; }   /* board's fixed box */
+
+.tcard--next .count, .tcard--next .count-unit,
+.tcard--coming .count, .tcard--coming .count-unit { color: var(--primary); }
+.tcard--next .trip-name, .tcard--coming .trip-name { color: var(--primary); }
+/* --ink, not --dvc-primary (the design director, 2026-07-28): the dates and money lines take
+   the same ink Home's dates line uses, so a trip card reads identically on
+   both screens. The planning variant below already used --ink; this makes all
+   three agree. Board still draws --dvc-primary here — amend the frame. */
+.tcard--next .trip-dates, .tcard--next .trip-money,
+.tcard--coming .trip-dates, .tcard--coming .trip-money { color: var(--ink); }
+.tcard--planning .count, .tcard--planning .count-unit,
+.tcard--planning .trip-name, .tcard--planning .trip-dates,
+.tcard--planning .trip-money { color: var(--ink); }
+
+/* ══ cta-buttons (51:358 primary-filled / 59:1630 primary-outline) ══
+   Radius = half height. The outline's 1.5 stroke is INSIDE, so it rides an
+   inset ring rather than a border. */
+.cta { height: var(--cta-h); border-radius: 24px;
+  background: var(--primary); color: var(--on-primary);
+  display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+.cta--outline { background: var(--surface); color: var(--primary);
+  box-shadow: inset 0 0 0 var(--border-strong) var(--primary); }
+
+/* ══════ 03. Add & Edit Trips (59:1729) / 03a scroll (6:594) ══════
+   One scroll region; 03a is scrollTop 987. The bottom pad matches the top
+   inset so that offset is reachable — slack goes to the scroll region. */
+.state--form { overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* scroll anchoring would nudge scrollTop whenever a conditional group is
+     revealed or hidden, which silently moves the 03a harness position */
+  overflow-anchor: none; }
+/* `.state--form .bg { position: fixed }` retired 2026-08-02 — the sweep is a
+   single fixed layer at body level now, so it holds still here by default. */
+.form-card { position: relative; margin: 24.14px 0 24.14px 20px; width: var(--col);
+  border-radius: var(--radius-card); background: var(--surface);
+  box-shadow: var(--shadow-card); overflow: hidden;
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding-bottom: 12px; }
+
+.band { align-self: stretch; height: 44px; display: flex; align-items: center;
+  gap: 10px; padding: 8px 19px; background: var(--dvc-primary); }
+/* the band is a FIXED 44 box and the type half of its label is derived copy,
+   so it must never wrap the band taller */
+.band { overflow: hidden; }
+.band .plan-title { color: var(--surface); white-space: nowrap; }
+
+.form-body { align-self: stretch; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 12px; padding: 16px 8px; }
+.form-body > * { align-self: stretch; }
+
+.label { color: var(--ink); }
+
+/* inpu-field (59:1563 text / 59:1562 date) */
+.input { height: var(--input-h); border-radius: var(--radius-input);
+  background: var(--surface); box-shadow: inset 0 0 0 var(--border-strong) var(--border);
+  display: flex; align-items: center; padding: 0 16px; overflow: hidden;
+  width: 100%; color: var(--muted); }
+.input::placeholder { color: var(--muted); opacity: 1; }
+/* A select has to look like the drawn field, not like a browser control: the
+   chevron beside it is the drawn one, so the native arrow goes. `display:block`
+   rather than the flex `.input` gives it — a select is not a flex container and
+   Safari lays it out oddly when told it is. Colour follows the same rule as the
+   placeholder: --muted until a choice exists, --ink after (.is-chosen). */
+select.input { appearance: none; -webkit-appearance: none; display: block;
+  padding-right: 42px; cursor: pointer;
+  /* `appearance: none` drops the arrow but NOT the UA's own 1px border, which
+     read as a grey hairline inside the drawn yellow ring (the design director). The drawn
+     ring is the inset box-shadow on .input; the border was never part of it. */
+  border: 0; }
+select.input.is-chosen { color: var(--ink); }
+.hotel-extra { width: 100%; }
+.hotel-extra[hidden] { display: none; }
+.input--center { text-align: center; }
+.input--money { font-weight: 700; font-size: 23px; line-height: 145%; }
+.input--forecast { box-shadow: inset 0 0 0 var(--border-strong) var(--ink);
+  color: var(--ink); }
+
+.field-row { display: flex; align-items: center; gap: 8px; }
+/* cta-help 191:5004 — the airfare disclosure. Full body width (319 = 335 − 8
+   − 8 padding), centred, 9px. The stack's own 12px itemSpacing provides the
+   gap above and below, so this carries no margin of its own. */
+.forecast-note { width: 100%; text-align: center; color: var(--ink); }
+/* min-width:0 — a flex item's automatic minimum is its content, so without
+   this the date field's overhanging placeholder would widen the column past
+   the drawn 155.5 instead of overflowing symmetrically inside it. */
+.field-row > .div { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 6px; }
+.field-row > .div > .input,
+.field-row > .div > .date-field { width: 100%; }
+
+/* date field (179:4529 / 179:4558) — REDRAWN 2026-07-26 (the design director): the trip
+   From/To fields are pickers now, not typed text. The board detached them
+   from `inpu-field` and set HORIZONTAL / primary CENTER / gap 8 (space/1),
+   value beside a 20x21 calendar glyph in color/border.
+   A native <input type="date"> is layered over the designed face at zero
+   opacity: it owns focus, keyboard and the OS picker, while what the user
+   sees is the drawn field — no browser default control is ever painted.
+
+   The empty face is the board's own `YYYY-MM-DD` (106x12). It is WIDER than
+   the padding box — 106 + 8 + 20 = 134 inside 123.5 — and that is drawn, not
+   a mistake: Figma centres the overrun symmetrically, so the text starts at
+   10.75 and the glyph ends at 144.75, comfortably inside the 155.5 field.
+   CSS reproduces it for free, because flex centring distributes NEGATIVE free
+   space to both sides too. Do not "fix" this by shrinking the padding. */
+.date-field { position: relative; height: var(--input-h);
+  border-radius: var(--radius-input); background: var(--surface);
+  box-shadow: inset 0 0 0 var(--border-strong) var(--border);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 16px; overflow: hidden; }
+/* the board's value box HUGS its string (88 for 2026-12-18, 91 for
+   2026-12-30), which is what re-centres the pair per date. nowrap because a
+   hug box that wraps would break the drawn 48px field height. */
+.date-field .date-val { color: var(--muted); white-space: nowrap; flex: none;
+  font-weight: 400; font-size: 17px; line-height: 120%; height: 12px; }
+.date-field .cal { width: 20px; height: 21px; flex: none; display: block; }
+.date-field input { position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; }
+.date-field:has(input:focus-visible) { outline: 3px solid var(--primary);
+  outline-offset: 2px; }
+
+/* pulldown — a designed field, never a browser <select>. The chevron sits
+   19px into the 48 field, exactly as drawn. */
+.pull { position: relative; }
+.pull .chev { position: absolute; right: 15.42px; top: 19px;
+  width: 18.501741px; height: 11px; display: block; pointer-events: none; }
+
+/* fieldset (61:1619 and siblings) */
+.fieldset { border-radius: var(--radius-card);
+  box-shadow: inset 0 0 0 var(--border-strong) var(--border);
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 8px; padding: 8px 12px; }
+.fieldset > * { align-self: stretch; }
+.fieldset--pad11 { padding: 8px 11px; }
+.legend { display: flex; align-items: center; justify-content: center;
+  padding: 0 9px; }
+.legend > span { color: var(--ink); }
+
+/* check-line + the 22px checkbox (59:1476 on / 59:1477 off) */
+.check-line { display: flex; align-items: center; gap: 8px; height: 23px; }
+/* 295x23 on a 31px pitch, so 31 is everything the 8px gap allows without two
+   rows overlapping. Wide-but-short is the mildest miss — the thumb has 295px
+   of horizontal forgiveness (the design director 2026-08-01, option 1). */
+.check-line { position: relative; }
+.check-line::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 100%; height: 31px; }
+.check-line input { position: absolute; opacity: 0; width: 22px; height: 22px;
+  margin: 0; cursor: pointer; }
+.box { width: 22px; height: 22px; flex: none; border-radius: var(--radius-check);
+  box-shadow: inset 0 0 0 var(--border-default) var(--border);
+  display: block; position: relative; }
+.box::after { content: ""; position: absolute; left: 4px; top: 4px;
+  width: 14px; height: 14px; border-radius: 3px; background: var(--primary);
+  opacity: 0; }
+.check-line input:checked + .box::after { opacity: 1; }
+.check-line input:focus-visible + .box { outline: 3px solid var(--primary);
+  outline-offset: 2px; }
+.check-line span { color: var(--ink); }
+
+/* Lodging card (78:2721) — its own card inside the form, counter CENTER */
+.lodging { border-radius: var(--radius-card); background: var(--surface);
+  box-shadow: inset 0 0 0 var(--border-strong) var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 8px 12px 12px; }
+.lodging > * { align-self: stretch; }
+.lodging .legend { padding: 0 9px 4px; }
+
+/* Hotel (78:2799 on-property / off-property) */
+.hotel { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.hotel > * { align-self: stretch; }
+.hotel .points-row { display: flex; align-items: center;
+  justify-content: space-between; gap: 4px; height: 23px; }
+.hotel .points-row .check-line { flex: none; }
+.hotel .helper { width: 106px; flex: none; color: var(--ink); }
+
+/* Split-stay (78:3651) — hotel card + a mini from/to row */
+.split { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.split > * { align-self: stretch; }
+.mini-row { display: flex; align-items: center; gap: 8px; height: var(--mini-h); }
+.mini-row > .div { flex: 1 1 0; display: flex; align-items: center; gap: 6px; }
+.mini-row .label { flex: none; }
+.mini-row .input { height: var(--mini-h); border-radius: var(--radius-chip);
+  flex: 1 1 auto; padding: 0 16px; font-weight: 400; font-size: 15px; }
+
+.add-more { color: var(--ink); text-decoration: underline; text-align: center;
+  align-self: center; width: auto; padding: 0; }
+
+/* chip (59:1494 default / 59:1499 toggled) */
+/* 32 tall -> 44 hit. Measured 47px of clearance between the dining row
+   (bottom 543) and the discount row (top 590), so height is free. Width is
+   capped by the 8px horizontal gaps: +4 a side is all there is, which leaves
+   the narrowest chips near 39. Accepted (the design director 2026-08-01, option 1) — well
+   past AA's 24, and no drawn pill changes size. */
+.chip { position: relative; }
+.chip::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% + 8px); height: 44px; }
+.chip { height: var(--mini-h); border-radius: var(--radius-chip);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 var(--border-default) var(--border);
+  display: flex; align-items: center; justify-content: center; padding: 8px;
+  color: var(--ink); }
+.chip[aria-pressed="true"] { box-shadow: inset 0 0 0 var(--border-default) var(--primary);
+  color: var(--primary); }
+.chip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chip-row { display: flex; align-items: center; gap: 8px; }
+.chip-row > .chip { flex: 1 1 0; }
+.chip-wrap { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.chip-wrap > .chip { flex: none; padding: 8px 6px; }
+
+.cta-row { display: flex; gap: 16px; padding: 0 8px; }
+.cta-row > .cta { flex: 1 1 0; }
+/* SAVE and CONFIRM stay inactive until the minimum is met (the design director, 2026-07-26:
+   date range set + adults > 0). The board expresses it as `opacity: 0.5` on
+   the whole cta-row — the `opacity/disabled` variable — not as a recoloured
+   button, so the row dims as one unit and the two CTAs keep their contrast
+   relationship. */
+.cta-row.is-disabled { opacity: 0.5; }
+.cta-row.is-disabled > .cta { cursor: not-allowed; }
+/* two lines of 15/120% trim to 28.8; the board's own box is 29, so it is
+   pinned rather than left to round down and shift the two items below it. */
+.cta-help { text-align: center; color: var(--ink);
+  font-weight: 400; font-size: 15px; line-height: 120%; min-height: 29px; }
+.cta-help b { font-weight: 600; }
+/* Figma spacer: a zero-height LINE. Only the two 12px gaps around it show. */
+.spacer { width: 80px; height: 0; align-self: flex-start; }
+/* 319x12 with 39px clear — 44 tall fits (2026-08-01). */
+.delete-link { position: relative; }
+.delete-link::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 100%; height: 44px; }
+.delete-link { text-align: center; color: var(--ink);
+  text-decoration: underline; }
+
+/* a conditional group that its component checkbox has switched off is ABSENT,
+   never disabled or greyed (TRIPS-FORM-LOGIC §1) */
+[hidden] { display: none !important; }
+
+/* symbol library — never painted itself */
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ══ Footer · variant Trips (41:1009) ══
+   Active tab paints --primary/--deco; inactive --dvc-primary/--dvc-bg. */
+footer.footer { flex: none; height: var(--footer-h); background: var(--surface);
+  border-top: 1.900338px solid var(--deco); display: flex; justify-content: center; }
+.tab { position: relative; width: 75px; height: 83.901894px;
+  display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+.tab .label { position: absolute; top: 60px; left: 0; right: 0; text-align: center; color: var(--ink); }
+.tab.on .label { color: var(--primary); }
+.tab svg { position: absolute; }
+/* ══ iOS safe areas (the design director, 2026-08-02) ═══════════════════════════════════
+   Reported on the live beta: a yellow strip under the footer, on every
+   screen. Without `viewport-fit=cover` Safari keeps the layout OUT of the
+   safe areas and paints them with the html background — which is the theme
+   colour, so the home-indicator band read as the footer stopping short.
+   Cover hands the layout those bands; `padding-top` on body puts the
+   content back exactly where it sat before, and the footer's own white now
+   reaches the physical bottom edge. Nothing drawn moves — where there is no
+   inset (every desktop browser, and any phone without an indicator) both
+   values resolve to 0, so this is inert off iOS. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+footer.footer {
+  height: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+</style>
+</head>
+<body>
+
+<svg class="defs" aria-hidden="true">
+<!-- Background 58:7120 — horizon sweep (color/surface) + 5 sparkles (color/deco) -->
+<symbol id="bg-trips" viewBox="-154 -82.3 873 808.3">
+<path d="M-154 -82.3395H719V250.73C719 221.361 693.436 197.538 661.921 197.538C661.921 172.749 640.325 152.624 613.724 152.624C606.24 152.624 599.116 154.22 592.804 157.077C580.09 134.431 554.662 118.927 525.311 118.927C500.468 118.927 478.376 130.019 464.49 147.204C456.149 140.691 445.373 136.784 433.651 136.784C410.567 136.784 391.27 151.909 386.581 172.119C382.974 171.32 379.277 170.9 375.4 170.9C363.497 170.9 352.586 174.934 344.2 181.572C338.88 162.161 319.989 147.75 297.491 147.75C276.706 147.75 259.033 159.976 252.225 177.161C245.011 173.169 236.58 170.858 227.608 170.858C219.582 170.858 212.008 172.707 205.335 175.942C199.023 157.96 180.899 144.935 159.438 144.935C152.089 144.935 145.146 146.447 138.924 149.178C127.472 123.507 100.33 105.482 68.6346 105.482C35.0456 105.482 6.50612 125.776 -3.54805 153.968C-10.2659 150.691 -17.8854 148.8 -26.0009 148.8C-52.6016 148.8 -74.1978 168.926 -74.1978 193.715C-74.1978 196.656 -73.8822 199.513 -73.2961 202.286C-80.5098 199.219 -88.4901 197.538 -96.9211 197.538C-128.436 197.538 -154 221.361 -154 250.73L-154 -82.3395Z" fill="var(--surface)"/>
+<path d="M68.169 57.3899C52.2145 57.3899 44.8345 64.8008 44.8345 80.822C44.8345 64.8008 37.4545 57.3899 21.5 57.3899C37.4545 57.3899 44.8345 49.979 44.8345 33.9578C44.8345 49.979 52.2145 57.3899 68.169 57.3899ZM328.16 114.508C315.192 114.508 309.22 120.505 309.22 133.571C309.22 120.548 303.248 114.508 290.279 114.508C303.248 114.508 309.22 108.511 309.22 95.4452C309.177 108.511 315.192 114.508 328.16 114.508ZM353.5 55.683C343.177 55.683 338.441 60.4379 338.441 70.8046C338.441 60.4807 333.706 55.683 323.383 55.683C333.706 55.683 338.441 50.928 338.441 40.5613C338.441 50.8852 343.219 55.683 353.5 55.683ZM136.168 34.6432C128.915 34.6432 125.588 37.9846 125.588 45.2669C125.588 37.9846 122.261 34.6432 115.009 34.6432C122.261 34.6432 125.588 31.3019 125.588 24.0195C125.588 31.2591 128.915 34.6432 136.168 34.6432ZM243.405 92.4713C236.153 92.4713 232.826 95.8126 232.826 103.095C232.826 95.8126 229.499 92.4713 222.246 92.4713C229.499 92.4713 232.826 89.13 232.826 81.8476C232.826 89.13 236.153 92.4713 243.405 92.4713Z" fill="var(--deco)"/>
+</symbol>
+
+<!-- icon-edit 61:2434 / 61:2427 / 61:2430. viewBox starts at 0 0; the export's
+     3,2 origin rides an inner <g> because <use> double-applies a non-zero one. -->
+<symbol id="pencil" viewBox="0 0 24 24"><g transform="translate(-3,-2)"><rect x="3" y="2" width="24" height="24" rx="12" fill="var(--pen-bg)"/><path d="M8.00049 20.5002C8.00049 20.2241 8.39223 20.0002 8.87546 20.0002H21.125C21.6083 20.0002 22 20.2241 22 20.5002C22 20.7764 21.6083 21.0002 21.125 21.0002H8.87546C8.39223 21.0002 8.00049 20.7764 8.00049 20.5002Z" fill="var(--pen-ink)"/><path d="M20.206 5.71468C19.1809 4.76276 17.5188 4.76275 16.4936 5.71466L9.64847 12.0709C9.4885 12.2194 9.37258 12.4038 9.31199 12.6062L8.03676 16.8661C7.83617 17.5362 8.5003 18.1529 9.22189 17.9666L13.8094 16.7824C14.0274 16.7262 14.226 16.6186 14.386 16.47L21.2311 10.1138C22.2563 9.16191 22.2563 7.61853 21.2311 6.6666L20.206 5.71468Z" fill="var(--pen-ink)"/></g></symbol>
+
+<!-- arrows / menu pull down 57:3731 -->
+<symbol id="chev" viewBox="0 0 18 11"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></symbol>
+
+<!-- calendar-icon 179:4541 — the date-picker affordance the design director added 2026-07-26 -->
+<symbol id="cal" viewBox="0 0 20 21"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.5 0C6.05228 0 6.5 0.447715 6.5 1V2H13.5V1C13.5 0.447715 13.9477 0 14.5 0C15.0523 0 15.5 0.447715 15.5 1V2.02469C18.0267 2.27555 20 4.40733 20 7V16C20 18.7614 17.7614 21 15 21H5C2.23858 21 0 18.7614 0 16V7C0 4.40733 1.97334 2.27555 4.5 2.02469V1C4.5 0.447715 4.94772 0 5.5 0ZM2.17071 6H17.8293C17.4175 4.83481 16.3062 4 15 4H5C3.69378 4 2.58254 4.83481 2.17071 6ZM18 8H2V16C2 17.6569 3.34315 19 5 19H15C16.6569 19 18 17.6569 18 16V8ZM10 9.5C10.5523 9.5 11 9.94771 11 10.5V12.5H13C13.5523 12.5 14 12.9477 14 13.5C14 14.0523 13.5523 14.5 13 14.5H11V16.5C11 17.0523 10.5523 17.5 10 17.5C9.44771 17.5 9 17.0523 9 16.5V14.5H7C6.44772 14.5 6 14.0523 6 13.5C6 12.9477 6.44772 12.5 7 12.5H9V10.5C9 9.94771 9.44771 9.5 10 9.5Z" fill="var(--border)"/></symbol>
+</svg>
+
+<!-- The horizon sweep, ONE layer for all four states (2026-08-02). It used to
+     be repeated inside each state, where `main`'s 375px clip cropped it. -->
+<svg class="bg" viewBox="-154 -82.3 873 808.3" aria-hidden="true"><use href="#bg-trips" x="-154" y="-82.3" width="873" height="808.3"/></svg>
+
+<main>
+  <!-- ══════ 01. Zero (5:4085) ══════
+       Background + one CTA. The board carries no empty-state copy. -->
+  <section class="state on" data-state="zero">
+    <button class="zero-cta cta" type="button" data-open-form>
+      <span class="t-17b txt">START PLANNING</span>
+    </button>
+  </section>
+
+  <!-- ══════ 02. Active (5:4602) ══════ next trip + coming up -->
+  <section class="state" data-state="02">
+    <div class="container">
+      <div class="cards" data-cards="02"></div>
+      <div class="add-wrap">
+        <button class="cta" type="button" data-open-form style="width:185px">
+          <span class="t-17b txt">ADD MORE TRIPS</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ 02a. Active (58:7315) ══════ next trip + planning in progress -->
+  <section class="state" data-state="02a">
+    <div class="container">
+      <div class="cards" data-cards="02a"></div>
+      <div class="add-wrap">
+        <button class="cta" type="button" data-open-form style="width:185px">
+          <span class="t-17b txt">ADD MORE TRIPS</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ 03. Add & Edit Trips (59:1729) · 03a scroll (6:594) ══════
+       Add and Edit are the same form; an edit is this form prefilled. -->
+  <section class="state state--form" data-state="03">
+
+    <form class="form-card" novalidate>
+      <div class="band">
+        <span class="plan-title t-19b txt">Plan <span data-plan-n>1</span> : <span data-derived>—</span></span>
+      </div>
+
+      <div class="form-body">
+        <label class="label t-15b txt" for="f-name">Trip name</label>
+        <input class="input t-17" id="f-name" type="text" placeholder="Trip name" autocomplete="off">
+
+        <div class="field-row">
+          <div class="div">
+            <label class="label t-15 txt" for="f-from">From</label>
+            <!-- the board draws these EMPTY, showing the format hint -->
+            <div class="date-field">
+              <span class="date-val txt" data-date-face>YYYY-MM-DD</span>
+              <svg class="cal" viewBox="0 0 20 21" aria-hidden="true"><use href="#cal"/></svg>
+              <input id="f-from" type="date" aria-label="From">
+            </div>
+          </div>
+          <div class="div">
+            <label class="label t-15 txt" for="f-to">To</label>
+            <div class="date-field">
+              <span class="date-val txt" data-date-face>YYYY-MM-DD</span>
+              <svg class="cal" viewBox="0 0 20 21" aria-hidden="true"><use href="#cal"/></svg>
+              <input id="f-to" type="date" aria-label="To">
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="div">
+            <label class="label t-15 txt" for="f-adults">Adults</label>
+            <input class="input t-17 input--center" id="f-adults" type="text" inputmode="numeric"
+                   value="0" autocomplete="off">
+          </div>
+          <div class="div">
+            <label class="label t-15 txt" for="f-kids">Kids (under 7)</label>
+            <input class="input t-17 input--center" id="f-kids" type="text" inputmode="numeric"
+                   value="0" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- What's in this trip? — each check reveals its own card below.
+             Unchecking discards that card's data (TRIPS-FORM-LOGIC §6). -->
+        <fieldset class="fieldset">
+          <div class="legend"><span class="t-15b txt">What's in this trip?</span></div>
+          <label class="check-line">
+            <input type="checkbox" data-comp="lodging"><span class="box"></span>
+            <span class="t-15 txt">Lodging</span>
+          </label>
+          <label class="check-line">
+            <input type="checkbox" data-comp="parks"><span class="box"></span>
+            <span class="t-15 txt">Parks</span>
+          </label>
+          <label class="check-line">
+            <input type="checkbox" data-comp="cruise"><span class="box"></span>
+            <span class="t-15 txt">Cruise</span>
+          </label>
+          <label class="check-line">
+            <input type="checkbox" data-comp="abd"><span class="box"></span>
+            <span class="t-15 txt">Adventures by Disney</span>
+          </label>
+        </fieldset>
+
+        <!-- Lodging (78:2721). The pre/post-cruise rows exist only while Cruise
+             is also checked; they default to 0 nights and a 0-night card
+             persists no segment row. -->
+        <div class="lodging" data-group="lodging">
+          <div class="legend"><span class="t-15b txt">Lodging</span></div>
+
+          <div class="field-row" data-cruise-nights>
+            <div class="div">
+              <label class="label t-15 txt" for="f-pnb">Nights before cruise</label>
+              <input class="input t-17 input--center" id="f-pnb" type="text" inputmode="numeric"
+                     placeholder="2" autocomplete="off">
+            </div>
+            <div class="div">
+              <label class="label t-15 txt" for="f-pna">Nights after cruise</label>
+              <input class="input t-17 input--center" id="f-pna" type="text" inputmode="numeric"
+                     placeholder="2" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="stays"></div>
+
+          <button class="add-more t-12 txt" type="button" data-add-stay>+add split stay</button>
+        </div>
+
+        <!-- Cruise -->
+        <fieldset class="fieldset" data-group="cruise">
+          <div class="legend"><span class="t-15b txt">Cruise</span></div>
+          <div class="div" style="display:flex;flex-direction:column;gap:6px">
+            <label class="label t-15 txt" for="f-cnights">Cruise nights</label>
+            <div class="pull">
+              <input class="input t-17 input--center" id="f-cnights" type="text" inputmode="numeric"
+                     placeholder="7" autocomplete="off">
+              <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
+            </div>
+          </div>
+          <div class="div" style="display:flex;flex-direction:column;gap:6px">
+            <!-- BOARD COPY BUG: this label reads "Cruise nights" a second time
+                 on 59:1729 while the chips below it are stateroom categories.
+                 Rendered as drawn; raised for the board audit. -->
+            <span class="label t-15 txt">Cruise nights</span>
+            <div class="chip-grid" role="group" aria-label="Stateroom" data-chips="cabin" data-single>
+              <button class="chip t-15 txt" type="button" aria-pressed="false" value="inside">Inside</button>
+              <button class="chip t-15 txt" type="button" aria-pressed="false" value="oceanview">Oceanview</button>
+              <button class="chip t-15 txt" type="button" aria-pressed="true"  value="verandah">Verandah</button>
+              <button class="chip t-15 txt" type="button" aria-pressed="false" value="concierge">Concierge</button>
+              <button class="chip t-15 txt" type="button" aria-pressed="false" value="suite">Suite</button>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Parks -->
+        <fieldset class="fieldset" data-group="parks">
+          <div class="legend"><span class="t-15b txt">Parks</span></div>
+          <div class="div" style="display:flex;flex-direction:column;gap:6px">
+            <label class="label t-15 txt" for="f-parkdays">Days in park</label>
+            <div class="pull">
+              <input class="input t-17 input--center" id="f-parkdays" type="text" inputmode="numeric"
+                     placeholder="7" autocomplete="off" style="color:var(--ink)">
+              <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
+            </div>
+          </div>
+          <label class="check-line">
+            <input type="checkbox" data-park="hopper"><span class="box"></span>
+            <span class="t-15 txt">Park hopper</span>
+          </label>
+          <label class="check-line">
+            <input type="checkbox" data-park="lightning_lane"><span class="box"></span>
+            <span class="t-15 txt">Lightning Lane</span>
+          </label>
+          <label class="check-line">
+            <input type="checkbox" data-park="after_hours"><span class="box"></span>
+            <span class="t-15 txt">After-hours party</span>
+          </label>
+          <!-- SCHEMA GAP: "Private tour" is drawn on the board but Schema
+               Freeze v1 has no column for it (park_hopper / lightning_lane /
+               after_hours_party only). Rendered as drawn; intake is not wired
+               until the column question is answered. -->
+          <label class="check-line">
+            <input type="checkbox" data-park="private_tour"><span class="box"></span>
+            <span class="t-15 txt">Private tour</span>
+          </label>
+        </fieldset>
+
+        <!-- Adventures by Disney -->
+        <fieldset class="fieldset" data-group="abd">
+          <div class="legend"><span class="t-15b txt">Adventures by Disney</span></div>
+          <div class="field-row">
+            <div class="div">
+              <label class="label t-15 txt" for="f-abddays">ABD days</label>
+              <input class="input t-17 input--center" id="f-abddays" type="text" inputmode="numeric"
+                     placeholder="2" autocomplete="off">
+            </div>
+            <div class="div">
+              <label class="label t-15 txt" for="f-abdest">ABD estimate</label>
+              <input class="input t-17 input--center" id="f-abdest" type="text" inputmode="numeric"
+                     placeholder="2" autocomplete="off">
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Dining Style — labels are the board's; stored values stay
+             save / balanced / treat_yourself (DATA-MODEL §1). -->
+        <fieldset class="fieldset">
+          <div class="legend"><span class="t-15b txt">Dining Style</span></div>
+          <div class="chip-row" role="group" aria-label="Dining style" data-chips="dining" data-single>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="save">Budget</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="true"  value="balanced">Balanced</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="treat_yourself">Signature</button>
+          </div>
+        </fieldset>
+
+        <!-- Discounts — junction values (DATA-MODEL §3), many allowed -->
+        <fieldset class="fieldset fieldset--pad11">
+          <div class="legend"><span class="t-15b txt">Discounts</span></div>
+          <div class="chip-wrap" role="group" aria-label="Discounts" data-chips="discounts">
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="annual_pass">AP</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="dvc">DVC</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="military">Military</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="florida_resident">FL Resident</button>
+            <button class="chip t-15 txt" type="button" aria-pressed="false" value="cast_member">CM</button>
+          </div>
+        </fieldset>
+
+        <!-- Budget is the input; Auto forecast is computed, never entered and
+             never stored. A partial forecast renders "—", never a smaller
+             number (frozen). -->
+        <div class="field-row">
+          <div class="div">
+            <label class="label t-15 txt" for="f-budget">Budget</label>
+            <input class="input input--center input--money" id="f-budget" type="text"
+                   inputmode="numeric" value="0" autocomplete="off">
+          </div>
+          <div class="div">
+            <span class="label t-15 txt">Auto forecast*</span>
+            <output class="input input--center input--money input--forecast" data-forecast>—</output>
+          </div>
+        </div>
+
+        <!-- cta-help 191:5004 (the design director, 2026-07-27) — the airfare disclosure now
+             has a drawn home, closing the chunk-6 gap where it rode the
+             forecast field's title attribute. Board: 9px Regular, centred,
+             319 wide, sitting between field-row and cta-row; the card grew
+             1648 → 1666 (6px of text + one 12px stack gap). -->
+        <p class="forecast-note t-9 txt">*Auto forecast excludes airfare and travel to the destination.</p>
+
+        <div class="cta-row">
+          <button class="cta cta--outline" type="button" data-save="planned">
+            <span class="t-17b txt">SAVE</span>
+          </button>
+          <button class="cta" type="button" data-save="booked">
+            <span class="t-17b txt">CONFIRM</span>
+          </button>
+        </div>
+
+        <p class="cta-help txt"><b>Save</b> keeps this in Planning in Progress ·<br>
+          <b>Confirm</b> books it as Next Trip / Coming Up</p>
+
+        <div class="spacer"></div>
+
+        <button class="delete-link t-17 txt" type="button" data-delete>Delete This Trip</button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<footer class="footer">
+  <a class="tab" href="index.html">
+    <svg aria-hidden="true" style="left:17.74px; top:8.85px" width="41" height="36" viewBox="0 0 41 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M40.5405 15.8387C37.1394 15.8387 35.5731 17.4049 35.5731 20.8172C35.5731 17.4161 34.0068 15.8387 30.6056 15.8387C34.0068 15.8387 35.5731 14.2724 35.5731 10.8602C35.5619 14.2724 37.1394 15.8387 40.5405 15.8387ZM5.54925 7.3877C3.64729 7.3877 2.77462 8.26033 2.77462 10.1622C2.77462 8.26033 1.90196 7.3877 0 7.3877C1.90196 7.3877 2.77462 6.51506 2.77462 4.61316C2.77462 6.50388 3.64729 7.3877 5.54925 7.3877ZM26.6786 4.33777C24.7766 4.33777 23.904 5.2104 23.904 7.1123C23.904 5.2104 23.0313 4.33777 21.1293 4.33777C23.0313 4.33777 23.904 3.46513 23.904 1.56323C23.904 3.46513 24.7766 4.33777 26.6786 4.33777Z" fill="var(--dvc-bg)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.0948 0V0.0763244C19.2306 0.0477366 19.5022 1.64076e-05 19.9588 0C21.3912 0 22.4163 0.857887 23.5893 0.857887C24.1697 0.857884 25.1082 0.695958 25.3799 0.934211C25.4779 1.01951 25.1078 0.829259 24.639 1.07668C24.3674 1.21963 23.1819 1.74421 22.33 1.74427C21.478 1.74427 21.4161 1.51529 20.7246 1.51529C20.1567 1.5153 19.3666 1.86759 19.0948 1.99156V3.717C19.1073 3.76571 21.0714 11.4372 21.4655 12.046C21.6383 12.1223 21.6385 12.1224 21.6385 12.1224V12.5513L21.3052 12.6561V13.6473H22.8235V15.4582L21.9346 16.0108V21.9194L24.3551 23.5395V21.2523L23.5522 21.0045V20.0799C23.5522 20.0799 23.7287 19.9925 24.318 19.6703C24.8736 18.7839 26.2072 15.0766 26.2072 15.0766V13.0947H26.4784V15.0766C26.4784 15.0766 27.7997 18.7839 28.3677 19.6703C28.9569 20.0019 29.1335 20.0799 29.1335 20.0799V21.0045L28.3311 21.2523V29.1432C29.3806 29.6388 30.4548 30.2014 31.4919 30.8208V29.4867L30.9363 29.2959V28.3713C30.9413 28.3689 31.1176 28.281 31.7016 27.9617C32.268 27.0779 33.412 24.3176 33.4184 24.3022V22.3198H33.6896V24.3022C33.697 24.3201 34.8397 27.0782 35.4059 27.9617C35.9919 28.2915 36.1678 28.3696 36.1716 28.3713V29.2959L35.616 29.4867V33.6988C36.4813 34.4084 36.9939 34.9098 36.9939 35.9519H1.04205C1.04205 34.9098 1.52921 34.4182 2.38842 33.7084V29.4867L1.83277 29.2959V28.3713C1.84024 28.3676 2.01828 28.2787 2.59805 27.9617C3.16339 27.0796 4.30365 24.328 4.31434 24.3022V22.3198H4.58605V24.3022C4.59562 24.3253 5.73672 27.0791 6.30233 27.9617C6.89503 28.2953 7.06812 28.3713 7.06812 28.3713V29.2959L6.51248 29.4867V30.8208C7.54967 30.2014 8.61144 29.6388 9.67333 29.1432V21.2523L8.8709 21.0045V20.0799C8.87773 20.0765 9.05534 19.9879 9.63618 19.6703C10.1918 18.784 11.5255 15.0766 11.5255 15.0766V13.0947H11.7972V15.0766C11.7972 15.0766 13.1185 18.784 13.6865 19.6703C14.2664 19.9967 14.4444 20.0767 14.4517 20.0799V21.0045L13.6493 21.2523V23.5395L16.0693 21.9194V16.0108L15.1804 15.4582V13.6473H16.6992V12.6561L16.366 12.5513V12.1224C16.366 12.1224 16.3815 12.1155 16.539 12.046C16.9333 11.4362 18.8987 3.75949 18.9096 3.717V0H19.0948ZM18.9834 29.8327C17.6252 29.8327 16.539 30.5378 16.539 31.405V33.3014H21.4283V31.405C21.4283 30.5282 20.3416 29.8327 18.9834 29.8327ZM18.8602 23.8C18.8602 23.8 18.1808 24.7147 16.9954 25.5819L17.1312 25.7061V27.7261H20.7862V25.7061L20.922 25.5819C19.7834 24.7125 19.0941 23.815 19.0826 23.8H18.8602Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">Home</span>
+  </a>
+  <a class="tab on" href="trips.html" aria-current="page">
+    <svg aria-hidden="true" style="left:26.36px; top:8.71px" width="23" height="38" viewBox="0 0 23 38" fill="none" xmlns="http://www.w3.org/2000/svg"><rect y="7.60132" width="22.8041" height="27.5549" rx="5.06757" fill="var(--primary)"/><rect x="7.60156" width="0.950169" height="9.50169" rx="0.475084" fill="var(--primary)"/><rect x="15.2031" width="0.950169" height="9.50169" rx="0.475084" fill="var(--primary)"/><rect x="6.65137" width="10.4519" height="1.90034" rx="0.950169" fill="var(--primary)"/><circle cx="5.70112" cy="36.1065" r="1.90034" fill="var(--primary)"/><circle cx="17.103" cy="36.1066" r="1.90034" fill="var(--primary)"/><rect x="1.90039" y="28.5051" width="19.0034" height="0.950169" fill="var(--deco)"/><rect x="1.90039" y="26.6049" width="19.0034" height="0.950169" fill="var(--deco)"/><path d="M16.6675 17.6271C16.6675 14.8855 17.9287 13.6271 20.6675 13.6271C17.9287 13.6271 16.6585 12.3686 16.6675 9.62708C16.6675 12.3686 15.4062 13.6271 12.6675 13.6271C15.4062 13.6271 16.6675 14.8945 16.6675 17.6271Z" fill="var(--deco)"/></svg>
+    <span class="label t-13 txt">Trips</span>
+  </a>
+  <a class="tab" href="spend.html">
+    <svg aria-hidden="true" style="left:23.57px; top:19.48px" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.1351" cy="10.1351" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10.8973 5.01299C11.3927 5.06572 11.8287 5.18177 12.205 5.36312C12.7452 5.6095 13.158 5.95575 13.4422 6.40113C13.7265 6.84652 13.8691 7.35844 13.8691 7.93649H11.9502C11.9123 7.51006 11.7602 7.18283 11.4949 6.95539C11.3503 6.82686 11.1509 6.73539 10.8973 6.6795V9.36917L10.9542 9.38649C11.229 9.47178 11.5426 9.58044 11.8933 9.71311C12.2532 9.83628 12.5985 10.0075 12.93 10.2253C13.2617 10.4338 13.5319 10.7082 13.7404 11.0493C13.9583 11.3809 14.067 11.7979 14.067 12.3001C14.067 12.9161 13.9204 13.4565 13.6266 13.9208C13.3328 14.3756 12.8968 14.7315 12.3189 14.9873C11.9164 15.1616 11.4423 15.2717 10.8973 15.3226V16.5363H9.51908V15.3238C8.5952 15.2404 7.8741 14.979 7.3577 14.532C6.72298 13.9729 6.38191 13.2191 6.33453 12.2716H8.31034C8.32929 12.6033 8.41069 12.8789 8.55283 13.0969C8.69497 13.305 8.90308 13.4616 9.17762 13.5657C9.28225 13.6054 9.3966 13.634 9.51908 13.6585V10.7227L9.41887 10.6942C8.56634 10.4479 7.88415 10.1068 7.37254 9.67105C6.86084 9.23515 6.6055 8.65666 6.60548 7.93649C6.60548 7.2921 6.76166 6.75167 7.07438 6.31576C7.39655 5.88001 7.8326 5.54843 8.3821 5.32105C8.73064 5.17686 9.10957 5.07811 9.51908 5.02536V3.80054H10.8973V5.01299ZM10.8973 13.6511C11.1881 13.5888 11.4301 13.4863 11.6223 13.3381C11.954 13.0728 12.1197 12.717 12.1197 12.2716C12.1196 12.0254 12.049 11.831 11.9069 11.6889C11.7742 11.5373 11.5841 11.4096 11.3378 11.3054C11.2019 11.2456 11.055 11.1894 10.8973 11.1359V13.6511ZM9.51908 6.6894C9.28001 6.74817 9.08579 6.84143 8.93636 6.97024C8.66172 7.19756 8.52451 7.50496 8.52438 7.89319C8.52438 8.08272 8.57602 8.24964 8.68026 8.39178C8.78437 8.52421 8.91245 8.63737 9.0638 8.73201C9.20761 8.81661 9.36017 8.88782 9.51908 8.94976V6.6894Z" fill="var(--dvc-bg)"/><circle cx="17.7366" cy="17.7365" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.4985 12.6143C18.9939 12.667 19.4299 12.7831 19.8062 12.9644C20.3464 13.2108 20.7591 13.5571 21.0434 14.0024C21.3277 14.4478 21.4703 14.9598 21.4703 15.5378H19.5514C19.5135 15.1114 19.3614 14.7841 19.0961 14.5567C18.9515 14.4282 18.7521 14.3367 18.4985 14.2808V16.9705L18.5554 16.9878C18.8302 17.0731 19.1438 17.1818 19.4945 17.3144C19.8544 17.4376 20.1997 17.6088 20.5312 17.8266C20.8629 18.0351 21.1331 18.3095 21.3416 18.6506C21.5595 18.9822 21.6682 19.3993 21.6682 19.9014C21.6682 20.5174 21.5215 21.0578 21.2278 21.5221C20.934 21.9769 20.498 22.3328 19.9201 22.5886C19.5175 22.763 19.0435 22.873 18.4985 22.9239V24.1376H17.1203V22.9251C16.1964 22.8417 15.4753 22.5804 14.9589 22.1333C14.3242 21.5742 13.9831 20.8204 13.9357 19.873H15.9115C15.9305 20.2046 16.0119 20.4802 16.154 20.6982C16.2962 20.9063 16.5043 21.0629 16.7788 21.1671C16.8834 21.2068 16.9978 21.2353 17.1203 21.2599V18.324L17.0201 18.2955C16.1675 18.0492 15.4853 17.7081 14.9737 17.2724C14.462 16.8365 14.2067 16.258 14.2067 15.5378C14.2067 14.8934 14.3629 14.353 14.6756 13.9171C14.9977 13.4813 15.4338 13.1498 15.9833 12.9224C16.3318 12.7782 16.7108 12.6794 17.1203 12.6267V11.4019H18.4985V12.6143ZM18.4985 21.2524C18.7893 21.1901 19.0313 21.0876 19.2235 20.9394C19.5552 20.6741 19.7209 20.3183 19.7209 19.873C19.7208 19.6267 19.6502 19.4323 19.5081 19.2902C19.3754 19.1387 19.1853 19.0109 18.939 18.9067C18.8031 18.8469 18.6562 18.7907 18.4985 18.7372V21.2524ZM17.1203 14.2907C16.8812 14.3495 16.687 14.4427 16.5376 14.5716C16.2629 14.7989 16.1257 15.1063 16.1256 15.4945C16.1256 15.684 16.1772 15.851 16.2815 15.9931C16.3856 16.1255 16.5136 16.2387 16.665 16.3333C16.8088 16.4179 16.9614 16.4891 17.1203 16.5511V14.2907Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Spend</span>
+  </a>
+  <a class="tab" href="dvc.html">
+        <!-- 19,13 is the board's own coordinate for this mark (Figma 41:1008, the
+         `svg` frame inside the DVC span). Ruled 2026-08-02: unlike the other
+         four footer icons this one is NOT optically compensated — it is
+         placed exactly as drawn. -->
+        <svg aria-hidden="true" style="left:19px; top:13px" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9999 33.3C24.9587 33.3 30.5999 31.5539 30.5999 29.4C30.5999 27.2461 24.9587 25.5 17.9999 25.5C11.0411 25.5 5.3999 27.2461 5.3999 29.4C5.3999 31.5539 11.0411 33.3 17.9999 33.3Z" fill="var(--dvc-bg)"/><path d="M16.7998 30.3C17.0998 23.4 18.7498 17.4 21.5998 13.2L24.1498 15.3C21.1498 19.5 20.5498 24.3 20.8498 30.3H16.7998Z" fill="var(--dvc-primary)"/><path d="M22.6663 9.94336C23.678 8.7376 26.5565 9.48718 29.095 11.6172C31.6333 13.7472 32.8714 16.4515 31.8596 17.6572C30.8479 18.863 27.9694 18.1134 25.4309 15.9834C22.8926 13.8535 21.6548 11.1492 22.6663 9.94336ZM29.6634 2.40039C31.8171 2.40054 33.5627 4.14608 33.5628 6.2998C33.5628 8.45362 31.8171 10.2 29.6634 10.2002C28.2273 10.2002 26.973 9.42332 26.2962 8.26758C25.0103 8.95006 22.8631 9.31033 20.4641 9.14258C20.0036 9.11037 19.5551 9.05923 19.1223 8.99316C18.3776 9.94436 17.3196 10.9242 16.0403 11.7871C12.8812 13.9179 9.56942 14.5316 8.64284 13.1582C7.71634 11.7846 9.52655 8.94345 12.6858 6.8125C13.0558 6.56292 13.428 6.33415 13.7981 6.12695C13.7791 6.02467 13.7723 5.92167 13.7796 5.81836C13.8894 4.24826 17.0603 3.19128 20.8616 3.45703C22.97 3.60446 24.8296 4.12807 26.0491 4.83301C26.6288 3.40625 28.0284 2.40039 29.6634 2.40039Z" fill="var(--dvc-bg)"/><path d="M19.5 14.55C20.7426 14.55 21.75 13.5427 21.75 12.3C21.75 11.0574 20.7426 10.05 19.5 10.05C18.2574 10.05 17.25 11.0574 17.25 12.3C17.25 13.5427 18.2574 14.55 19.5 14.55Z" fill="var(--dvc-primary)"/><path d="M23.8501 15.75C25.0927 15.75 26.1001 14.7426 26.1001 13.5C26.1001 12.2574 25.0927 11.25 23.8501 11.25C22.6075 11.25 21.6001 12.2574 21.6001 13.5C21.6001 14.7426 22.6075 15.75 23.8501 15.75Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">DVC</span>
+  </a>
+  <a class="tab" href="insights.html">
+    <svg aria-hidden="true" style="left:22.62px; top:13.49px" width="33" height="30" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.895828 8.81396C0.401075 8.3192 0.400989 7.51357 0.91226 7.03591C7.24023 1.12389 13.8274 -0.727922 20.6736 1.48046C21.3338 1.69342 21.658 2.4228 21.4144 3.07233L21.3583 3.22188C21.1089 3.88711 20.3623 4.21159 19.6841 3.99981C14.0601 2.24352 8.43617 3.89921 2.81221 8.96689C2.29864 9.42966 1.5084 9.42653 1.01956 8.93769L0.895828 8.81396Z" fill="var(--dvc-bg)"/><path d="M8.55154 18.6867C8.55154 17.1124 7.27532 15.8362 5.70103 15.8362C4.12674 15.8362 2.85052 17.1124 2.85052 18.6867V26.6048C2.85052 28.1791 4.12674 29.4553 5.70103 29.4553C7.27532 29.4553 8.55154 28.1791 8.55154 26.6048V18.6867Z" fill="var(--dvc-primary)"/><path d="M17.7365 12.0356C17.7365 10.4613 16.4603 9.18506 14.886 9.18506C13.3117 9.18506 12.0355 10.4613 12.0355 12.0356V26.6048C12.0355 28.1791 13.3117 29.4553 14.886 29.4553C16.4603 29.4553 17.7365 28.1791 17.7365 26.6048V12.0356Z" fill="var(--dvc-primary)"/><path d="M26.9215 15.5195C26.9215 13.9452 25.6453 12.6689 24.071 12.6689C22.4967 12.6689 21.2205 13.9452 21.2205 15.5195V26.6048C21.2205 28.179 22.4967 29.4553 24.071 29.4553C25.6453 29.4553 26.9215 28.179 26.9215 26.6048V15.5195Z" fill="var(--dvc-primary)"/><path d="M25.9713 0L27.8717 4.59248L32.4642 6.49282L27.8717 8.39316L25.9713 12.9856L24.071 8.39316L19.4785 6.49282L24.071 4.59248L25.9713 0Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Insights</span>
+  </a>
+</footer>
+
+<script type="module">
+/* ══════════════ Trips — state selection, card render, form logic ══════════
+   Mockup stage. Sample rows stand in for storage; the real reads and writes
+   land in the single real-app assembly pass, not here (the design director, 2026-07-25).
+
+   Dev harness: ?state=zero|02|02a|03|03a|04|04a · ?theme=<name>
+   There is no on-screen state switcher. 04 / 04a ARE the shipped initial
+   state; 03 / 03a repopulate the form with what those two boards draw, so the
+   pixel audit stays reproducible.
+   ────────────────────────────────────────────────────────────────────────── */
+
+import { openIdb } from './js/storage/adapter-idb.js';
+import { createRepo } from './js/storage/repo.js';
+import { loadForecastBundle, forecastFromStore } from './js/forecast-bundle.js';
+import { tripType } from './js/trip-type.js';
+import { isSaveable } from './js/trip-gate.js';
+
+/* The forecast is CALCULATED, never stored and never typed (operating rule 5).
+   Its datasheets are optional: if they fail to load the field stays "—",
+   which is the honest reading — an unknown forecast, not a zero.
+
+   The bundle loads FOUR datasheets, not three. This screen used to load three
+   and pass no options to the engine, which silently dropped the transport
+   carry — the same trip read $12,462 here and $24,808 on Insights. */
+let FC = null, HOTELS_ALL = [];
+try { FC = await loadForecastBundle(); }
+catch (e) { console.warn('Trips: forecast datasheets unavailable —', e); }
+
+/* The repo is the only writer on this screen. If IndexedDB is unavailable
+   (private mode, storage disabled) the screen still renders and navigates —
+   it just cannot persist, and says so once in the console rather than dying
+   at module scope and taking the whole page with it. */
+let repo = null;
+try { repo = createRepo(await openIdb()); }
+catch (e) { console.error('Trips: storage unavailable, running read-only —', e); }
+
+/* Hotel rows give each lodging segment its benchmark tier. Seeded on demand so
+   a Trips-only session still resolves an on-property stay — and so a datasheet
+   CORRECTION reaches a user who never opens DVC (seed_rev, 2026-08-01).
+   The catch stays quiet but no longer stays silent: this call lost its fetch
+   helper in the forecast-bundle refactor and threw a swallowed ReferenceError,
+   so the seed had stopped running here with nothing to show for it. */
+if (repo) {
+  try {
+    const sheet = await fetch('./data/hotels.json').then(r => r.json());
+    await repo.seedHotels(sheet.hotels ?? []);
+  } catch (e) { console.warn('Trips: resort seed unavailable —', e.message); }
+  HOTELS_ALL = await repo.listHotels();
+}
+
+const qs = new URLSearchParams(location.search);
+const SCROLL = { '03a': 970, '04a': 170 };   /* each board's own drawn delta */
+
+/* ?state=03 / 03a reproduce the POPULATED boards for the pixel audit. Those
+   frames are now a genuine READY-TO-CONFIRM state (the design director, 2026-07-27): the
+   dates are filled, so the CTA gate opens on its own and no override is
+   needed — the earlier force-enable is gone with the inconsistency. */
+
+/* ── theme ─────────────────────────────────────────────────────────────── */
+const theme = qs.get('theme');
+if (theme) Theme.apply(theme);   /* harness preview only — never committed */
+
+/* ── dates ─────────────────────────────────────────────────────────────── */
+const DAY = 86400000;
+const T0 = (() => { const d = new Date();
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); })();   /* today, UTC-normalised */
+const at = d => Date.parse(d + 'T00:00:00Z');
+const usDate = d => { const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y}`; };
+const countdown = d => Math.ceil((at(d) - T0) / DAY);
+const nightsBetween = (a, b) => Math.round((at(b) - at(a)) / DAY);
+
+const HEADING = { next: 'Next Trip', coming: 'Coming Up', planning: 'Planning' };
+
+/* Trip type is DERIVED from the component flags — never stored, never picked.
+   The vocabulary moved to js/trip-type.js on 2026-07-28: Home and Trips were
+   labelling four of the eight combinations differently, so there is now one
+   module and no local copy. `deriveType` stays as the local name because the
+   two call sites below read better with it. */
+const deriveType = tripType;
+
+const money = n => '$' + Number(n).toLocaleString('en-US');
+
+/* The Budget field shows "$24,000" while being typed into (board 61:1653).
+   Digits are the only real input; the $ and separators are presentation, and
+   readTrip strips them again via fnum(), so storage still receives 24000.
+   An empty field shows nothing rather than "$0" — a bare $ prompt would look
+   like a value the user did not enter. */
+const moneyFieldValue = raw => {
+  const digits = String(raw ?? '').replace(/[^0-9]/g, '');
+  return digits === '' ? '' : money(Number(digits));
+};
+
+/* Returns the typical band value, or null when the app cannot honestly claim
+   a number. A PARTIAL forecast is not a smaller forecast — one missing
+   benchmark taints the whole trip, so it renders "—" rather than a total
+   that silently excludes a term (operating rule 5, INSIGHTS-BUILD §4.3).
+
+   toForecastTrip is mandatory here: a raw storage row still produces a
+   number, but a quietly low one that does NOT flag itself partial.
+
+   The trip's own recorded expenses are an INPUT, not decoration: the frozen
+   transport carry (FORECASTING.md, the design director 2026-07-20) adds the user's recorded
+   ground transport to the forecast, and a recorded flight drops the "airfare
+   not included" disclosure. Omitting them was the three-screen discrepancy. */
+function forecastFor(row, segs, expenses = []) {
+  const none = { value: null, airfare: null, labels: [] };
+  try {
+    const f = forecastFromStore(FC, row, { segments: segs, hotels: HOTELS_ALL, expenses });
+    if (!f) return none;
+    return {
+      value: (f.total && !f.partial) ? f.total.typical : null,
+      airfare: f.airfare, labels: f.labels ?? [],
+    };
+  } catch (e) { console.warn('Trips: forecast failed —', e.message); return none; }
+}
+/* Operating rule 5: a value the app cannot compute yet renders —, never a
+   fake number. Forecast is one until chunk 6 wires js/forecast.js. */
+const dash = n => (n == null || n === '' ? '—' : money(n));
+
+function cardHTML(t) {
+  const editVariant = { next: 'next', coming: 'coming', planning: 'planning' }[t.kind];
+  return `
+    <article class="tcard tcard--${editVariant}">
+      <div class="tcard__head">
+        <span class="tcard__title t-19b txt">${HEADING[t.kind]} : ${t.type}</span>
+        <button class="tcard__edit" type="button" aria-label="Edit ${t.name}" data-open-form data-trip="${t.id}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#pencil"/></svg>
+        </button>
+      </div>
+      <div class="tcard__body">
+        <div class="count-row">
+          <span class="count">${t.days}</span>
+          <span class="count-unit t-19b txt">days until</span>
+        </div>
+        <span class="trip-name t-17b txt">${t.name}</span>
+        <span class="trip-dates t-17 txt">from ${t.from} to ${t.to}</span>
+        <!-- "Budget" capitalised (the design director, 2026-07-28) — it matches Forecast
+             beside it, and the form's own field label above. -->
+        <span class="trip-money t-17 txt">Forecast ${dash(t.forecast)} / Budget ${dash(t.budget)}</span>
+      </div>
+    </article>`;
+}
+
+/* Trip type is derived from the stored component flags, never read back from
+   a column — there is no trip_type (DATA-MODEL §1). */
+function toCard(t, kind) {
+  return {
+    id: t.id, kind,
+    type: deriveType({ lodging: t.include_lodging, parks: t.include_parks,
+                       cruise: t.include_cruise, abd: t.include_abd }),
+    name: t.title || 'Untitled trip',
+    from: usDate(t.start_date), to: usDate(t.end_date),
+    days: countdown(t.start_date),
+    forecast: t.__forecast ?? null,   /* computed in renderCards (chunk 6) */
+    budget: t.budget_amount,
+  };
+}
+
+/* 02 pairs the soonest booked trip with the next booked one; 02a pairs it with
+   a planning scenario. Past trips leave the module entirely (board Spec), so
+   the filter is on end_date — a trip is past only once it is fully over.
+   Returns the state name to show, so the caller never guesses. */
+async function renderCards() {
+  const box02 = document.querySelector('[data-cards="02"]');
+  const box02a = document.querySelector('[data-cards="02a"]');
+  box02.innerHTML = box02a.innerHTML = '';
+  if (!repo) return 'zero';
+
+  const all = await repo.listTrips();
+  /* Forecast each card from its own stored row + segments. Cheap: the stack
+     never holds more than two. */
+  for (const t of all) {
+    const v = forecastFor(t, await repo.segmentsOf(t.id),
+      await repo.expensesOf(t.id)).value;
+    /* whole dollars on the card: the band carries fractions the board never
+       shows, and "$3,607.472" reads as false precision on an estimate */
+    t.__forecast = v == null ? null : Math.round(v);
+  }
+  const upcoming = all.filter(t => t.start_date && t.end_date && at(t.end_date) >= T0);
+  const byStart = (a, b) => at(a.start_date) - at(b.start_date);
+  const booked   = upcoming.filter(t => t.status === 'booked').sort(byStart);
+  const planning = upcoming.filter(t => t.status === 'planned').sort(byStart);
+  if (!booked.length && !planning.length) return 'zero';
+
+  /* With only one trip the same stack renders one card — the drawn layout with
+     fewer items, not a new state. Nothing here invents a variant. */
+  let stack, state;
+  if (booked.length >= 2) {
+    stack = [toCard(booked[0], 'next'), toCard(booked[1], 'coming')];  state = '02';
+  } else if (booked.length === 1 && planning.length) {
+    stack = [toCard(booked[0], 'next'), toCard(planning[0], 'planning')]; state = '02a';
+  } else if (booked.length === 1) {
+    stack = [toCard(booked[0], 'next')]; state = '02';
+  } else {
+    stack = planning.slice(0, 2).map(t => toCard(t, 'planning')); state = '02a';
+  }
+  document.querySelector(`[data-cards="${state}"]`).innerHTML = stack.map(cardHTML).join('');
+  return state;
+}
+
+/* the two card stacks are themselves stack items, so they carry the 16 gap */
+for (const el of document.querySelectorAll('.cards')) {
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  el.style.gap = '16px';
+  el.style.width = 'var(--col)';
+}
+
+/* ── state selection ───────────────────────────────────────────────────── */
+const states = [...document.querySelectorAll('.state')];
+const FORM_STATES = ['03', '03a', '04', '04a'];
+function show(name) {
+  const isForm = FORM_STATES.includes(name);
+  const key = isForm ? '03' : name;
+  for (const s of states) s.classList.toggle('on', s.dataset.state === key);
+  if (isForm) {
+    const region = document.querySelector('.state--form');
+    region.scrollTop = SCROLL[name] || 0;
+  }
+}
+/* Delegated: the card stacks are re-rendered on every save, so a listener
+   bound to today's buttons would be lost with them. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-open-form]');
+  if (b) openForm(b.dataset.trip || null);
+});
+
+/* ── form: component checks reveal their own cards ─────────────────────── */
+const form = document.querySelector('.form-card');
+const comps = () => Object.fromEntries(
+  [...form.querySelectorAll('[data-comp]')].map(i => [i.dataset.comp, i.checked]));
+
+const stays = form.querySelector('.stays');
+
+/* Hotel card (78:2799). `on_points` is offered on every on-property hotel —
+   points can book non-villa resorts, so it is not gated by is_dvc.
+
+   THE PICKER (the design director, 2026-07-28). Order is hers: placeholder, Off property,
+   the DVC villas, Other on-property. The placeholder is not decoration — a
+   native select shows its first option when nothing is chosen, so without it
+   "Off property hotel" would render as a choice the user never made and save
+   one onto an untouched trip.
+   The open state is the OS picker, exactly as DVC's shipped pulldown does it
+   (dvc.html overlays a native select on the drawn chevron). Nothing here
+   invents a drawn surface: the closed field is the drawn one, and if a custom
+   list is drawn later only the presentation swaps — every read path below
+   goes through pickedHotel(). */
+/* REVISED 2026-07-28 (the design director): the top picker is purely CATEGORICAL — off
+   property, on property, DVC — and the second step is permanent rather than a
+   branch only two of three choices take. Every path is now the same two
+   gestures, which is why she called it the more inclusive shape: no category
+   is a first-class citizen in the top list while the others are footnotes.
+   It also stops the top list growing every time the seed does. */
+const OFF = '__off', ONPROP = '__onprop', DVC = '__dvc';
+const optionsFor = rows => rows.map(h =>
+  `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
+const TIERS = [['deluxe', 'Deluxe'], ['moderate', 'Moderate'], ['value', 'Value']];
+const byName = (a, b) => a.name.localeCompare(b.name);
+
+function hotelSelectHTML() {
+  return `
+        <!-- "type", not "a hotel": this list stopped naming hotels when it went
+             categorical, and the second picker is where a hotel is chosen.
+             (the design director, 2026-07-28) -->
+        <option value="" disabled selected>Choose hotel type</option>
+        <option value="${OFF}">Off property hotel</option>
+        <option value="${ONPROP}">On property hotel</option>
+        <option value="${DVC}">DVC resort</option>`;
+}
+/* Grouped by tier: 22 rows is a long flat list on a 375 phone, and the
+   grouping is Disney's own — the same three tiers the design director's rule names. */
+function onPropHTML() {
+  /* `active !== false` is what RETIRES a row. seedHotels can insert and (via
+     seed_rev) correct, but it never deletes — so a store that already seeded
+     "Riviera Resort (hotel rooms)" still holds it after the datasheet dropped
+     it. Retiring rather than deleting also keeps a stored segment's hotel_id
+     resolvable, so an old trip still prices instead of falling to "—". */
+  const onProp = HOTELS_ALL.filter(h =>
+    !h.is_dvc && h.category !== 'off_property' && h.active !== false);
+  /* Walt Disney World groups by Disney's own three tiers. Disneyland is its own
+     group rather than a fourth tier: DLR does not publish that vocabulary, and
+     mixing it in put "Disneyland Hotel" under Deluxe on a Florida trip
+     (the design director, 2026-07-28). Anything neither wdw nor dlr would fall out of both
+     groups, so it is caught explicitly rather than silently dropped. */
+  const wdw = TIERS.map(([cat, label]) => {
+    const rows = onProp.filter(h => h.resort_area === 'wdw' && h.category === cat).sort(byName);
+    return rows.length ? `<optgroup label="${label}">${optionsFor(rows)}</optgroup>` : '';
+  }).join('');
+  const others = ['dlr', 'other'].map(area => {
+    const rows = onProp.filter(h => h.resort_area === area).sort(byName);
+    const label = area === 'dlr' ? 'Disneyland Resort' : 'Other';
+    return rows.length ? `<optgroup label="${label}">${optionsFor(rows)}</optgroup>` : '';
+  }).join('');
+  return `<option value="" disabled selected>Choose a Disney hotel</option>${wdw}${others}`;
+}
+function dvcHTML() {
+  return `<option value="" disabled selected>Choose a DVC resort</option>` +
+    optionsFor(HOTELS_ALL.filter(h => h.is_dvc && h.active !== false).sort(byName));
+}
+/* Points book Disney hotels and DVC resorts alike — but not Swan or Dolphin,
+   which sit on Disney property under Marriott. That is an operator fact about
+   a specific row, so it rides the row (`points_eligible: false`) rather than
+   an id list buried in this form: the datasheet is where "which hotels are
+   these" already lives, and the next such hotel is then a data edit.
+   ⚠ Swan Reserve and Shades of Green are arguably the same case — flagged in
+   TODO for the design director rather than assumed, since she named only two. */
+const pointsEligible = id => {
+  const h = HOTELS_ALL.find(x => x.id === id);
+  return h ? h.points_eligible !== false : false;
+};
+
+function hotelHTML(label) {
+  return `
+    <div class="hotel">
+      <span class="label t-15 txt">${label}</span>
+      <div class="pull">
+        <select class="input t-17" data-hotel aria-label="Hotel">${hotelSelectHTML()}</select>
+        <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
+      </div>
+      <!-- One slot, two occupants: the custom name field for Off Property, the
+           tier-grouped list for Other on-property. Empty and hidden until the
+           primary choice asks for one. -->
+      <div class="hotel-extra" hidden></div>
+      <div class="points-row">
+        <label class="check-line">
+          <input type="checkbox" data-on-points><span class="box"></span>
+          <span class="t-15 txt">Staying on DVC points</span>
+        </label>
+        <span class="helper t-9">Point details are managed in the DVC tab.</span>
+      </div>
+    </div>`;
+}
+
+/* Datasheet names only ever reach the option list (a user's own off-property
+   row is filtered out by category), but escaping is not conditional on that
+   staying true. */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+}
+
+/* What the card is currently saying, read once and answered the same way by
+   all three consumers — the live forecast, the save, and the reload. */
+function pickedHotel(hotel) {
+  const v = hotel.querySelector('[data-hotel]')?.value ?? '';
+  if (v === OFF) {
+    const name = hotel.querySelector('[data-hotel-custom]')?.value.trim() ?? '';
+    return { kind: name ? 'off' : 'none', name };
+  }
+  if (v === ONPROP || v === DVC) {
+    const id = hotel.querySelector('[data-hotel-2]')?.value ?? '';
+    return id ? { kind: 'id', id } : { kind: 'none' };
+  }
+  return { kind: 'none' };   /* nothing chosen yet — the placeholder */
+}
+
+/* The slot's occupant follows the primary choice. Off Property also hides the
+   points line: DVC points book Disney hotels, and a Hampton Inn is not one —
+   the control is absent rather than disabled, so it cannot be left checked on
+   a stay that can never be on points. */
+function syncHotelCard(hotel, { keepSecond = false } = {}) {
+  const v = hotel.querySelector('[data-hotel]').value;
+  const slot = hotel.querySelector('.hotel-extra');
+  const pts = hotel.querySelector('.points-row');
+  const listHTML = v === ONPROP ? onPropHTML() : v === DVC ? dvcHTML() : null;
+  if (v === OFF) {
+    if (!slot.querySelector('[data-hotel-custom]'))
+      slot.innerHTML = `<input class="input t-17" data-hotel-custom type="text"
+        placeholder="Hotel name" autocomplete="off" aria-label="Hotel name">`;
+  } else if (listHTML) {
+    /* Rebuilt on every category change: the same element must not keep an id
+       from the list it is no longer showing, or a DVC row could be saved
+       against an On property choice. `keepSecond` is only for reload, which
+       sets the value straight after. */
+    if (!keepSecond || !slot.querySelector('[data-hotel-2]'))
+      slot.innerHTML = `<div class="pull">
+        <select class="input t-17" data-hotel-2 aria-label="Hotel">${listHTML}</select>
+        <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
+      </div>`;
+  } else {
+    slot.innerHTML = '';
+  }
+  slot.hidden = !slot.innerHTML;
+  /* Points ride both Disney categories, so the gate is the CHOSEN ROW, not the
+     category: an on-property Marriott (Swan, Dolphin) cannot take points while
+     the Value resort beside it can. Absent, not disabled, so it can never be
+     left checked on a stay that could not use it. */
+  if (pts) {
+    const picked = pickedHotel(hotel);
+    const ok = v !== OFF && picked.kind === 'id' && pointsEligible(picked.id);
+    pts.hidden = !ok;
+    if (!ok) { const b = pts.querySelector('[data-on-points]'); if (b) b.checked = false; }
+  }
+  /* the field reads as a value once one is chosen, as a prompt before that */
+  hotel.querySelector('[data-hotel]').classList.toggle('is-chosen', Boolean(v));
+}
+
+stays.addEventListener('change', e => {
+  /* the second list moves the points line too, so both selects re-sync */
+  const sel = e.target.closest('[data-hotel], [data-hotel-2]');
+  if (sel) syncHotelCard(sel.closest('.hotel'), { keepSecond: sel.matches('[data-hotel-2]') });
+});
+
+/* Split-stay (78:3651) adds the per-hotel from–to row. Single stay shows none:
+   the trip window is implied. check_in = from, nights = to − from. */
+function splitHTML(n) {
+  return `
+    <div class="split">
+      ${hotelHTML('Hotel ' + n)}
+      <div class="mini-row">
+        <div class="div">
+          <span class="label t-12 txt">From</span>
+          <input class="input input--center" type="text" inputmode="numeric" placeholder="2026-12-18" autocomplete="off">
+        </div>
+        <div class="div">
+          <span class="label t-12 txt">To</span>
+          <input class="input input--center" type="text" inputmode="numeric" placeholder="2026-12-30" autocomplete="off">
+        </div>
+      </div>
+    </div>`;
+}
+
+let stayCount = 1;
+function renderStays() {
+  stays.innerHTML = stayCount === 1
+    ? hotelHTML('Hotel')
+    : Array.from({ length: stayCount }, (_, i) => splitHTML(i + 1)).join('');
+  stays.style.display = 'flex';
+  stays.style.flexDirection = 'column';
+  stays.style.gap = '8px';
+  form.querySelector('[data-add-stay]').textContent =
+    stayCount === 1 ? '+add split stay' : '+add another split stay';
+}
+
+form.querySelector('[data-add-stay]').addEventListener('click', () => {
+  stayCount += 1;
+  renderStays();
+  /* a new stay row starts with no hotel, so it makes the trip unsaveable */
+  gate();
+});
+
+/* ── the CTA gate ──────────────────────────────────────────────────────── */
+/* FULL REQUIREMENT (the design director, 2026-08-01): "the save button should not be
+   activated until all required fields are filled in. it is the design."
+
+   ⚠ SUPERSEDES the 2026-07-26 minimum, which was deliberately narrower than
+   full validation and left "at least one component" to be checked when the
+   button was PRESSED. That gap is what made an undrawn error state
+   load-bearing: repo.saveTrip rejects what the narrow gate allowed, so a
+   rejected save looked like a button that did nothing. A button that cannot
+   be pressed while the trip is incomplete has no error to draw.
+
+   The rule itself lives in js/trip-gate.js, shared with the repository rather
+   than copied here — the same drift that had three screens forecasting one
+   trip differently. `meetsMinimum` is kept as a thin alias because it is an
+   export others may hold. */
+const ctaRow = form.querySelector('.cta-row');
+export function meetsMinimum({ from, to, adults }) {
+  return Boolean(from) && Boolean(to) && Number(adults) > 0;
+}
+function gate() {
+  /* Reads the DOM directly rather than calling readTrip(). readTrip depends on
+     `fval`, a const declared ~140 lines BELOW this function, so routing the
+     gate through it put a temporal-dead-zone reference on the module's init
+     path and killed the whole form. `comps()` and `liveSegments` are both
+     declared above and are safe. */
+  const c = comps();
+  const row = {
+    start_date: form.querySelector('#f-from').value || null,
+    end_date: form.querySelector('#f-to').value || null,
+    adults: form.querySelector('#f-adults').value,
+    include_lodging: c.lodging, include_parks: c.parks,
+    include_cruise: c.cruise, include_abd: c.abd,
+  };
+  /* liveSegments reads the stays UI without touching storage, which is what
+     the gate needs: the form may describe a trip that has never been saved,
+     and a stay with no hotel picked is correctly not a segment. */
+  const ok = isSaveable(row, c.lodging ? liveSegments(row) : []);
+  ctaRow.classList.toggle('is-disabled', !ok);
+  for (const b of ctaRow.querySelectorAll('.cta')) {
+    b.disabled = !ok;
+    b.setAttribute('aria-disabled', String(!ok));
+  }
+  return ok;
+}
+
+/* Auto forecast updates as the form is filled. It reads the SAME function the
+   cards use, so the number a user sees while planning is the number that
+   lands on the card. */
+const forecastOut = form.querySelector('[data-forecast]');
+function paintForecast() {
+  if (!forecastOut) return;
+  const row = readTrip('planned');
+  const segs = row.include_lodging ? liveSegments(row) : [];
+  const { value, airfare } = forecastFor(row, segs, editingExpenses);
+  /* Both halves of the row carry $ (the design director amended the board 2026-07-27:
+     values read "$24,000" and the Budget label dropped its "($)"). */
+  forecastOut.textContent = value == null ? '—' : money(Math.round(value));
+  /* The airfare disclosure now has a DRAWN home — the cta-help line below the
+     field (191:5004) — so the improvised title attribute is gone. It was
+     explicitly a placeholder for the missing frame, and it would now
+     contradict the drawn copy, which states the exclusion unconditionally. */
+}
+
+/* The stays UI without hitting storage — the form may describe a trip that has
+   never been saved. Hotel names resolve to seeded rows when they match. */
+function liveSegments(row) {
+  const splits = [...stays.querySelectorAll('.split')];
+  const cards = splits.length ? splits : [...stays.querySelectorAll('.hotel')];
+  const out = [];
+  for (const el of cards) {
+    const hotel = el.matches('.hotel') ? el : el.querySelector('.hotel');
+    const picked = pickedHotel(hotel);
+    if (picked.kind === 'none') continue;
+    const mini = el.querySelectorAll('.mini-row .input');
+    const from = (mini[0]?.value.trim() || row.start_date) || null;
+    const to = (mini[1]?.value.trim() || row.end_date) || null;
+    /* An off-property stay has no seeded row to forecast a tier from, and this
+       function never writes, so it stays null rather than inventing one. */
+    out.push({ hotel_id: picked.kind === 'id' ? picked.id : null,
+      /* An off-property stay is NAMED here and only gets an id at save time,
+         when readSegments resolves it through ensureOffPropertyHotel. The gate
+         has to know the difference: `hotel_id: null` with a name is a complete
+         stay, without one it is not a segment at all (skipped above). */
+      hotel_named: picked.kind === 'off',
+      nights: (from && to) ? nightsBetween(from, to) : 0,
+      check_in: from, on_points: Boolean(hotel.querySelector('[data-on-points]')?.checked) });
+  }
+  return out;
+}
+
+function sync() {
+  const c = comps();
+  for (const el of form.querySelectorAll('[data-group]')) {
+    el.hidden = !c[el.dataset.group];
+  }
+  /* Lodging is the only component with dependencies: the pre/post-cruise rows
+     exist only when Cruise is also checked (TRIPS-FORM-LOGIC §2). */
+  form.querySelector('[data-cruise-nights]').hidden = !(c.lodging && c.cruise);
+  form.querySelector('[data-derived]').textContent = deriveType(c);
+  gate();
+  paintForecast();
+}
+
+form.querySelector('#f-adults').addEventListener('input', gate);
+/* Every money field carries its unit in the VALUE (the design director, 2026-07-27 — the
+   labels dropped their "($)" so nothing on this form is an outlier). Listing
+   them here means a new money field cannot be added without its formatting. */
+const MONEY_FIELDS = ['#f-budget', '#f-abdest'];
+for (const sel of MONEY_FIELDS) {
+  const el = form.querySelector(sel);
+  if (!el) continue;
+  el.addEventListener('input', () => {
+    const atEnd = el.selectionStart === el.value.length;
+    el.value = moneyFieldValue(el.value);
+    if (atEnd) el.setSelectionRange(el.value.length, el.value.length);
+  });
+}
+/* Any field the engine reads must repaint the forecast, not just the gate.
+   And the GATE must track every field too, now that it enforces the whole
+   requirement (the design director 2026-08-01). The hotel picker is the case that proves it:
+   turning Lodging on with no hotel named correctly disables Save, so naming
+   one has to re-enable it — the stays UI has its own `change` handler that
+   only re-syncs the card, so without this the button would stay dead and I
+   would have replaced one dead-end with another. */
+const repaint = () => { paintForecast(); gate(); };
+form.addEventListener('input', repaint);
+form.addEventListener('change', repaint);
+form.addEventListener('click', e => { if (e.target.closest('.chip, [data-on-points]')) repaint(); });
+
+for (const i of form.querySelectorAll('[data-comp]')) {
+  /* Unchecking discards that card's data immediately — re-checking starts
+     blank. No form-session restore (TRIPS-FORM-LOGIC §6). */
+  i.addEventListener('change', () => {
+    if (i.dataset.comp === 'lodging' && !i.checked) { stayCount = 1; renderStays(); }
+    sync();
+  });
+}
+
+/* ── date fields ───────────────────────────────────────────────────────── */
+/* The native control is invisible and only lends its picker, focus and
+   keyboard handling; the visible face is the drawn field. Tapping the face
+   asks for the picker directly where the browser supports it. */
+/* The empty face is drawn on the board (179:4530 / 179:4559): the literal
+   string `YYYY-MM-DD`. It overhangs the field's padding by design — see the
+   .date-field note — and only wraps if the face is allowed to break, which
+   `white-space: nowrap` prevents. */
+const EMPTY_DATE = 'YYYY-MM-DD';
+for (const f of form.querySelectorAll('.date-field')) {
+  const input = f.querySelector('input');
+  const face = f.querySelector('[data-date-face]');
+  const paint = () => { face.textContent = input.value || EMPTY_DATE; gate(); };
+  paint();
+  input.addEventListener('change', paint);
+  f.addEventListener('click', e => {
+    if (e.target === input && typeof input.showPicker === 'function') {
+      try { input.showPicker(); } catch { /* gesture rules differ per browser */ }
+    }
+  });
+}
+
+/* ── chips ─────────────────────────────────────────────────────────────── */
+for (const group of form.querySelectorAll('[data-chips]')) {
+  const single = group.hasAttribute('data-single');
+  group.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const on = chip.getAttribute('aria-pressed') === 'true';
+    if (single) {
+      for (const c of group.querySelectorAll('.chip')) c.setAttribute('aria-pressed', 'false');
+      chip.setAttribute('aria-pressed', 'true');
+    } else {
+      chip.setAttribute('aria-pressed', String(!on));
+    }
+  });
+}
+
+/* ── CTAs ──────────────────────────────────────────────────────────────── */
+/* SAVE → planned (Planning in Progress) · CONFIRM → booked (Next Trip /
+   Coming Up by soonest date). Sibling scenarios are left untouched — that
+   behaviour is still an open product decision (P2).
+   The "This trip uses DVC points" reminder fires on CONFIRM only, and is NOT
+   built: it has no Figma frame, and nothing here is invented. */
+/* ── reading the form ──────────────────────────────────────────────────── */
+const fval = sel => (form.querySelector(sel)?.value ?? '').trim();
+const fnum = sel => { const v = Number(fval(sel).replace(/[^0-9.]/g, ''));
+                      return Number.isFinite(v) ? v : 0; };
+const chipOne  = g => form.querySelector(`[data-chips="${g}"] .chip[aria-pressed="true"]`)?.value ?? null;
+const chipMany = g => [...form.querySelectorAll(`[data-chips="${g}"] .chip[aria-pressed="true"]`)].map(c => c.value);
+const isOn = sel => Boolean(form.querySelector(sel)?.checked);
+
+/* Component gating (DATA-MODEL §1, CHECK trips_component_fields_check): every
+   section's columns are NULL when its include_* flag is false. Writing 0 in
+   place of NULL would look like a real answer. */
+function readTrip(status) {
+  const c = comps();
+  return {
+    title: fval('#f-name') || null,
+    status,
+    start_date: fval('#f-from') || null,
+    end_date: fval('#f-to') || null,
+    adults: fnum('#f-adults'),
+    kids_under_7: fnum('#f-kids'),
+    budget_amount: fnum('#f-budget'),
+    dining_profile: chipOne('dining'),
+    include_lodging: c.lodging, include_parks: c.parks,
+    include_cruise: c.cruise, include_abd: c.abd,
+    park_days:           c.parks  ? fnum('#f-parkdays') : null,
+    park_hopper:         c.parks  ? isOn('[data-park="hopper"]') : null,
+    lightning_lane:      c.parks  ? isOn('[data-park="lightning_lane"]') : null,
+    after_hours_party:   c.parks  ? isOn('[data-park="after_hours"]') : null,
+    cruise_nights:       c.cruise ? fnum('#f-cnights') : null,
+    cabin_class:         c.cruise ? chipOne('cabin') : null,
+    abd_days:            c.abd    ? fnum('#f-abddays') : null,
+    abd_estimate_amount: c.abd    ? fnum('#f-abdest') : null,
+    /* pre/post-cruise nights exist only when lodging AND cruise are both on
+       (TRIPS-FORM-LOGIC §2). ⚠ DATA-MODEL lists these only in its
+       dropped-columns note as the rename of pre_post_cruise_nights, so which
+       section owns them is unconfirmed — logged in TODO. */
+    park_nights_before: (c.lodging && c.cruise) ? fnum('#f-pnb') : null,
+    park_nights_after:  (c.lodging && c.cruise) ? fnum('#f-pna') : null,
+  };
+}
+
+/* One hotel card = one segment. The pulldown is free text with no drawn option
+   list, so every name resolves through ensureOffPropertyHotel — on-property
+   stays have no path yet (logged; it feeds on_property derivation and the DVC
+   segment linkage in chunk 4). Single stay: the trip window is the stay, so
+   check_in = start and nights = the trip's own span. */
+async function readSegments(trip) {
+  if (!trip.include_lodging || !repo) return [];
+  const splits = [...stays.querySelectorAll('.split')];
+  const cards = splits.length ? splits : [...stays.querySelectorAll('.hotel')];
+  const out = [];
+  for (const el of cards) {
+    const hotel = el.matches('.hotel') ? el : el.querySelector('.hotel');
+    const picked = pickedHotel(hotel);
+    if (picked.kind === 'none') continue;   /* an unnamed stay is not a segment */
+    const mini = el.querySelectorAll('.mini-row .input');
+    const from = (mini[0]?.value.trim() || trip.start_date) || null;
+    const to   = (mini[1]?.value.trim() || trip.end_date)   || null;
+    out.push({
+      /* A seeded row is pointed at, never copied: ensureOffPropertyHotel is
+         now reached only by the Off Property branch, which is what it was
+         always for. Before the picker every stay went through it, so typing a
+         real resort name minted a duplicate off-property row and on_property
+         derivation was wrong for on-property stays. */
+      hotel_id: picked.kind === 'id'
+        ? picked.id
+        : await repo.ensureOffPropertyHotel(picked.name),
+      nights: (from && to) ? nightsBetween(from, to) : 0,
+      check_in: from,
+      on_points: Boolean(hotel.querySelector('[data-on-points]')?.checked),
+    });
+  }
+  return out;
+}
+
+/* ── editing ───────────────────────────────────────────────────────────── */
+/* editingRow keeps the STORED row so a save preserves the columns the form
+   never shows — id, plan_group_id, plan_number, created_at. Without it an
+   edit would mint a new scenario group and reset the plan number. */
+let editingId = null, editingRow = null, editingExpenses = [];
+
+const setVal = (sel, v) => { const el = form.querySelector(sel); if (!el) return;
+  el.value = v ?? ''; el.dispatchEvent(new Event('change', { bubbles: true })); };
+const setOn = (sel, v) => { const el = form.querySelector(sel); if (el) el.checked = Boolean(v); };
+const pressChips = (g, vals) => {
+  for (const c of form.querySelectorAll(`[data-chips="${g}"] .chip`))
+    c.setAttribute('aria-pressed', String(vals.includes(c.value)));
+};
+
+function resetForm() {
+  for (const [sel, v] of [['#f-name',''], ['#f-from',''], ['#f-to',''],
+    ['#f-adults','0'], ['#f-kids','0'], ['#f-budget',''], ['#f-parkdays',''],
+    ['#f-cnights',''], ['#f-abddays',''], ['#f-abdest',''], ['#f-pnb',''], ['#f-pna','']])
+    setVal(sel, v);
+  for (const i of form.querySelectorAll('[data-comp]')) i.checked = false;
+  for (const i of form.querySelectorAll('[data-park]')) i.checked = false;
+  /* Dining defaults to Balanced, not the first chip (the design director, 2026-07-27): the
+     middle tier means a forgotten choice cannot under-state the forecast. */
+  pressChips('dining', ['balanced']);
+  pressChips('cabin', []);
+  pressChips('discounts', []);
+  stayCount = 1;
+  renderStays();
+}
+
+async function fillForm(t) {
+  setVal('#f-name', t.title); setVal('#f-from', t.start_date); setVal('#f-to', t.end_date);
+  setVal('#f-adults', String(t.adults ?? 0)); setVal('#f-kids', String(t.kids_under_7 ?? 0));
+  setVal('#f-budget', moneyFieldValue(t.budget_amount));
+  for (const i of form.querySelectorAll('[data-comp]'))
+    i.checked = Boolean(t['include_' + i.dataset.comp]);
+  setOn('[data-park="hopper"]', t.park_hopper);
+  setOn('[data-park="lightning_lane"]', t.lightning_lane);
+  setOn('[data-park="after_hours"]', t.after_hours_party);
+  setVal('#f-parkdays', t.park_days ?? ''); setVal('#f-cnights', t.cruise_nights ?? '');
+  setVal('#f-abddays', t.abd_days ?? ''); setVal('#f-abdest', moneyFieldValue(t.abd_estimate_amount));
+  setVal('#f-pnb', t.park_nights_before ?? ''); setVal('#f-pna', t.park_nights_after ?? '');
+  pressChips('dining', t.dining_profile ? [t.dining_profile] : ['balanced']);
+  pressChips('cabin', t.cabin_class ? [t.cabin_class] : []);
+  pressChips('discounts', t.discounts ?? []);
+
+  /* Edit is the same form prefilled — including its stays. */
+  const segs = t.segments ?? [];
+  stayCount = Math.max(1, segs.length);
+  renderStays();
+  const hotels = repo ? await repo.listHotels() : [];
+  const rowOf = id => hotels.find(h => h.id === id);
+  const splits = [...stays.querySelectorAll('.split')];
+  const cards = splits.length ? splits : [...stays.querySelectorAll('.hotel')];
+  segs.forEach((seg, i) => {
+    const el = cards[i]; if (!el) return;
+    const hotel = el.matches('.hotel') ? el : el.querySelector('.hotel');
+    /* Reopening works backwards from the stored hotel_id to the branch that
+       produced it — the half that gets forgotten and then reads as "editing a
+       trip lost my hotel". A DVC row selects itself; a Disney non-DVC row
+       selects Other on-property and then itself in the second list; anything
+       else is the Off Property row the user named. */
+    const row = rowOf(seg.hotel_id);
+    const sel = hotel.querySelector('[data-hotel]');
+    if (row && row.is_dvc) sel.value = DVC;
+    else if (row && row.category !== 'off_property') sel.value = ONPROP;
+    else sel.value = OFF;
+    syncHotelCard(hotel);
+    if (sel.value === OFF) hotel.querySelector('[data-hotel-custom]').value = row?.name ?? '';
+    else {
+      hotel.querySelector('[data-hotel-2]').value = row.id;
+      syncHotelCard(hotel, { keepSecond: true });   /* the points line follows the row */
+    }
+    const pts = hotel.querySelector('[data-on-points]'); if (pts) pts.checked = Boolean(seg.on_points);
+    const mini = el.querySelectorAll('.mini-row .input');
+    if (mini.length && seg.check_in) {
+      mini[0].value = seg.check_in;
+      mini[1].value = new Date(at(seg.check_in) + seg.nights * DAY).toISOString().slice(0, 10);
+    }
+  });
+}
+
+async function openForm(tripId) {
+  editingId = tripId || null; editingRow = null; editingExpenses = [];
+  resetForm();
+  if (editingId && repo) {
+    const t = await repo.getTrip(editingId);
+    if (t) {
+      const { segments, discounts, ...row } = t; editingRow = row;
+      /* The live forecast must equal the card's. On an EXISTING trip that
+         means its ledger too — the transport carry is part of the number, so
+         reading it here is what stops the form and the card disagreeing. A
+         new trip has no ledger, which is why the default is []. */
+      editingExpenses = await repo.expensesOf(editingId);
+      await fillForm(t);
+    }
+    else { editingId = null; }        /* a stale ?edit= opens a blank new trip */
+  }
+  sync();
+  show('03');
+}
+
+/* ── CTAs ──────────────────────────────────────────────────────────────── */
+for (const b of form.querySelectorAll('[data-save]')) {
+  b.addEventListener('click', async () => {
+    if (!gate() || !repo) return;
+    const trip = { ...(editingRow ?? {}), ...readTrip(b.dataset.save) };
+    try {
+      await repo.saveTrip(trip, await readSegments(trip), chipMany('discounts'));
+    } catch (err) {
+      /* saveTrip enforces what the CTA gate deliberately does not: at least one
+         component, and a named hotel when lodging is on. The validation error
+         appearance is UNDRAWN, so nothing is invented — the user stays on the
+         form and the reason goes to the console until the design director draws the state. */
+      console.warn('Trips: save rejected —', err.message);
+      return;
+    }
+    editingId = null; editingRow = null; editingExpenses = [];
+    show(await renderCards());
+  });
+}
+
+form.querySelector('[data-delete]').addEventListener('click', async () => {
+  /* On a saved trip this deletes it (cascading segments and discounts); on an
+     unsaved one it is simply "discard" and nothing is written. */
+  if (repo && editingId) await repo.deleteTrip(editingId);
+  editingId = null; editingRow = null; editingExpenses = [];
+  show(await renderCards());
+});
+
+/* ── ?state=03 / 03a — audit harness, not a product state ──────────────── */
+/* The form's DEFAULT is the initial state the design director specified (2026-07-26) and
+   the boards now draw it too, as `04. Form initial state` (179:4569) and
+   `04a` (179:4784). Boards 03 / 03a still depict the POPULATED form, so those
+   two harness states repopulate it — never reachable from the UI. */
+const state0 = qs.get('state') || 'zero';
+if (state0 === '03' || state0 === '03a') {
+  for (const i of form.querySelectorAll('[data-comp]')) i.checked = true;
+  for (const [id, v] of [['#f-from', '2026-12-12'], ['#f-to', '2026-12-31'],
+                         ['#f-adults', '2'], ['#f-kids', '2'], ['#f-abdest', '$200,000'],
+                         ['#f-budget', '$24,000']]) {
+    const el = form.querySelector(id);
+    el.value = v;
+    /* the date faces painted before this block ran, so they need the event */
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  for (const c of form.querySelectorAll('[data-chips="discounts"] .chip')) {
+    c.setAttribute('aria-pressed', String(c.value === 'dvc'));
+  }
+}
+
+renderStays();
+sync();
+
+/* the state is applied LAST: a scroll position is only valid once the
+   conditional groups and stay cards have settled their heights */
+if (qs.get('edit')) {
+  /* Home hands off here rather than editing a trip itself. */
+  await openForm(qs.get('edit'));
+} else if (qs.get('state')) {
+  await renderCards();              /* the harness states stay reproducible */
+  show(state0);
+} else {
+  show(await renderCards());
+}
+</script>
+
+</body>
+</html>

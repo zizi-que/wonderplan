@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<!--
+  Spend — real screen (Sprint 10 visual build).
+  Visual truth: Figma Spend section 25:2, read via figwright 2026-07-21.
+  Component-first: every class below maps to a Figma component/variant;
+  states are thin compositions of them (spec: specs/SPEND-SPEC.md v2.1).
+  Logic: js/spend/gate.js · js/spend/propagate.js · js/categorizer/engine.js
+  Laws applied: cap-height vertical trim (text-box) · Figma inside-strokes →
+  pinned heights · single exception rule (no screen-corner rounding).
+  All 9 states composed. 04a reads as the same workbench composition as 04
+  (more example trip cards above it, not a distinct layout) — pending the design director
+  confirmation, same pattern as the 02 reading. Real-app wiring (real CSV
+  only, repo.saveExpense persistence) still open — see TODO.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — Spend</title>
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS is the platform this matters on. Safari evicts IndexedDB after 7 days
+     without a visit, and a Home Screen app is exempt — so these tags are not
+     polish, they are what stops a tester losing their ledger by not opening
+     the app for a week. `apple-mobile-web-app-capable` is still required:
+     iOS only began honouring the manifest's display mode in 16.4. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
+<script src="js/theme.js"></script>
+<style>
+/* ══ Theme tokens live in css/theme.css — ONE copy for all five screens ══ */
+
+/* ══ Structural tokens — Figma variables (values verified in frame reads) ══ */
+:root {
+  --attention: #757575;               /* color/attention — fixed across themes */
+  --surface-overlay: rgba(255,255,255,0.55); /* color/Surface-Overlay */
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-card: 14px;                /* radius/card   */
+  --radius-input: 10px;               /* radius/input — chips too (rebound 2026-07-21) */
+  --radius-tile: 7px;                 /* radius/chip (stat-tile) */
+  --space-1: 8px; --space-2: 12px; --space-3: 16px; --space-4: 24px;
+  --cta-h: 48px;                      /* size/cta-height */
+  --input-h: 48px;                    /* size/input-min-height */
+  --border-default: 1px; --border-strong: 1.5px;
+  --footer-h: 85.802238px;          /* matched to the other four screens 2026-07-27 */
+  --disabled: 0.5;                    /* board value (04 ADD) — not the 0.4 variable */
+  --space-5: 36px;                    /* space/5 — 05a error-card padding/gap */
+}
+
+/* ══ Base ══ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+/* ══ The app frame (the design director, 2026-07-27) ══════════════════════════════════
+   The five screens used to disagree above 375px: Home and Trips pinned their
+   content left (states positioned at literal board coordinates), while Spend,
+   DVC and Insights centred theirs. the design director chose centred for all.
+
+   The whole frame is capped and centred — content AND footer together — so a
+   wide window shows one phone-width column, not a narrow column sitting on a
+   full-width bar. html carries the page colour so the margins match.
+
+   At 375 and below this is completely inert, which is why it changes no
+   audited pixel: 375 is the drawn width and the QA viewport.
+
+   Home and Trips keep literal board coordinates INSIDE the frame — those are
+   the drawn Figma values, and re-expressing them as flex gaps would mean
+   inventing spacing nobody drew. Centring the frame achieves the chosen
+   behaviour without touching them. */
+html { background: var(--bg); }
+body {
+  font-family: var(--font);
+  background: var(--bg); color: var(--ink);
+  width: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+.txt { text-box: trim-both cap alphabetic; }   /* Figma cap-height vertical trim */
+
+/* ══ Text styles (Figma text styles, verbatim) ══ */
+.t-h2      { font-weight: 700; font-size: 23px; line-height: 145%; }   /* Bold 23 */
+.t-h3      { font-weight: 600; font-size: 19px; line-height: 135%; }   /* SemiBold 19 */
+.t-body    { font-weight: 400; font-size: 15px; line-height: 120%; }   /* Regular 15 */
+.t-input   { font-weight: 400; font-size: 17px; line-height: 120%; }   /* Regular 17 */
+.t-cta     { font-weight: 600; font-size: 17px; line-height: 120%; }   /* SemiBold 17 */
+.t-caption { font-weight: 400; font-size: 12px; line-height: 120%; }   /* Regular 12 */
+
+/* ══ Layout: content area + footer ══ */
+/* The app column is 375 and the FOOTER BAND is not (the design director 2026-08-01,
+   option 1). The constraint used to sit on `body`, so the white band ended
+   with the app: at any window wider than 375 the column centred and theme
+   background showed on BOTH sides of the band, which read as the footer
+   stopping short. The column now lives on `main`, and `body` is free to be as
+   wide as the window — so the band spans it while the five 75px tabs stay
+   centred on 375 by the footer's own `justify-content: center`.
+   Nothing drawn moves: `main` is the positioned ancestor on Home and Trips,
+   so every absolute coordinate inside it is unchanged. */
+/* overflow-x restored 2026-08-01. Moving the 375 column from `body` to `main`
+   also moved the CLIP: `body { overflow: hidden }` used to crop everything to
+   375, and with `body` now as wide as the window that guard was silently gone,
+   so anything overflowing this column could paint into the side gutters.
+   `clip`, not `hidden`, because these mains scroll vertically and `hidden`
+   would make this box a scroll container on both axes. */
+main {
+  flex: 1; overflow-y: auto; overflow-x: clip;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 375px; margin-inline: auto;
+}
+.state { display: none; flex: 1; flex-direction: column; }
+.state.on { display: flex; }
+/* Active Frame paddings (per state, from frame reads) */
+.frame-standard { padding: 32px 20px 16px; gap: 16px; align-items: center; }  /* 03 / 06 / 07 — also 05/05a/04a Active Frame (verified via figwright: bottom padding is 16 there, not 20) */
+.frame-workbench { padding: 32px 20px 20px; gap: 16px; align-items: center; } /* 04 ONLY — its Active Frame is the sole 20px-bottom read; 04a/05/05a all measured at 16px like frame-standard */
+.frame-zero { padding: 20px; gap: 10px; align-items: center; justify-content: center; } /* 01 */
+.frame-solo { padding: 179px 20px; align-items: center; }                     /* 02 */
+.state > * { width: 100%; max-width: 335px; }
+
+/* ══ Component: headers / header-spending ══ */
+.header-spending { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.header-spending .t-h2 { color: var(--ink); }
+.rule { width: 100%; height: 0; border-top: var(--border-strong) solid var(--primary); }
+
+/* ══ Component: cards category=trips type=overview ══ */
+.card-overview { display: flex; flex-direction: column; gap: 8px; }
+/* 120%, not the t-h3 default of 135% (the design director, 2026-07-28: "all long trip names
+   across the board fixed at 120%, keep original 135% if the name fits in one
+   line"). The block gaps on this card were already 5.8px — as tight as the
+   Trips card — so what read as loose was the LEADING INSIDE a wrapped name:
+   25.7px of pitch on a 13.4 cap box, against 20.4 on 12 for the Trips card's
+   name. Matching the ratio, not the pixel count, is what makes them look alike
+   at two different sizes.
+   The rule needs no conditional: MEASURED, a one-line name renders identically
+   at 135% and 120% — same 13.68px box, ink to the same subpixel — because
+   `text-box: trim-both cap alphabetic` strips the half-leading either way. The
+   value only shows once the name wraps, which is exactly the case named.
+   Scoped to this title rather than t-h3, which heads single-line sections. */
+.card-overview .ov-title { color: var(--ink); line-height: 120%; }
+.card-overview .ov-dates { color: var(--ink); }
+.trend { display: flex; gap: 8px; align-items: flex-start; }
+.stat-tile {
+  flex: 1; border-radius: var(--radius-tile);
+  background: var(--surface-overlay);
+  padding: 8px; display: flex; flex-direction: column; gap: 8px;
+}
+.stat-tile .label { color: var(--ink); text-align: center; }
+/* A money figure is one word. Without this the minus sign wraps to its own
+   line and "− / $11,045" reads as two separate values (the design director, 2026-07-28). */
+.stat-tile .value { font-weight: 700; font-size: 23px; line-height: 145%; text-align: center;
+  white-space: nowrap; }
+.v-actual   { color: var(--accent); }
+.v-forecast { color: var(--dvc-primary); }
+.v-variance { color: var(--attention); }  /* never a judgment color — fixed gray */
+/* 07 ghost variant (new card reveal) styled at the 07 read — TODO */
+
+/* ══ Component: cta-buttons ══ */
+.cta {
+  height: var(--cta-h); border-radius: calc(var(--cta-h) / 2);
+  padding: 0 var(--space-4);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 17px; line-height: 120%;
+}
+.cta-filled  { background: var(--primary); color: var(--on-primary); }
+.cta-outline { background: var(--on-primary); color: var(--primary);
+               border: var(--border-strong) solid var(--primary); }
+.cta[disabled] { opacity: var(--disabled); cursor: default; }
+.cta-chip {   /* small "+ add more item" chip */
+  height: 25px; border-radius: var(--radius-input);
+  background: var(--on-primary); border: var(--border-default) solid var(--ink);
+  padding: 8px; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 400; font-size: 12px; line-height: 120%; color: var(--ink);
+}
+.cta-row { display: flex; gap: 8px; justify-content: center; width: auto; }
+.ghost { opacity: 0.5; pointer-events: none; }
+.hidden-space { visibility: hidden; }
+
+/* ══ Component: error-card (05a, board Frame 30 — surface/radius-card/space-5) ══
+   Figma centers Frame 30 on the ghost card's own box (368px, "Group 22"),
+   not on the taller flex-grow "card insert" wrapper (399px) — a sibling
+   group at full opacity, independent of the card's 0.5 ghost dimming.
+   .card-anchor reproduces that: it hugs the card's rendered height so the
+   error-card's 50%/-50% centering lands on the card, not the outer flex box. */
+.card-anchor { position: relative; width: 100%; }
+.error-card {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 320px; height: 320px; box-sizing: border-box;
+  background: var(--surface); border-radius: var(--radius-card);
+  padding: var(--space-5) var(--space-3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-5);
+}
+.error-card .msg { text-align: center; color: var(--attention); }
+.error-card .msg .big { font-weight: 700; font-size: 28px; line-height: 145%; }
+.error-card .msg .sub { font-weight: 600; font-size: 19px; line-height: 135%; }
+
+/* ══ Component: Input Fields ══ */
+.input {
+  width: 100%; height: var(--input-h);
+  background: var(--surface);
+  border: var(--border-strong) solid var(--border);
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  display: flex; align-items: center; overflow: hidden;
+  position: relative;
+}
+.input-inner { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
+/* The picker does not need to show a whole trip name (the design director 2026-08-01): it
+   truncates with an ellipsis instead. The field is a drawn 48px box with
+   `overflow: hidden`, so a long name simply WRAPPED and was sliced — the
+   stress ledger's 57-character title rendered four lines into a two-line box
+   and lost 26px of itself, top and bottom. One line that says "Christmas at
+   Disney's Grand Cali…" is honest; half a glyph is not.
+   min-width: 0 is what actually lets it shrink — a flex item defaults to
+   min-width: auto and refuses to go below its content, which is why the field
+   overflowed rather than truncating. The dates keep their own width and stay
+   at the right edge, as drawn.
+   The min-width: 0 is needed on BOTH — the row itself was the one refusing to
+   shrink (554px of content inside a 319px field), so truncating only the name
+   left it overflowing sideways instead of downwards. */
+.input-inner { min-width: 0; }
+#trip-name-display {
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#trip-dates-display { flex: none; }
+/* Dates sit at the RIGHT edge, next to the pulldown arrow (the design director, 2026-07-27).
+   space-between splits the free space EITHER SIDE of the dates when there are
+   three children (name · dates · arrow), which floated them mid-field. The
+   auto margin absorbs all of it to their left instead, so the name stays left
+   and the dates land right regardless of how long either string is. */
+#trip-dates-display { margin-left: auto; }
+.input .value { color: var(--ink); }
+.input .placeholder { color: var(--muted); }
+.input select.overlay, .input input.overlay {
+  position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+}
+
+/* ══ Component: category-chips (6 variants, r10 since 2026-07-21) ══ */
+.chip {
+  width: 61px; height: 21px; flex: none;
+  border-radius: var(--radius-input);
+  background: var(--on-primary);
+  padding: 6px var(--space-1);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 400; font-size: 12px; line-height: 120%;
+}
+.chip-default { border: var(--border-default) solid var(--primary); color: var(--primary); }
+.chip-set     { border: var(--border-default) solid var(--ink);     color: var(--ink); }
+
+/* ══ Component: manual entry box (workbench, Figma "Trip Name" wrapper 52:368) ══
+   One box, HUG height — grows to hold N rows + a single "+ add more item". */
+.manual-box {
+  width: 100%;
+  background: var(--surface);
+  border: var(--border-strong) solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  overflow: hidden;
+}
+#manual-rows { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+/* 21 -> 44 (the design director 2026-08-01, Interaction Pass). This row was the app's worst
+   touch target and its most used: three inputs 14px tall with nothing between
+   them, in the primary logging flow. Nothing here could grow while the row was
+   21, so the row grew. The type, the columns and the dividers are untouched —
+   only the box the thumb lands on. Rejected: one field per row (the design director). */
+.manual-cols { align-self: stretch; height: 44px; display: flex; align-items: center; gap: 3px; }
+/* The cells now FILL the row, which is the whole point — a 14px input centred
+   in a 44px row would leave the row tall and the target small. */
+.manual-cols .mcell { height: 100%; }
+/* The category chip rides the row and matches it; .chip stays 21px everywhere
+   else, so this cannot reach 04a/05/05a. */
+.manual-cols .chip { height: 100%; }
+/* "+ add more item" sat at 25. It is the control that CREATES a row, so it is
+   hit as often as the rows are. */
+.manual-box .cta-chip { height: 44px; }
+.vdiv { width: 0; height: 17px; border-left: 1px solid var(--ink); flex: none; }
+.mcell {
+  font-weight: 400; font-size: 12px; line-height: 120%;
+  color: var(--ink); text-align: center;
+  background: transparent; border: 0; min-width: 0;
+}
+.mcell::placeholder { color: var(--ink); opacity: 1; }
+/* Focus indicator — the same rule index.html, trips.html and insights.html
+   carry. Spend and DVC were missing it, so every control except the footer
+   tabs focused invisibly (WCAG 2.4.7). Found by tools/focus-walk.js. */
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+/* The colour change is the preset-label behaviour (the label clears on focus);
+   it must NOT also remove the ring. .mcell:focus outranks a bare
+   :focus-visible, so the outline has to be restored explicitly here. */
+.mcell:focus { color: var(--muted); }
+.mcell:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.m-date { width: 30px; flex: none; }
+.m-merchant { flex: 1; }
+.m-amount { width: 65px; flex: none; }
+
+/* ══ Component: cards category=spend type=input (workbench card) ══ */
+.card-input {
+  width: 100%; min-height: 368px;     /* 368 = one-row hug (02/04/04a/05/05a
+                                          reads); grows as manual rows are added */
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px rgba(30,30,30,0.10);
+  padding: 16px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px;
+}
+.card-input .group { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.card-input .group-add { gap: 10px; align-items: center; }
+.card-input .group-add .t-h3 { align-self: stretch; }
+.card-input .t-h3 { color: var(--ink); }
+.andor {
+  width: 179px; min-height: 29px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 400; color: var(--ink);
+}
+/* per-span line-height: a % value on .andor itself would compute once against
+   its own font-size and be inherited as a fixed px by both spans, breaking
+   the 12px/15px runs — set it on each span so it scales to that span's size */
+.andor .s12 { font-size: 12px; line-height: 120%; }
+.andor .s15 { font-size: 15px; line-height: 120%; }
+/* 02 solo: fixed 368 centered · 04: bottom-anchored in grow insert */
+.card-insert { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* ── 04: the card FLOWS OVER the upper text (the design director 2026-08-01) ────────────
+   Mirrors Home's `02a` stack exactly, and for the same reason. Growing the
+   manual rows from 21 to 44 makes the card taller than its share of the
+   frame; letting it push would either shove the header off or shrink the
+   card. Home already answered this shape: give the region the WHOLE frame,
+   bottom-anchor the content, and let it scroll and paint over what is above.
+   the design director's note that a user can rotate to landscape is the escape hatch for
+   the density this costs.
+
+   Every rule below is Home's, re-derived here rather than copied blindly:
+
+   · The box spans the frame and scrolls internally, so the page stops
+     growing and the card overlays "2026 Spending", the trip list and the
+     rule when it is tall enough to.
+   · Bottom-anchored by an auto margin, not justify-content: flex-end — a
+     flex-end column that overflows pushes its FIRST child above the scroll
+     origin, where nothing can reach it. The auto margin collapses to 0 the
+     moment the content stops fitting. (Home, chunk 8.)
+   · Children do not shrink. A flex item defaults to shrinking, which on Home
+     silently squeezed three cards instead of overflowing them.
+   · The box takes no pointer events; the card does. An empty transparent box
+     spanning the frame would otherwise swallow taps meant for the header and
+     the trip rows underneath — the exact defect chunk 8 found on Home's
+     settings glyph. Paint order is untouched: where the card covers the text,
+     it still covers it.
+   · No scrollbar gutter: a classic scrollbar would eat 15px of a column drawn
+     335 wide. The phone this ships to has overlay scrollbars. */
+[data-state="04"] { position: relative; }
+[data-state="04"] .card-insert {
+  position: absolute; left: 20px; right: 20px; top: 0; bottom: 20px;
+  width: auto; max-width: none;
+  justify-content: flex-start;
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  pointer-events: none;
+}
+[data-state="04"] .card-insert::-webkit-scrollbar { width: 0; height: 0; }
+[data-state="04"] .card-insert > * { flex: none; pointer-events: auto; }
+[data-state="04"] .card-insert > :first-child { margin-top: auto; }
+
+/* ══ Component: cards category=spend type=review ══ */
+.card-review {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 0.8px 2.41px rgba(30,30,30,0.10);
+  padding: var(--space-3) var(--space-1);
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-3); overflow: hidden;
+}
+.card-review .trip-head { width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
+.card-review .trip-head .t-h3, .card-review .trip-label { color: var(--ink); }
+.card-review .trip-label { font-weight: 600; font-size: 17px; line-height: 120%; }
+.card-review .section-label { width: 100%; color: var(--ink); }
+.rows {
+  width: 100%; border-radius: var(--radius-input);
+  background: var(--on-primary);
+  padding: 8px 0;
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 269px; overflow-y: auto;
+}
+.data-row { width: 100%; height: 21px; display: flex; align-items: center; gap: 6px; }
+.data-row .d-date { width: 30px; flex: none; text-align: center; color: var(--ink); }
+.data-row .d-merchant { flex: 1; text-align: center; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.data-row .d-amount { width: 80px; flex: none; text-align: center; color: var(--ink); }
+
+/* ══ Component: Footer (variant Spend) ══ */
+footer.footer {
+  flex: none; height: var(--footer-h);
+  background: var(--surface);
+  border-top: 1.900338px solid var(--deco);
+  display: flex; justify-content: center;
+}
+.tab { position: relative; width: 75px; height: 83.901894px;
+  display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+.tab .label {
+  position: absolute; top: 60px; left: 0; right: 0; text-align: center;
+  font-weight: 600; font-size: 13px; line-height: 120%; color: var(--ink);
+}
+.tab.on .label { color: var(--primary); }
+.tab svg { position: absolute; }
+
+/* toast (propagation count — SPEND-SPEC §B.3) */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--footer-h) + 16px);
+  transform: translateX(-50%);
+  background: var(--ink); color: var(--on-primary);
+  font-size: 13px; font-weight: 600;
+  padding: 10px 16px; border-radius: 999px;
+  opacity: 0; transition: opacity .25s; pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+/* ══ iOS safe areas (the design director, 2026-08-02) ═══════════════════════════════════
+   Reported on the live beta: a yellow strip under the footer, on every
+   screen. Without `viewport-fit=cover` Safari keeps the layout OUT of the
+   safe areas and paints them with the html background — which is the theme
+   colour, so the home-indicator band read as the footer stopping short.
+   Cover hands the layout those bands; `padding-top` on body puts the
+   content back exactly where it sat before, and the footer's own white now
+   reaches the physical bottom edge. Nothing drawn moves — where there is no
+   inset (every desktop browser, and any phone without an indicator) both
+   values resolve to 0, so this is inert off iOS. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+footer.footer {
+  height: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+</style>
+</head>
+<body>
+
+<main>
+  <!-- ── 01. Zero ─────────────────────────────────────────────── -->
+  <section class="state frame-zero" data-state="01">
+    <button class="cta cta-filled" data-go="workbench"><span class="txt">LOG YOUR FIRST EXPENSE</span></button>
+  </section>
+
+  <!-- ── 02. Active (workbench solo, ADD-gate-satisfied reading — the design director confirmed) ── -->
+  <section class="state frame-solo" data-state="02">
+    <div id="workbench-mount-02"></div>
+  </section>
+
+  <!-- ── 03. Add Expenses (active summary) ────────────────────── -->
+  <section class="state frame-standard" data-state="03">
+    <div class="header-spending">
+      <div class="t-h2 txt" id="year-title">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div id="trip-list-03"><!-- card-overview per trip --></div>
+    <div class="card-insert" style="justify-content:center; align-items:center;">
+      <button class="cta cta-filled" data-go="workbench"><span class="txt">LOG MORE EXPENSES</span></button>
+    </div>
+  </section>
+
+  <!-- ── 04 / 04a Data Entry + 02 Active (workbench) ──────────── -->
+  <section class="state frame-workbench" data-state="04">
+    <div class="header-spending">
+      <div class="t-h2 txt">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div id="trip-list-04"><!-- card-overview per trip --></div>
+    <div class="rule"></div>
+    <div class="card-insert" id="workbench-mount-04">
+      <div class="card-input" id="workbench">
+        <div class="group">
+          <div class="t-h3 txt">Trip Name</div>
+          <div class="input">
+            <div class="input-inner">
+              <span class="t-body value txt" id="trip-empty-display">No trip available</span>
+              <span class="t-body value txt" id="trip-name-display" style="display:none">Text text text&nbsp;</span>
+              <span class="t-body value txt" id="trip-dates-display" style="display:none">mm/dd/yy~mm/dd/yy</span>
+              <svg id="trip-arrow" style="display:none" width="18" height="11" viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg>
+            </div>
+            <select class="overlay" id="trip-select" aria-label="Trip">
+              <option value="">Select a trip</option>
+            </select>
+          </div>
+        </div>
+        <div class="group group-add">
+          <div class="t-h3 txt">Add Expenses</div>
+          <div class="input">
+            <span class="t-input placeholder txt" id="csv-label">Select CSV file&nbsp;</span>
+            <input type="file" accept=".csv,text/csv" class="overlay" id="csv-input" aria-label="Select CSV file">
+          </div>
+          <div class="andor"><span class="s12">AND / OR</span><span class="s15">Add items manually below</span></div>
+          <div class="manual-box">
+            <div id="manual-rows"><!-- .manual-cols rows injected --></div>
+            <button class="cta-chip" id="btn-add-more"><span class="txt">+ add more item</span></button>
+          </div>
+        </div>
+        <div class="cta-row">
+          <button class="cta cta-outline" style="width:115px" data-go="cancel"><span class="txt">CANCEL</span></button>
+          <button class="cta cta-filled" style="width:113px" id="btn-add" disabled><span class="txt">ADD</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 05. Processing (51:746) — dimmed workbench, single PROCESSING CTA ── -->
+  <section class="state frame-standard" data-state="05">
+    <div class="header-spending">
+      <div class="t-h2 txt">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div id="trip-list-05"></div>
+    <div class="rule"></div>
+    <div class="card-insert">
+      <div class="card-input ghost">
+        <div class="group">
+          <div class="t-h3 txt">Trip Name</div>
+          <div class="input"><div class="input-inner">
+            <span class="t-body value txt">Text text text&nbsp;</span>
+            <span class="t-body value txt">mm/dd/yy~mm/dd/yy</span>
+            <svg width="18" height="11" viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg>
+          </div></div>
+        </div>
+        <div class="group group-add">
+          <div class="t-h3 txt">Add Expenses</div>
+          <div class="input"><span class="t-input placeholder txt">Select CSV file&nbsp;</span></div>
+          <div class="andor"><span class="s12">AND / OR</span><span class="s15">Add items manually below</span></div>
+          <div class="manual-box">
+            <div class="manual-cols">
+              <span class="mcell m-date txt">Date</span><span class="vdiv"></span>
+              <span class="mcell m-merchant txt">Merchant</span><span class="vdiv"></span>
+              <span class="mcell m-amount txt">Amount</span><span class="vdiv"></span>
+              <span class="chip chip-default txt">Select</span>
+            </div>
+            <span class="cta-chip"><span class="txt">+ add more item</span></span>
+          </div>
+        </div>
+        <div class="cta-row">
+          <span class="cta cta-filled" style="width:156px"><span class="txt">PROCESSING</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 05a. Import Failed (41:914) — same dimmed card + centered error-card overlay ── -->
+  <section class="state frame-standard" data-state="05a">
+    <div class="header-spending">
+      <div class="t-h2 txt">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div id="trip-list-05a"></div>
+    <div class="rule"></div>
+    <div class="card-insert">
+      <div class="card-anchor">
+        <div class="card-input ghost">
+          <div class="group">
+            <div class="t-h3 txt">Trip Name</div>
+            <div class="input"><div class="input-inner">
+              <span class="t-body value txt">Text text text&nbsp;</span>
+              <span class="t-body value txt">mm/dd/yy~mm/dd/yy</span>
+              <svg width="18" height="11" viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg>
+            </div></div>
+          </div>
+          <div class="group group-add">
+            <div class="t-h3 txt">Add Expenses</div>
+            <div class="input"><span class="t-input placeholder txt">Select CSV file&nbsp;</span></div>
+            <div class="andor"><span class="s12">AND / OR</span><span class="s15">Add items manually below</span></div>
+            <div class="manual-box">
+              <div class="manual-cols">
+                <span class="mcell m-date txt">Date</span><span class="vdiv"></span>
+                <span class="mcell m-merchant txt">Merchant</span><span class="vdiv"></span>
+                <span class="mcell m-amount txt">Amount</span><span class="vdiv"></span>
+                <span class="chip chip-default txt">Select</span>
+              </div>
+              <span class="cta-chip"><span class="txt">+ add more item</span></span>
+            </div>
+          </div>
+          <div class="cta-row">
+            <span class="cta cta-outline hidden-space" style="width:115px"><span class="txt">CANCEL</span></span>
+            <span class="cta cta-filled hidden-space" style="width:113px"><span class="txt">ADD</span></span>
+          </div>
+        </div>
+        <div class="error-card">
+          <div class="msg txt"><span class="big">Upload Failed.</span><br><span class="sub">Couldn't import your expenses.</span></div>
+          <button class="cta cta-filled" style="width:133px" id="btn-try-again"><span class="txt">TRY AGAIN</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 06. Review & Confirm ─────────────────────────────────── -->
+  <section class="state frame-standard" data-state="06">
+    <div class="header-spending">
+      <div class="t-h2 txt">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div class="card-insert" style="justify-content:center;">
+      <div class="card-review">
+        <div class="trip-head">
+          <div class="t-h3 txt">Trip Name</div>
+          <div class="trip-label txt" id="review-trip-label">Summer in WDW</div>
+        </div>
+        <div class="section-label t-h3 txt">Data Review</div>
+        <div class="rows" id="review-rows"><!-- .data-row injected --></div>
+        <div class="cta-row">
+          <button class="cta cta-outline" style="width:115px" data-go="cancel-review"><span class="txt">CANCEL</span></button>
+          <button class="cta cta-filled" style="width:113px" id="btn-confirm"><span class="txt">CONFIRM</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 07. Save Success (54:611, Active Frame 54:612) — same layout as 03; new card ghosted pre-reveal ── -->
+  <section class="state frame-standard" data-state="07">
+    <div class="header-spending">
+      <div class="t-h2 txt" id="year-title-07">2026 Spending</div>
+      <div class="rule"></div>
+    </div>
+    <div id="trip-list-07"><!-- card-overview per trip, last one ghosted --></div>
+    <div class="card-insert" style="justify-content:center; align-items:center;">
+      <button class="cta cta-filled" data-go="workbench"><span class="txt">LOG MORE EXPENSES</span></button>
+    </div>
+  </section>
+</main>
+
+<!-- ── Footer (variant: Spend) — exact node SVG exports ── -->
+<footer class="footer">
+  <a class="tab" href="index.html">
+    <svg aria-hidden="true" style="left:17.74px; top:8.85px" width="41" height="36" viewBox="0 0 41 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M40.5405 15.8387C37.1394 15.8387 35.5731 17.4049 35.5731 20.8172C35.5731 17.4161 34.0068 15.8387 30.6056 15.8387C34.0068 15.8387 35.5731 14.2724 35.5731 10.8602C35.5619 14.2724 37.1394 15.8387 40.5405 15.8387ZM5.54925 7.3877C3.64729 7.3877 2.77462 8.26033 2.77462 10.1622C2.77462 8.26033 1.90196 7.3877 0 7.3877C1.90196 7.3877 2.77462 6.51506 2.77462 4.61316C2.77462 6.50388 3.64729 7.3877 5.54925 7.3877ZM26.6786 4.33777C24.7766 4.33777 23.904 5.2104 23.904 7.1123C23.904 5.2104 23.0313 4.33777 21.1293 4.33777C23.0313 4.33777 23.904 3.46513 23.904 1.56323C23.904 3.46513 24.7766 4.33777 26.6786 4.33777Z" fill="var(--dvc-bg)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.0948 0V0.0763244C19.2306 0.0477366 19.5022 1.64076e-05 19.9588 0C21.3912 0 22.4163 0.857887 23.5893 0.857887C24.1697 0.857884 25.1082 0.695958 25.3799 0.934211C25.4779 1.01951 25.1078 0.829259 24.639 1.07668C24.3674 1.21963 23.1819 1.74421 22.33 1.74427C21.478 1.74427 21.4161 1.51529 20.7246 1.51529C20.1567 1.5153 19.3666 1.86759 19.0948 1.99156V3.717C19.1073 3.76571 21.0714 11.4372 21.4655 12.046C21.6383 12.1223 21.6385 12.1224 21.6385 12.1224V12.5513L21.3052 12.6561V13.6473H22.8235V15.4582L21.9346 16.0108V21.9194L24.3551 23.5395V21.2523L23.5522 21.0045V20.0799C23.5522 20.0799 23.7287 19.9925 24.318 19.6703C24.8736 18.7839 26.2072 15.0766 26.2072 15.0766V13.0947H26.4784V15.0766C26.4784 15.0766 27.7997 18.7839 28.3677 19.6703C28.9569 20.0019 29.1335 20.0799 29.1335 20.0799V21.0045L28.3311 21.2523V29.1432C29.3806 29.6388 30.4548 30.2014 31.4919 30.8208V29.4867L30.9363 29.2959V28.3713C30.9413 28.3689 31.1176 28.281 31.7016 27.9617C32.268 27.0779 33.412 24.3176 33.4184 24.3022V22.3198H33.6896V24.3022C33.697 24.3201 34.8397 27.0782 35.4059 27.9617C35.9919 28.2915 36.1678 28.3696 36.1716 28.3713V29.2959L35.616 29.4867V33.6988C36.4813 34.4084 36.9939 34.9098 36.9939 35.9519H1.04205C1.04205 34.9098 1.52921 34.4182 2.38842 33.7084V29.4867L1.83277 29.2959V28.3713C1.84024 28.3676 2.01828 28.2787 2.59805 27.9617C3.16339 27.0796 4.30365 24.328 4.31434 24.3022V22.3198H4.58605V24.3022C4.59562 24.3253 5.73672 27.0791 6.30233 27.9617C6.89503 28.2953 7.06812 28.3713 7.06812 28.3713V29.2959L6.51248 29.4867V30.8208C7.54967 30.2014 8.61144 29.6388 9.67333 29.1432V21.2523L8.8709 21.0045V20.0799C8.87773 20.0765 9.05534 19.9879 9.63618 19.6703C10.1918 18.784 11.5255 15.0766 11.5255 15.0766V13.0947H11.7972V15.0766C11.7972 15.0766 13.1185 18.784 13.6865 19.6703C14.2664 19.9967 14.4444 20.0767 14.4517 20.0799V21.0045L13.6493 21.2523V23.5395L16.0693 21.9194V16.0108L15.1804 15.4582V13.6473H16.6992V12.6561L16.366 12.5513V12.1224C16.366 12.1224 16.3815 12.1155 16.539 12.046C16.9333 11.4362 18.8987 3.75949 18.9096 3.717V0H19.0948ZM18.9834 29.8327C17.6252 29.8327 16.539 30.5378 16.539 31.405V33.3014H21.4283V31.405C21.4283 30.5282 20.3416 29.8327 18.9834 29.8327ZM18.8602 23.8C18.8602 23.8 18.1808 24.7147 16.9954 25.5819L17.1312 25.7061V27.7261H20.7862V25.7061L20.922 25.5819C19.7834 24.7125 19.0941 23.815 19.0826 23.8H18.8602Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label txt">Home</span>
+  </a>
+  <a class="tab" href="trips.html">
+    <svg aria-hidden="true" style="left:26.36px; top:8.71px" width="23" height="38" viewBox="0 0 23 38" fill="none" xmlns="http://www.w3.org/2000/svg"><rect y="7.60132" width="22.8041" height="27.5549" rx="5.06757" fill="var(--dvc-primary)"/><rect x="7.60156" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="15.2031" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="6.65137" width="10.4519" height="1.90034" rx="0.950169" fill="var(--dvc-primary)"/><circle cx="5.70112" cy="36.1065" r="1.90034" fill="var(--dvc-primary)"/><circle cx="17.103" cy="36.1066" r="1.90034" fill="var(--dvc-primary)"/><rect x="1.90039" y="28.5051" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><rect x="1.90039" y="26.6049" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><path d="M16.6675 17.6271C16.6675 14.8855 17.9287 13.6271 20.6675 13.6271C17.9287 13.6271 16.6585 12.3686 16.6675 9.62708C16.6675 12.3686 15.4062 13.6271 12.6675 13.6271C15.4062 13.6271 16.6675 14.8945 16.6675 17.6271Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label txt">Trips</span>
+  </a>
+  <a class="tab on" href="spend.html" aria-current="page">
+    <svg aria-hidden="true" style="left:23.57px; top:19.48px" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.1351" cy="10.1351" r="10.1351" fill="var(--primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10.8973 5.01299C11.3927 5.06572 11.8287 5.18177 12.205 5.36312C12.7452 5.6095 13.158 5.95575 13.4422 6.40113C13.7265 6.84652 13.8691 7.35844 13.8691 7.93649H11.9502C11.9123 7.51006 11.7602 7.18283 11.4949 6.95539C11.3503 6.82686 11.1509 6.73539 10.8973 6.6795V9.36917L10.9542 9.38649C11.229 9.47178 11.5426 9.58044 11.8933 9.71311C12.2532 9.83628 12.5985 10.0075 12.93 10.2253C13.2617 10.4338 13.5319 10.7082 13.7404 11.0493C13.9583 11.3809 14.067 11.7979 14.067 12.3001C14.067 12.9161 13.9204 13.4565 13.6266 13.9208C13.3328 14.3756 12.8968 14.7315 12.3189 14.9873C11.9164 15.1616 11.4423 15.2717 10.8973 15.3226V16.5363H9.51908V15.3238C8.5952 15.2404 7.8741 14.979 7.3577 14.532C6.72298 13.9729 6.38191 13.2191 6.33453 12.2716H8.31034C8.32929 12.6033 8.41069 12.8789 8.55283 13.0969C8.69497 13.305 8.90308 13.4616 9.17762 13.5657C9.28225 13.6054 9.3966 13.634 9.51908 13.6585V10.7227L9.41887 10.6942C8.56634 10.4479 7.88415 10.1068 7.37254 9.67105C6.86084 9.23515 6.6055 8.65666 6.60548 7.93649C6.60548 7.2921 6.76166 6.75167 7.07438 6.31576C7.39655 5.88001 7.8326 5.54843 8.3821 5.32105C8.73064 5.17686 9.10957 5.07811 9.51908 5.02536V3.80054H10.8973V5.01299ZM10.8973 13.6511C11.1881 13.5888 11.4301 13.4863 11.6223 13.3381C11.954 13.0728 12.1197 12.717 12.1197 12.2716C12.1196 12.0254 12.049 11.831 11.9069 11.6889C11.7742 11.5373 11.5841 11.4096 11.3378 11.3054C11.2019 11.2456 11.055 11.1894 10.8973 11.1359V13.6511ZM9.51908 6.6894C9.28001 6.74817 9.08579 6.84143 8.93636 6.97024C8.66172 7.19756 8.52451 7.50496 8.52438 7.89319C8.52438 8.08272 8.57602 8.24964 8.68026 8.39178C8.78437 8.52421 8.91245 8.63737 9.0638 8.73201C9.20761 8.81661 9.36017 8.88782 9.51908 8.94976V6.6894Z" fill="var(--deco)"/><circle cx="17.7366" cy="17.7365" r="10.1351" fill="var(--primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.4985 12.6143C18.9939 12.667 19.4299 12.7831 19.8062 12.9644C20.3464 13.2108 20.7591 13.5571 21.0434 14.0024C21.3277 14.4478 21.4703 14.9598 21.4703 15.5378H19.5514C19.5135 15.1114 19.3614 14.7841 19.0961 14.5567C18.9515 14.4282 18.7521 14.3367 18.4985 14.2808V16.9705L18.5554 16.9878C18.8302 17.0731 19.1438 17.1818 19.4945 17.3144C19.8544 17.4376 20.1997 17.6088 20.5312 17.8266C20.8629 18.0351 21.1331 18.3095 21.3416 18.6506C21.5595 18.9822 21.6682 19.3993 21.6682 19.9014C21.6682 20.5174 21.5215 21.0578 21.2278 21.5221C20.934 21.9769 20.498 22.3328 19.9201 22.5886C19.5175 22.763 19.0435 22.873 18.4985 22.9239V24.1376H17.1203V22.9251C16.1964 22.8417 15.4753 22.5804 14.9589 22.1333C14.3242 21.5742 13.9831 20.8204 13.9357 19.873H15.9115C15.9305 20.2046 16.0119 20.4802 16.154 20.6982C16.2962 20.9063 16.5043 21.0629 16.7788 21.1671C16.8834 21.2068 16.9978 21.2353 17.1203 21.2599V18.324L17.0201 18.2955C16.1675 18.0492 15.4853 17.7081 14.9737 17.2724C14.462 16.8365 14.2067 16.258 14.2067 15.5378C14.2067 14.8934 14.3629 14.353 14.6756 13.9171C14.9977 13.4813 15.4338 13.1498 15.9833 12.9224C16.3318 12.7782 16.7108 12.6794 17.1203 12.6267V11.4019H18.4985V12.6143ZM18.4985 21.2524C18.7893 21.1901 19.0313 21.0876 19.2235 20.9394C19.5552 20.6741 19.7209 20.3183 19.7209 19.873C19.7208 19.6267 19.6502 19.4323 19.5081 19.2902C19.3754 19.1387 19.1853 19.0109 18.939 18.9067C18.8031 18.8469 18.6562 18.7907 18.4985 18.7372V21.2524ZM17.1203 14.2907C16.8812 14.3495 16.687 14.4427 16.5376 14.5716C16.2629 14.7989 16.1257 15.1063 16.1256 15.4945C16.1256 15.684 16.1772 15.851 16.2815 15.9931C16.3856 16.1255 16.5136 16.2387 16.665 16.3333C16.8088 16.4179 16.9614 16.4891 17.1203 16.5511V14.2907Z" fill="var(--deco)"/></svg>
+    <span class="label txt">Spend</span>
+  </a>
+  <a class="tab" href="dvc.html">
+        <!-- 19,13 is the board's own coordinate for this mark (Figma 41:1008, the
+         `svg` frame inside the DVC span). Ruled 2026-08-02: unlike the other
+         four footer icons this one is NOT optically compensated — it is
+         placed exactly as drawn. -->
+        <svg aria-hidden="true" style="left:19px; top:13px" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9999 33.3C24.9587 33.3 30.5999 31.5539 30.5999 29.4C30.5999 27.2461 24.9587 25.5 17.9999 25.5C11.0411 25.5 5.3999 27.2461 5.3999 29.4C5.3999 31.5539 11.0411 33.3 17.9999 33.3Z" fill="var(--dvc-bg)"/><path d="M16.7998 30.3C17.0998 23.4 18.7498 17.4 21.5998 13.2L24.1498 15.3C21.1498 19.5 20.5498 24.3 20.8498 30.3H16.7998Z" fill="var(--dvc-primary)"/><path d="M22.6663 9.94336C23.678 8.7376 26.5565 9.48718 29.095 11.6172C31.6333 13.7472 32.8714 16.4515 31.8596 17.6572C30.8479 18.863 27.9694 18.1134 25.4309 15.9834C22.8926 13.8535 21.6548 11.1492 22.6663 9.94336ZM29.6634 2.40039C31.8171 2.40054 33.5627 4.14608 33.5628 6.2998C33.5628 8.45362 31.8171 10.2 29.6634 10.2002C28.2273 10.2002 26.973 9.42332 26.2962 8.26758C25.0103 8.95006 22.8631 9.31033 20.4641 9.14258C20.0036 9.11037 19.5551 9.05923 19.1223 8.99316C18.3776 9.94436 17.3196 10.9242 16.0403 11.7871C12.8812 13.9179 9.56942 14.5316 8.64284 13.1582C7.71634 11.7846 9.52655 8.94345 12.6858 6.8125C13.0558 6.56292 13.428 6.33415 13.7981 6.12695C13.7791 6.02467 13.7723 5.92167 13.7796 5.81836C13.8894 4.24826 17.0603 3.19128 20.8616 3.45703C22.97 3.60446 24.8296 4.12807 26.0491 4.83301C26.6288 3.40625 28.0284 2.40039 29.6634 2.40039Z" fill="var(--dvc-bg)"/><path d="M19.5 14.55C20.7426 14.55 21.75 13.5427 21.75 12.3C21.75 11.0574 20.7426 10.05 19.5 10.05C18.2574 10.05 17.25 11.0574 17.25 12.3C17.25 13.5427 18.2574 14.55 19.5 14.55Z" fill="var(--dvc-primary)"/><path d="M23.8501 15.75C25.0927 15.75 26.1001 14.7426 26.1001 13.5C26.1001 12.2574 25.0927 11.25 23.8501 11.25C22.6075 11.25 21.6001 12.2574 21.6001 13.5C21.6001 14.7426 22.6075 15.75 23.8501 15.75Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label txt">DVC</span>
+  </a>
+  <a class="tab" href="insights.html">
+    <svg aria-hidden="true" style="left:22.62px; top:13.49px" width="33" height="30" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.895828 8.81396C0.401075 8.3192 0.400989 7.51357 0.91226 7.03591C7.24023 1.12389 13.8274 -0.727922 20.6736 1.48046C21.3338 1.69342 21.658 2.4228 21.4144 3.07233L21.3583 3.22188C21.1089 3.88711 20.3623 4.21159 19.6841 3.99981C14.0601 2.24352 8.43617 3.89921 2.81221 8.96689C2.29864 9.42966 1.5084 9.42653 1.01956 8.93769L0.895828 8.81396Z" fill="var(--dvc-bg)"/><path d="M8.55154 18.6867C8.55154 17.1124 7.27532 15.8362 5.70103 15.8362C4.12674 15.8362 2.85052 17.1124 2.85052 18.6867V26.6048C2.85052 28.1791 4.12674 29.4553 5.70103 29.4553C7.27532 29.4553 8.55154 28.1791 8.55154 26.6048V18.6867Z" fill="var(--dvc-primary)"/><path d="M17.7365 12.0356C17.7365 10.4613 16.4603 9.18506 14.886 9.18506C13.3117 9.18506 12.0355 10.4613 12.0355 12.0356V26.6048C12.0355 28.1791 13.3117 29.4553 14.886 29.4553C16.4603 29.4553 17.7365 28.1791 17.7365 26.6048V12.0356Z" fill="var(--dvc-primary)"/><path d="M26.9215 15.5195C26.9215 13.9452 25.6453 12.6689 24.071 12.6689C22.4967 12.6689 21.2205 13.9452 21.2205 15.5195V26.6048C21.2205 28.179 22.4967 29.4553 24.071 29.4553C25.6453 29.4553 26.9215 28.179 26.9215 26.6048V15.5195Z" fill="var(--dvc-primary)"/><path d="M25.9713 0L27.8717 4.59248L32.4642 6.49282L27.8717 8.39316L25.9713 12.9856L24.071 8.39316L19.4785 6.49282L24.071 4.59248L25.9713 0Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label txt">Insights</span>
+  </a>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<template id="tpl-overview">
+  <div class="card-overview">
+    <div class="t-h3 ov-title txt">Trip Name</div>
+    <div class="t-body ov-dates txt">from mm/dd/yy to mm/dd/yy</div>
+    <div class="trend">
+      <div class="stat-tile"><span class="t-caption label txt">Actual spend</span><span class="value v-actual txt">$0</span></div>
+      <div class="stat-tile"><span class="t-caption label txt">Forecasted</span><span class="value v-forecast txt">—</span></div>
+      <div class="stat-tile"><span class="t-caption label txt">Variance</span><span class="value v-variance txt">—</span></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-manual">
+  <div class="manual-cols">
+    <input class="mcell m-date" placeholder="Date" aria-label="Date">
+    <span class="vdiv"></span>
+    <input class="mcell m-merchant" placeholder="Merchant" aria-label="Merchant">
+    <span class="vdiv"></span>
+    <input class="mcell m-amount" placeholder="Amount" aria-label="Amount">
+    <span class="vdiv"></span>
+    <button class="chip chip-default chip-pick" data-category=""><span class="txt">Select</span></button>
+  </div>
+</template>
+
+<script type="module">
+import { canAdd, isTouched } from './js/spend/gate.js';
+import { applyCategory } from './js/spend/propagate.js';
+import { compileEngine, categorizeRows } from './js/categorizer/engine.js';
+import { parseStatementCSV } from './js/categorizer/csv.js';
+import { openIdb } from './js/storage/adapter-idb.js';
+import { createRepo } from './js/storage/repo.js';
+import { loadForecastBundle, forecastFromStore, typicalOrNull } from './js/forecast-bundle.js';
+import { variancePct } from './js/format.js';
+
+/* Storage failure degrades to "cannot save", never to a dead screen. */
+let repo = null;
+try { repo = createRepo(await openIdb()); }
+catch (e) { console.error('Spend: storage unavailable, running read-only —', e); }
+
+/* ── labels: internal key `transportation`, UI label "Travel" (frozen) ── */
+const CATS = ['transportation','lodging','food','activity','gifts'];
+const LABEL = { transportation:'Travel', lodging:'Lodging', food:'Food', activity:'Activity', gifts:'Gifts', '': 'Select' };
+
+/* ── state machine ── */
+const states = [...document.querySelectorAll('.state')];
+function show(id) {
+  states.forEach(s => s.classList.toggle('on', s.dataset.state === id));
+  document.querySelector('main').scrollTop = 0;
+}
+
+/* ── trips come from storage (chunk 3) ────────────────────────────────
+   Spend never creates a trip — Trips owns that. An expense must belong to a
+   trip (operating rule 3), so with an empty trip list the workbench has
+   nothing to log against and the screen stays on its zero state. */
+const shortDate = d => { const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y.slice(2)}`; };
+
+/* The overview card's three tiles are REAL (chunk 7). They shipped as the
+   template's literal `$0 / — / —`, so a trip with a logged ledger still read
+   "Actual spend $0" — a fake number in the one place the screen exists to be
+   right about. Actual is summed from stored expenses; Forecasted goes through
+   the same `toForecastTrip` adapter Trips and Insights use, so a partial trip
+   renders — rather than a confident low number (operating rule 5). */
+let FC = null, HOTELS_ALL = [];
+try { FC = await loadForecastBundle(); }
+catch (e) { console.warn('Spend: forecast datasheets unavailable —', e); }
+if (repo) { try { HOTELS_ALL = await repo.listHotels(); } catch { HOTELS_ALL = []; } }
+
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+
+/* The trip's own expenses are an INPUT to the forecast, not only the Actual
+   tile: the frozen transport carry adds recorded ground transport to the
+   forecast. Passing them is what makes this tile agree with Trips and
+   Insights — Variance is a percentage now, so a disagreement is legible. */
+function forecastFor(row, segs, expenses = []) {
+  try {
+    return typicalOrNull(
+      forecastFromStore(FC, row, { segments: segs, hotels: HOTELS_ALL, expenses }));
+  } catch (e) { console.warn('Spend: forecast failed —', e.message); return null; }
+}
+
+async function loadTrips() {
+  if (!repo) return [];
+  const rows = await repo.listTrips();
+  const kept = rows
+    .filter(t => t.start_date && t.end_date)
+    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+  return Promise.all(kept.map(async t => {
+    const segs = await repo.segmentsOf(t.id);
+    const rows = await repo.expensesOf(t.id);
+    const actual = rows.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    return {
+      id: t.id,
+      name: t.title || 'Untitled trip',
+      label: t.title || 'Untitled trip',
+      dates: `${shortDate(t.start_date)}~${shortDate(t.end_date)}`,
+      start: t.start_date,
+      actual,
+      forecast: forecastFor(t, segs, rows),
+    };
+  }));
+}
+
+/* ?trips=N still slices, for the 0/1/2/3+ trip-name states — it can only
+   narrow what storage holds, never fabricate rows. */
+const devTripsParam = new URLSearchParams(location.search).get('trips');
+let trips = await loadTrips();
+if (devTripsParam !== null) trips = trips.slice(0, Number(devTripsParam));
+
+function earliestTrip() {
+  return trips.length ? [...trips].sort((a, b) => new Date(a.start) - new Date(b.start))[0] : null;
+}
+
+let engine = null;
+fetch('./data/categorizer/prefixes.json')
+  .then(r => r.json())
+  .then(prefixes => { engine = compileEngine({ prefixes }); })
+  .catch(() => { engine = null; });
+
+/* ── render trip overview cards ── */
+function renderTrips(elId) {
+  const host = document.getElementById(elId);
+  host.style.cssText = 'display:flex; flex-direction:column; gap:16px; width:100%;';
+  host.innerHTML = '';
+  trips.forEach(t => {
+    const n = document.getElementById('tpl-overview').content.cloneNode(true);
+    n.querySelector('.ov-title').textContent = t.name;
+    n.querySelector('.ov-dates').textContent = `from ${t.dates.replace('~',' to ')}`;
+    n.querySelector('.v-actual').textContent = money(t.actual);
+    n.querySelector('.v-forecast').textContent = t.forecast == null ? '—' : money(t.forecast);
+    /* Variance is a PERCENTAGE (the design director, 2026-07-28), not the signed dollar gap
+       this tile used to show: actual as a share of forecast, which is the
+       definition Insights already renders, now shared via format.variancePct
+       so the two tiles cannot answer differently. 100% is on forecast and
+       above it is overspend, so the direction survives losing the sign.
+       Still unknowable whenever the forecast is — a share of an unknown is
+       not 0%. */
+    const pct = variancePct(t.actual, t.forecast);
+    n.querySelector('.v-variance').textContent = pct == null ? '—' : `${pct}%`;
+    host.appendChild(n);
+  });
+}
+// 07 Save Success: the just-logged trip's card is ghosted pre-reveal (board 54:612);
+// the pixie-dust materialization itself rides the Interaction Pass.
+function renderTripsGhostLast(elId) {
+  renderTrips(elId);
+  const host = document.getElementById(elId);
+  const last = host.querySelector('.card-overview:last-child');
+  if (last) last.classList.add('ghost');
+}
+
+/* ── move the single #workbench card between its two mount points ──
+   02 (solo, no summary) when there's no trip history yet; 04 (grows below
+   the summary list) once at least one trip exists. Same component, same
+   gate/DOM wiring — only the surrounding Active Frame differs (board read). */
+function mountWorkbench(target) {
+  document.getElementById(target).appendChild(document.getElementById('workbench'));
+}
+
+/* ── workbench: gate wiring (js/spend/gate.js is the authority) ── */
+const tripSelect = document.getElementById('trip-select');
+const csvInput = document.getElementById('csv-input');
+const manualHost = document.getElementById('manual-rows');
+const btnAdd = document.getElementById('btn-add');
+let csvText = null;
+
+trips.forEach(t => {
+  const o = document.createElement('option');
+  o.value = t.id; o.textContent = t.label;
+  tripSelect.appendChild(o);
+});
+// trip-name field (122:3896): "No trip available" only when the trips list is
+// genuinely empty; otherwise the earliest trip is pre-selected, never left on
+// the empty state waiting for a manual pick.
+const earliest = earliestTrip();
+if (earliest) tripSelect.value = earliest.id;
+applyTripDisplay(earliest);
+
+// One box (.manual-box, static in the markup), N rows inside it, one
+// persistent "+ add more item" button — rows are added to #manual-rows,
+// never as their own bordered card (board 52:368: a single HUG container).
+function addManualRow() {
+  const n = document.getElementById('tpl-manual').content.cloneNode(true);
+  const row = n.querySelector('.manual-cols');
+  manualHost.appendChild(n);
+  wireManualRow(row);
+}
+function manualRows() {
+  return [...manualHost.querySelectorAll('.manual-cols')].map(el => ({
+    date: el.querySelector('.m-date').value,
+    merchant: el.querySelector('.m-merchant').value,
+    amount: el.querySelector('.m-amount').value,
+    category: el.querySelector('.chip-pick').dataset.category || null,
+  }));
+}
+function refreshGate() {
+  const batch = {
+    trip_id: tripSelect.value || null,
+    csvFile: csvText,                 // gate.js batch shape: { trip_id, csvFile, manualRows }
+    manualRows: manualRows(),
+  };
+  btnAdd.disabled = !canAdd(batch);
+}
+function wireManualRow(row) {
+  // Date/Merchant/Amount are preset labels, not native placeholders — they
+  // disappear the moment the field is clicked (focus), not only once a
+  // character is typed, and return only if the user leaves it empty.
+  row.querySelectorAll('.mcell').forEach(i => {
+    i.oninput = refreshGate;
+    i.onfocus = () => { i.dataset.ph = i.placeholder; i.placeholder = ''; };
+    i.onblur = () => { if (!i.value) i.placeholder = i.dataset.ph || ''; };
+  });
+  const ch = row.querySelector('.chip-pick');
+  ch.onclick = () => {
+    // cycle through categories (chip menu rides the Interaction Pass)
+    const cur = ch.dataset.category;
+    const idx = cur === '' ? -1 : CATS.indexOf(cur);
+    const next = idx + 1 >= CATS.length ? '' : CATS[idx + 1];
+    ch.dataset.category = next;
+    ch.querySelector('.txt').textContent = LABEL[next];
+    ch.classList.toggle('chip-default', next === '');
+    ch.classList.toggle('chip-set', next !== '');
+    refreshGate();
+  };
+}
+// trip-name field display (122:3896): Default ("No trip available", arrow
+// hidden) only when trips is genuinely empty. Otherwise "active" (name +
+// dates); the arrow is a "more choices" affordance, not a selection
+// indicator, so it only shows once there's more than one trip to pick
+// from — with a single trip, there's nothing to open a menu for.
+function applyTripDisplay(t) {
+  document.getElementById('trip-empty-display').style.display = t ? 'none' : '';
+  document.getElementById('trip-name-display').style.display = t ? '' : 'none';
+  document.getElementById('trip-dates-display').style.display = t ? '' : 'none';
+  document.getElementById('trip-name-display').textContent = t ? t.label + ' ' : '';
+  document.getElementById('trip-dates-display').textContent = t ? t.dates : '';
+  /* display, not visibility: a hidden arrow must not RESERVE its 18px, or the
+     dates stop 26px short of the right edge on a single-trip household
+     (the design director, 2026-07-27). The arrow is a "more choices" affordance — with
+     nothing to choose it should take no space at all. */
+  document.getElementById('trip-arrow').style.display = trips.length > 1 ? '' : 'none';
+}
+document.getElementById('btn-add-more').onclick = (e) => { e.preventDefault(); addManualRow(); };
+tripSelect.onchange = () => {
+  applyTripDisplay(trips.find(x => x.id === tripSelect.value));
+  refreshGate();
+};
+csvInput.onchange = () => {
+  const f = csvInput.files[0];
+  if (!f) { csvText = null; refreshGate(); return; }
+  document.getElementById('csv-label').textContent = f.name;
+  f.text().then(t => { csvText = t; refreshGate(); });
+};
+
+/* ── ADD → Processing → Review / Import Failed ──
+   Manual rows settle before CSV parsing (SPEND-SPEC §A) — they already
+   carry a user category and cannot fail. Processing is shown for a beat
+   even though parsing is synchronous, matching the board's own state. */
+let staged = [];
+btnAdd.onclick = () => {
+  if (btnAdd.disabled) return;
+  show('05');
+  setTimeout(runImport, 500);
+};
+function runImport() {
+  const manual = manualRows().filter(isTouched).map(r => ({
+    ...r, source: 'manual', category_source: 'user', rule: null,
+  }));
+  try {
+    let rows = [];
+    if (csvText != null) {
+      const parsed = parseStatementCSV(csvText);
+      /* csv.js does not throw — it REPORTS failure by returning a null dialect
+         with the reason in warnings (unrecognized header, empty/header-only
+         file). That is the genuine failure signal 05a was waiting for; the old
+         build could only reach 05a from an unexpected exception, because it
+         always had the sample CSV to fall back on. */
+      if (parsed.dialect === null) {
+        console.warn('Spend: CSV rejected —', parsed.warnings.join('; '));
+        show('05a');
+        return;
+      }
+      if (parsed.warnings.length) console.warn('Spend: CSV warnings —', parsed.warnings.join('; '));
+      // categorizeRows returns { results, counters, unmatched } — results is the row list
+      rows = engine ? categorizeRows(parsed.rows, engine, []).results
+        : parsed.rows.map(r => ({ ...r, descriptor_raw: r.descriptor, category: null }));
+    }
+    staged = [...manual, ...rows.map(r => ({ ...r, source: 'csv' }))];
+    renderReview();
+    show('06');
+  } catch (err) {
+    /* Still defensive: a malformed file can surprise the parser. */
+    console.warn('Spend: import failed —', err.message);
+    show('05a');
+  }
+}
+document.getElementById('btn-try-again').onclick = () => { show('04'); mountWorkbench('workbench-mount-04'); };
+
+/* ── 06 Review & Confirm ── */
+function renderReview() {
+  const t = trips.find(x => x.id === tripSelect.value);
+  document.getElementById('review-trip-label').textContent = t ? t.label : '';
+  const host = document.getElementById('review-rows');
+  host.innerHTML = '';
+  staged.forEach((row, i) => {
+    const div = document.createElement('div');
+    div.className = 'data-row';
+    const cat = row.category || '';
+    // §C: matched rows show the rule's merchant name; unmatched rows show the
+    // RAW bank descriptor — the only string the user can recognize.
+    const merchant = row.source === 'manual' ? (row.merchant ?? '')
+      : (row.merchant ?? row.descriptor_raw ?? '');
+    const d = row.date ? row.date.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, '$1/$2') : (row.date ?? '');
+    div.innerHTML = `
+      <span class="t-caption d-date txt">${d}</span>
+      <span class="t-caption d-merchant txt">${merchant}</span>
+      <span class="t-caption d-amount txt">${row.amount != null && row.amount !== '' ? '$' + Number(row.amount).toFixed(2) : ''}</span>
+      <button class="chip ${cat ? 'chip-set' : 'chip-default'} chip-pick" data-i="${i}"><span class="txt">${LABEL[cat]}</span></button>`;
+    host.appendChild(div);
+  });
+  host.querySelectorAll('.chip-pick').forEach(ch => ch.onclick = () => {
+    const i = +ch.dataset.i;
+    const cur = staged[i].category || '';
+    const idx = cur === '' ? -1 : CATS.indexOf(cur);
+    const next = idx + 1 >= CATS.length ? null : CATS[idx + 1];
+    const res = applyCategory(staged, i, next);   // returns { rows, changed } — changed = siblings only
+    staged = res.rows;
+    if (res.changed > 0) toast(`${res.changed} matching row${res.changed === 1 ? '' : 's'} updated`);
+    renderReview();
+  });
+  // CONFIRM is gated on full categorization (SPEND-SPEC §C, 2026-07-24) —
+  // "Select" is no longer a committable state. Recomputed on every render
+  // since a chip change (direct or via sibling propagation) can flip it.
+  document.getElementById('btn-confirm').disabled = !staged.every(r => r.category);
+}
+document.getElementById('btn-confirm').onclick = async () => {
+  const btn = document.getElementById('btn-confirm');
+  if (btn.disabled) return;
+  const trip_id = tripSelect.value || null;
+  /* Operating rule 3: every user expense belongs to a trip. trip_id null is
+     reserved for system cash imputation, so a batch without one is refused
+     rather than filed against nothing. The ADD gate already requires it — this
+     is the last line, not the first. */
+  if (!trip_id || !repo) {
+    console.warn('Spend: confirm refused — no trip selected or storage unavailable');
+    return;
+  }
+  btn.disabled = true;                       /* no double-submit */
+  /* One batch id per confirm, so an import can be traced back as a unit
+     (schema.sql expenses.import_batch_id). */
+  const batch = crypto.randomUUID();
+  try {
+    for (const r of staged) {
+      await repo.saveExpense({
+        trip_id,
+        date: r.date,
+        merchant: r.source === 'manual' ? (r.merchant ?? '')
+                                        : (r.merchant ?? r.descriptor_raw ?? ''),
+        amount: Number(r.amount),
+        category: r.category,
+        source: r.source === 'manual' ? 'manual' : 'import',
+        import_batch_id: batch,
+        /* the raw bank string is kept verbatim — it is the only text the user
+           can recognise when auditing a categorisation later */
+        original_statement: r.descriptor_raw ?? null,
+      });
+    }
+  } catch (err) {
+    console.warn('Spend: save failed —', err.message);
+    btn.disabled = false;
+    return;
+  }
+  staged = [];
+  trips = await loadTrips();                 /* totals move with the new rows */
+  renderTripsGhostLast('trip-list-07');
+  show('07');
+  // Save Success fires for every batch, then settles back to the summary
+  // (SPEND-SPEC §A). The pixie-dust sweep itself rides the Interaction Pass.
+  setTimeout(() => { renderTrips('trip-list-03'); show('03'); }, 900);
+};
+
+/* ── navigation ──
+   02 (solo workbench) when there's no trip history yet — matches 01 Zero's
+   only path in; 04 (workbench grows below the summary) once trips exist. */
+document.querySelectorAll('[data-go="workbench"]').forEach(b => b.onclick = () => {
+  if (trips.length) { mountWorkbench('workbench-mount-04'); show('04'); }
+  else { mountWorkbench('workbench-mount-02'); show('02'); }
+  refreshGate();
+});
+document.querySelectorAll('[data-go="cancel"]').forEach(b => b.onclick = () => show(trips.length ? '03' : '01'));
+document.querySelectorAll('[data-go="cancel-review"]').forEach(b => b.onclick = () => {
+  // CANCEL on Review discards the staged batch, back to the summary (SPEND-SPEC §A
+  // flow: 06 --CANCEL--> discard --> 03). Confirm dialog rides the Interaction Pass.
+  staged = []; show(trips.length ? '03' : '01');
+});
+
+/* ── toast ── */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ── boot ── */
+renderTrips('trip-list-03');
+renderTrips('trip-list-04');
+renderTrips('trip-list-05');
+renderTrips('trip-list-05a');
+addManualRow();
+const dev = new URLSearchParams(location.search).get('state');
+const initial = dev || (trips.length ? '03' : '01');
+mountWorkbench(trips.length ? 'workbench-mount-04' : 'workbench-mount-02');
+if (initial === '02' || initial === '04') refreshGate();
+if (initial === '07') renderTripsGhostLast('trip-list-07');
+show(initial);
+</script>
+</body>
+</html>

@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<!--
+  Insights — real screen. Visual truth: Figma Insights section 25:557, read via
+  figwright 2026-07-26. Every padding / gap / size / radius / stroke below is a
+  literal auto-layout value from a frame read, never an estimate, never a
+  screenshot measurement.
+
+  Frames read (all five):
+    01. Zero                          74:2911
+    02. active-cards                  74:3015
+    02a. active-cards-all-time-open   84:3794
+    02b. active-cards-early-open      84:4214
+    03. active-graphs                 74:3069
+  Plus the authored card variants, because a board instance can be a stale
+  placement while the component is the design:
+    cards / category=insights, type=yearly-expanded   76:2860
+    cards / category=insights, type=all time-expanded 84:3744
+    Graphs (6 variants: line|bar × 3-year|5-year|all-time)  77:2592
+
+  Frame logic (Active Frame 375×726, Footer 85.802238, page 375×812):
+    01 Zero    pad 20             gap 40  primary CENTER  counter CENTER
+    Cards      pad 32/20/20/20    gap 16  primary MIN     counter CENTER
+    Graph      pad 32/20/20/20    gap 16  primary MIN     counter CENTER
+  Content column is 335 (375 − 20 − 20) everywhere.
+
+  The five DVC translation laws (specs/DVC-BUILD.md) are applied throughout:
+   1. Figma rules are ZERO-height lines with centre-aligned strokes — drawn
+      here with a centred ::after so they cost 0 layout. A border-top would
+      push everything below down by 1.5px, compounding per rule.
+   2. strokeAlign INSIDE → inset rings, never CSS borders on auto-height
+      boxes. (Insights has no stroked boxes; the footer's border-top sits on
+      a fixed-height element, so it is safe.)
+   3. Text heights are pinned to Figma's cap boxes. `text-box: trim-both cap
+      alphabetic` makes an element's box equal Figma's, and every height the
+      board pins is written out (Bold 23/145% → 17, SemiBold 15/120% → 11,
+      Regular 12/120% → 9, SemiBold 19/135% → 14, SemiBold 17/120% → 12).
+   4. Children sit at their drawn width inside their track, not stretched.
+   5. A deduped instance can hide an override — the boards were also exported
+      as PNG and looked at (that is how the Zero copy block and the graph
+      geometry were confirmed).
+
+  Vector assets are exact Figma SVG exports (the sanctioned export under the
+  Token Economy rule): the Zero hero rising-graph, the three snack marks, the
+  `equal` glyph, the disclosure chevron, and the graph axis with its two
+  arrowheads. Nothing is hand-drawn or approximated.
+
+  BOARD DEVIATIONS — three, each one deliberate and reported to the design director:
+   A. `03. active-graphs` still carries the churro milestone icons on the
+      accumulative points, and translucent ghost segments in the Per Year
+      bars. Both were CUT by the design director on 2026-07-20 and are frozen in Project
+      Memory ("Graph view plots actuals only — no forecast ghost in either
+      graph"; snack icons removed, plain $ labels). Project Memory frozen
+      decisions outrank the board, and this frame was unreadable on the REST
+      limit when that sync happened, so it never caught up. Built per the
+      frozen decision; frame needs the amendment.
+   B. `02b. active-cards-early-open` opens a year using an `all time-expanded`
+      instance — its inner tiles still read Most Days / Most Trips / Largest
+      Burn and the pill still says "Tap to hide all time details". The
+      authored `yearly-expanded` component (76:2860) is the real design and
+      says Actual spend / Forecasted / Variance, "Tap to hide trip details".
+      Built from the component; the frame placement needs swapping.
+   C. There is no Cards↔Graph control drawn on ANY board, and `headers /
+      header-insights` has no slot for one. Spec §4 calls for a segmented
+      control top-right. Nothing was invented here — the Graph view is
+      reached with ?view=graph until the design director designs the control.
+
+  Insights WRITES NOTHING. It is a pure reader (repository philosophy);
+  the only storage call anywhere in this file is a read.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — Insights</title>
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS is the platform this matters on. Safari evicts IndexedDB after 7 days
+     without a visit, and a Home Screen app is exempt — so these tags are not
+     polish, they are what stops a tester losing their ledger by not opening
+     the app for a week. `apple-mobile-web-app-capable` is still required:
+     iOS only began honouring the manifest's display mode in 16.4. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
+<script src="js/theme.js"></script>
+<style>
+/* ══ Theme tokens live in css/theme.css — ONE copy for all five screens ══ */
+
+/* ══ Structural tokens — Figma variables, values verified in the frame reads ══ */
+:root {
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* One fixed value across all 16 themes (PALETTE-CONTRACT §, the design director
+     2026-07-18): grey is the voice of "that's a shame", not a warning. The
+     board binds Variance and Largest Burn to it, which is consistent with
+     "the user is never colour-punished for overspending". */
+  --attention: #757575;                /* color/attention */
+
+  --surface-overlay: #FFFFFF8C;        /* color/Surface-Overlay — disclosure pill */
+  --radius-chip: 7px;                  /* radius/chip — stat-tiles AND the
+                                          disclosure pill (the design director 2026-07-26:
+                                          pill rebound radius/compact-card 12 →
+                                          radius/chip 7 to match the white
+                                          stat-tiles; board already updated) */
+  --radius-strip: 6px;                 /* radius/strip — category bar tops */
+  --space-1: 8px; --space-2: 12px; --space-3: 16px; --space-4: 24px;
+  --border-strong: 1.5px;              /* border/strong — Rule + graph axis */
+  --footer-h: 85.802238px;
+  --shadow-card: 0 1px 3px rgba(30,30,30,0.10);
+  --col: 335px;                        /* content column */
+
+  /* Insights category group — an INDEPENDENT variable set that stays
+     identical across all 16 themes (frozen). Values are read from
+     the Figma variables `insight-cat/*`, which the design director has since authored and
+     bound; they SUPERSEDE the placeholder table in INSIGHTS-SPEC §3.
+     These are identity colours, never semantic feedback. */
+  --cat-transportation: #E34B62;       /* insight-cat/transportation 76:2515 */
+  --cat-lodging:        #8AC0E5;       /* insight-cat/lodging        76:2516 */
+  --cat-food:           #0A64A5;       /* insight-cat/food           76:2517 */
+  --cat-activity:       #FFEB94;       /* insight-cat/activity       76:2521 */
+  --cat-gifts:          #FFCA35;       /* insight-cat/gifts          76:2519 */
+  /* Label ink per category, exactly as bound on `graph bar-detail`: white on
+     the two dark grounds, ink on the three light ones. */
+  --on-transportation: var(--on-primary);
+  --on-lodging:        var(--ink);
+  --on-food:           var(--on-primary);
+  --on-activity:       var(--ink);
+  --on-gifts:          var(--ink);
+}
+
+/* ══ Base ══ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+/* ══ The app frame (the design director, 2026-07-27) ══════════════════════════════════
+   The five screens used to disagree above 375px: Home and Trips pinned their
+   content left (states positioned at literal board coordinates), while Spend,
+   DVC and Insights centred theirs. the design director chose centred for all.
+
+   The whole frame is capped and centred — content AND footer together — so a
+   wide window shows one phone-width column, not a narrow column sitting on a
+   full-width bar. html carries the page colour so the margins match.
+
+   At 375 and below this is completely inert, which is why it changes no
+   audited pixel: 375 is the drawn width and the QA viewport.
+
+   Home and Trips keep literal board coordinates INSIDE the frame — those are
+   the drawn Figma values, and re-expressing them as flex gaps would mean
+   inventing spacing nobody drew. Centring the frame achieves the chosen
+   behaviour without touching them. */
+html { background: var(--bg); }
+body { font-family: var(--font); background: var(--bg); color: var(--ink);
+  width: 100%;
+  display: flex; flex-direction: column; overflow: hidden; }
+button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit;
+  text-align: inherit; display: block; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+/* Figma cap-height vertical trim — makes element heights equal Figma's boxes */
+.txt { text-box: trim-both cap alphabetic; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ══ Text styles — Figma text styles, verbatim (height = the pinned cap box) ══ */
+.t-h1   { font-weight: 700; font-size: 23px; line-height: 145%; min-height: 17px; }
+.t-h3   { font-weight: 600; font-size: 19px; line-height: 135%; min-height: 14px; }
+.t-17   { font-weight: 600; font-size: 17px; line-height: 120%; min-height: 12px; }
+.t-15b  { font-weight: 600; font-size: 15px; line-height: 120%; min-height: 11px; }
+.t-13b  { font-weight: 600; font-size: 13px; line-height: 120%; min-height: 9px; }
+.t-12   { font-weight: 400; font-size: 12px; line-height: 120%; min-height: 9px; }
+.t-9b   { font-weight: 700; font-size:  9px; line-height: 120%; }
+.t-13   { font-weight: 600; font-size: 13px; line-height: 120%; }  /* footer */
+
+/* ══ Active Frame ══ */
+/* The app column is 375 and the FOOTER BAND is not (the design director 2026-08-01,
+   option 1). The constraint used to sit on `body`, so the white band ended
+   with the app: at any window wider than 375 the column centred and theme
+   background showed on BOTH sides of the band, which read as the footer
+   stopping short. The column now lives on `main`, and `body` is free to be as
+   wide as the window — so the band spans it while the five 75px tabs stay
+   centred on 375 by the footer's own `justify-content: center`.
+   Nothing drawn moves: `main` is the positioned ancestor on Home and Trips,
+   so every absolute coordinate inside it is unchanged. */
+/* overflow-x restored 2026-08-01. Moving the 375 column from `body` to `main`
+   also moved the CLIP: `body { overflow: hidden }` used to crop everything to
+   375, and with `body` now as wide as the window that guard was silently gone,
+   so anything overflowing this column could paint into the side gutters.
+   `clip`, not `hidden`, because these mains scroll vertically and `hidden`
+   would make this box a scroll container on both axes. */
+main { flex: 1; min-height: 0; overflow-x: clip; display: flex; flex-direction: column;
+  width: 100%; max-width: 375px; margin-inline: auto; }
+.state { display: none; flex: 1; min-height: 0; flex-direction: column; align-items: center; }
+.state.on { display: flex; }
+.frame-zero  { padding: 20px;          gap: 40px; justify-content: center; }
+.frame-page  { padding: 32px 20px 20px; gap: 16px; }
+.state > * { width: var(--col); flex: none; }
+
+/* ══ 01. Zero ══
+   icon-graph is a 175×209 layout box whose art overflows on every side
+   (clipsContent false): children span local (−11.96,−7.47)…(208.28,209.32),
+   so the export is 221×217 and is offset back onto the box. */
+.zero-icon { width: 175px; height: 209px; position: relative; }
+.zero-icon svg { position: absolute; left: -11.961481px; top: -7.470641px; }
+/* --primary-text: see index.html — option A (the design director, 2026-07-28). */
+.zero-copy { width: 335px; text-align: center; color: var(--primary-text);
+  font-weight: 600; font-size: 19px; line-height: 135%; min-height: 40px; }
+
+/* ══ headers / header-insights (335 × 33) ══ */
+.header-insights { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.text-row { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* ══ Rule / primary ══
+   Figma rules are ZERO-height lines with a centre-aligned stroke: they must
+   contribute 0 to layout, or every element below drifts down by 1.5px. */
+.rule { width: 100%; height: 0; position: relative; }
+.rule::after { content: ""; position: absolute; left: 0; right: 0;
+  top: calc(var(--border-strong) / -2); height: var(--border-strong); background: var(--primary); }
+
+/* ══ Cards view — Content (335 × 625, FILL/FIXED, gap 16) ══
+   The board makes the YEAR LIST the scroll region, not the page: Content is a
+   fixed-height column and `scroll container` absorbs the change when a card
+   expands. Translated as flex-shrink on the list so the layout stays inside
+   625 instead of overflowing the frame the way Figma does. */
+.content { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  gap: 16px; align-items: stretch; width: 100%; }
+.block-top { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 16px; align-items: stretch;
+  /* a classic scrollbar would eat the 335 column; the board has none */
+  scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ══ cards · category=insights · type=overview  (the snack card, 318 × 106.71) ══ */
+.card-snacks { display: flex; align-items: center; justify-content: center;
+  padding: 8px 0; align-self: center; }
+.snack { width: 90px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.snack-figures { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.snack-count { color: var(--ink); }
+.snack-label { color: var(--ink); }
+.equal { width: 24px; height: 18px; flex: none; display: block; }
+
+/* ══ cards · category=insights · type="all time" | "yearly" ══
+   Both are `data trend` + a disclosure pill, VERTICAL gap 4. */
+.card { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.data-trend { display: flex; align-items: center; gap: 8px; width: 100%;
+  filter: drop-shadow(0 1px 3px rgba(30,30,30,0.10)); }
+.stat-tile { border-radius: var(--radius-chip); background: var(--surface); }
+
+/* all time — two equal tiles, label over value, both centred */
+.tile-stack { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+.tile-stack .label { text-align: center; color: var(--ink); }
+.tile-stack .value { text-align: center; }
+
+/* yearly — year tile is FIXED 200, trips tile FILLs; both are
+   SPACE_BETWEEN with the two texts sitting on the tile's BOTTOM edge */
+.tile-row { display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 8px; padding: 8px 24px; }
+.tile-row.year { width: 200px; flex: none; }
+.tile-row.count { flex: 1; }
+.tile-row .label { text-align: center; color: var(--ink); }
+.tile-row .value { text-align: center; }
+/* Grid children sit at their DRAWN width, not stretched (law 4): the year
+   label is a 37px box inside the 200px tile. */
+.tile-row.year .label { width: 37px; flex: none; }
+
+.v-accent { color: var(--accent); }
+.v-muted  { color: var(--muted); }
+.v-dvc    { color: var(--dvc-primary); }
+.v-attn   { color: var(--attention); }
+
+/* ══ trip insight-closed / -expanded — the disclosure pill ══ */
+.pill { width: 100%; padding: 4px 12px 0; border-radius: var(--radius-chip);
+  background: var(--surface-overlay); overflow: hidden;
+  display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.disclose { width: 100%; height: 11px; padding: 0 1px; display: flex;
+  align-items: center; gap: 8px; color: var(--ink); }
+/* 311x11 with 116 / 67px of clear space — 44 tall, drawn row unmoved
+   (the design director 2026-08-01). The view dots below already carry their own ::after
+   (40x40 at a 40px gap) and are deliberately left alone. */
+.disclose { position: relative; }
+.disclose::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 100%; height: 44px; }
+/* `arrows / menu pull down` is a DOWN triangle; the collapsed variant carries
+   Figma rotation 90 (counter-clockwise) → the apex points RIGHT, so CSS needs
+   −90deg. Expanded is rotation 0, i.e. the glyph as drawn. */
+.chev { width: 11px; height: 11px; flex: none; display: block; transform: rotate(-90deg);
+  transition: transform .15s ease; }
+[data-open="true"] .chev { transform: rotate(0deg); }
+.disclose .cap { height: 9px; }
+
+/* `graph bar` and `graph bar-detail` are 335 FIXED inside the pill's 311
+   content box: wider than their parent, and the pill is counter-axis CENTER,
+   so they overflow symmetrically and land at x=0 — flush with the card edge,
+   clipped by the pill's 7px radius.
+   The centred overflow IS the whole mechanism. An extra negative margin
+   double-counts it: flexbox resolves the margin first, so the bar ends up
+   half the margin (6px) LEFT of the card edge. Width only. */
+.bleed { width: calc(100% + 24px); flex: none; }
+.mixbar { height: 6px; display: flex; overflow: hidden; }
+.mixbar > i { display: block; height: 100%; }
+/* booked-future ghost — same bar, ~50% translucency (PALETTE-CONTRACT L3) */
+.mixbar > i.ghost { background: var(--muted); opacity: .5; }
+
+/* ══ graph bar-detail — the vertical category chart (335 × 100) ══ */
+.catbars { height: 100px; display: grid; grid-template-columns: repeat(5, 1fr);
+  align-items: end; overflow: hidden; }
+.catbar { position: relative; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 4px; border-radius: var(--radius-strip) var(--radius-strip) 0 0; }
+.catbar span { height: 17px; text-align: center; white-space: pre; }
+/* A label that cannot fit ON its bar moves OFF it (the design director, 2026-07-28), rather
+   than sitting half on the bar and half on the page ground — which is what
+   produced the app's worst contrast reading, 1.14:1, since one ink cannot
+   serve two grounds at once. Threshold is the label's own height plus the
+   base padding twice; see `catbars()` for the derivation. */
+.catbar--outside > span { position: absolute; left: 0; right: 0;
+  bottom: 100%; margin-bottom: 4px; }
+
+/* ══ cards · category=trips · type=overview — inside an expanded card ══ */
+.trip-card { width: 100%; padding-top: 4px; display: flex; flex-direction: column; gap: 8px; }
+/* The board draws these two texts as FIXED 309 boxes inside the 311 column. */
+.trip-head { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.trip-head > * { width: 309px; color: var(--ink); }
+.trip-tiles { width: 100%; display: flex; align-items: center; gap: 8px; }
+.trip-tiles .stat-tile { flex: 1; display: flex; flex-direction: column; gap: 8px;
+  padding: 8px; box-shadow: var(--shadow-card); }
+/* the all-time superlative tile is padded 4/8/6/8, not 8 all round */
+.super-tiles .stat-tile { padding: 4px 8px 6px; }
+.trip-tiles .label { text-align: center; color: var(--ink); }
+.trip-tiles .value { text-align: center; }
+/* superlative value = year (SemiBold 19/135%) over metric (SemiBold 13/120%) */
+.super { height: 30px; display: flex; flex-direction: column; align-items: stretch;
+  justify-content: space-between; }
+.super > * { text-align: center; }
+.super .yr { font-weight: 600; font-size: 19px; line-height: 135%; height: 14px; }
+.super .mt { font-weight: 600; font-size: 13px; line-height: 120%; height: 9px; }
+
+/* ══ Graph view ══ */
+.graph-scroll { flex: 1 1 0; min-height: 0; width: 100%; overflow-y: auto;
+  overflow-x: hidden; display: flex; flex-direction: column; gap: 16px;
+  align-items: center; scrollbar-width: none; }
+.graph-scroll::-webkit-scrollbar { display: none; }
+.graph-block { width: 100%; flex: none; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.graph-block.accumulative { padding-bottom: 12px; }
+.graph { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+/* the line graph's H3 row is drawn FIXED 14, the bar graph's HUG 12 */
+.graph.line .range-label { height: 14px; }
+.graph.bar  .range-label { height: 12px; }
+.range-label { display: flex; align-items: flex-start; justify-content: center; }
+.plot { width: 335px; height: 235px; position: relative; }
+.plot svg { position: absolute; inset: 0; overflow: visible; }
+.plot .axis { color: var(--primary); }
+.dots { height: 10px; display: flex; align-items: center;
+  justify-content: center; gap: 40px; }
+.dots.range { width: 110px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--primary);
+  opacity: .5; display: block; }
+.dots i.on { opacity: 1; }
+/* A 10px dot is a 10px tap target. The ::after grows the touch area to 40px
+   at ZERO layout cost, so the drawn geometry is untouched. */
+.dots button { position: relative; }
+.dots button::after { content: ""; position: absolute; inset: -15px; }
+
+/* ══ view dots — the Cards ⇄ Graph swap (the design director 2026-07-26) ══
+   Same architecture as the graph range pages: 10px dots, 40px apart, active
+   at full opacity and inactive at 0.5. Rendered in --accent so the view
+   switch reads as a different class of control from a graph's range pages,
+   which stay --primary. (--attention was the first pick and was corrected
+   2026-07-26: it is reserved for system failures and destructive confirms,
+   and persistent chrome is neither.) Pinned at the foot of the Active Frame,
+   above the footer nav, so it is reachable from any scroll position.
+   NOT ON THE BOARD YET — supersedes the "segmented control top-right" that
+   INSIGHTS-SPEC §4 called for and that was drawn nowhere. */
+.view-dots { width: 60px; flex: none; align-self: center; }
+.view-dots i { background: var(--accent); }
+
+/* ══ Footer · variant Insights ══ */
+footer.footer { flex: none; height: var(--footer-h); background: var(--surface);
+  border-top: 1.900338px solid var(--deco); display: flex; justify-content: center; }
+.tab { position: relative; width: 75px; height: 83.901894px;
+  display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+.tab .label { position: absolute; top: 60px; left: 0; right: 0; text-align: center; color: var(--ink); }
+.tab.on .label { color: var(--primary); }
+.tab svg { position: absolute; }
+
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+/* ══ iOS safe areas (the design director, 2026-08-02) ═══════════════════════════════════
+   Reported on the live beta: a yellow strip under the footer, on every
+   screen. Without `viewport-fit=cover` Safari keeps the layout OUT of the
+   safe areas and paints them with the html background — which is the theme
+   colour, so the home-indicator band read as the footer stopping short.
+   Cover hands the layout those bands; `padding-top` on body puts the
+   content back exactly where it sat before, and the footer's own white now
+   reaches the physical bottom edge. Nothing drawn moves — where there is no
+   inset (every desktop browser, and any phone without an indicator) both
+   values resolve to 0, so this is inert off iOS. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+footer.footer {
+  height: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+</style>
+</head>
+<body>
+
+<main>
+  <!-- ══════ 01. Zero ══════ -->
+  <section class="state frame-zero" data-state="zero">
+    <div class="zero-icon" aria-hidden="true">
+      <svg width="221" height="217" viewBox="0 0 221 217" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.5877 64.8079C-0.881425 61.3199 -0.882225 55.6399 2.70468 52.2745C46.2807 11.3892 91.6381 -1.4357 138.777 13.7999C143.408 15.2966 145.68 20.4392 143.972 25.0183L143.687 25.7826C141.938 30.4724 136.702 32.7591 131.945 31.2724C93.2333 19.1748 54.5217 30.6409 15.8101 65.6707C12.2071 68.931 6.66652 68.909 3.2389 65.4627L2.5877 64.8079Z" fill="var(--deco)"/>
+        <path opacity="0.8" d="M55.2943 142.104C55.2943 131.186 46.4911 122.334 35.6317 122.334C24.7723 122.334 15.969 131.186 15.969 142.104V197.02C15.969 207.939 24.7723 216.79 35.6317 216.79C46.4911 216.79 55.2943 207.939 55.2943 197.02V142.104Z" fill="var(--primary)"/>
+        <path opacity="0.8" d="M118.652 95.9807C118.652 85.0622 109.849 76.2109 98.9895 76.2109C88.1301 76.2109 79.3268 85.0622 79.3268 95.9807V197.026C79.3268 207.945 88.1301 216.796 98.9895 216.796C109.849 216.796 118.652 207.945 118.652 197.026V95.9807Z" fill="var(--primary)"/>
+        <path opacity="0.8" d="M182.009 120.14C182.009 109.221 173.206 100.37 162.347 100.37C151.487 100.37 142.684 109.221 142.684 120.14V197.026C142.684 207.945 151.487 216.796 162.347 216.796C173.206 216.796 182.009 207.945 182.009 197.026V120.14Z" fill="var(--primary)"/>
+        <path d="M164.994 0C169.435 22.2246 176.79 31.5333 199.014 35.9744C176.79 40.4155 169.435 47.7702 164.994 69.9948C160.553 47.7702 153.198 40.4155 130.974 35.9744C153.198 31.5333 160.553 22.2246 164.994 0Z" fill="var(--deco)"/>
+      </svg>
+    </div>
+    <p class="zero-copy txt">Watch your memories grow.<br>One magical moment at a time.</p>
+  </section>
+
+  <!-- ══════ Cards view — 02 / 02a / 02b ══════ -->
+  <section class="state frame-page" data-state="cards">
+    <div class="header-insights">
+      <div class="text-row"><h1 class="t-h1 txt">Your Net Trip Burn</h1></div>
+      <div class="rule"></div>
+    </div>
+
+    <div class="content">
+      <div class="block-top">
+        <!-- cards / insights, overview — the snack comparison -->
+        <div class="card-snacks" id="snacks"></div>
+
+        <!-- cards / insights, "all time" ⇄ "all time-expanded" -->
+        <article class="card" id="alltime" data-open="false"></article>
+      </div>
+
+      <div class="rule"></div>
+      <div class="text-row"><h2 class="t-h1 txt">Yearly Insights</h2></div>
+
+      <!-- scroll container — one `cards / insights, yearly` per calendar year,
+           newest first; the current year is just another row. -->
+      <div class="scroll" id="years"></div>
+    </div>
+
+    <div class="dots view-dots" id="v-cards"></div>
+  </section>
+
+  <!-- ══════ Graph view — 03 ══════ -->
+  <section class="state frame-page" data-state="graph">
+    <div class="header-insights">
+      <div class="text-row"><h1 class="t-h1 txt">Your Net Trip Burn</h1></div>
+      <div class="rule"></div>
+    </div>
+
+    <!-- the two graph blocks are fixed height (310 / 296); with the view dots
+         taking the foot of the frame they no longer both fit, so the pair
+         scrolls and the dots stay pinned. -->
+    <div class="graph-scroll">
+      <figure class="graph-block accumulative">
+        <div class="text-row"><h2 class="t-h1 txt">Accumulative</h2></div>
+        <div class="graph line" id="g-acc"></div>
+        <div class="dots range" id="d-acc"></div>
+      </figure>
+
+      <figure class="graph-block">
+        <div class="text-row"><h2 class="t-h1 txt">Per Year</h2></div>
+        <div class="graph bar" id="g-year"></div>
+        <div class="dots range" id="d-year"></div>
+      </figure>
+    </div>
+
+    <div class="dots view-dots" id="v-graph"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <a class="tab" href="index.html">
+    <svg aria-hidden="true" style="left:17.74px; top:8.85px" width="41" height="36" viewBox="0 0 41 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M40.5405 15.8387C37.1394 15.8387 35.5731 17.4049 35.5731 20.8172C35.5731 17.4161 34.0068 15.8387 30.6056 15.8387C34.0068 15.8387 35.5731 14.2724 35.5731 10.8602C35.5619 14.2724 37.1394 15.8387 40.5405 15.8387ZM5.54925 7.3877C3.64729 7.3877 2.77462 8.26033 2.77462 10.1622C2.77462 8.26033 1.90196 7.3877 0 7.3877C1.90196 7.3877 2.77462 6.51506 2.77462 4.61316C2.77462 6.50388 3.64729 7.3877 5.54925 7.3877ZM26.6786 4.33777C24.7766 4.33777 23.904 5.2104 23.904 7.1123C23.904 5.2104 23.0313 4.33777 21.1293 4.33777C23.0313 4.33777 23.904 3.46513 23.904 1.56323C23.904 3.46513 24.7766 4.33777 26.6786 4.33777Z" fill="var(--dvc-bg)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.0948 0V0.0763244C19.2306 0.0477366 19.5022 1.64076e-05 19.9588 0C21.3912 0 22.4163 0.857887 23.5893 0.857887C24.1697 0.857884 25.1082 0.695958 25.3799 0.934211C25.4779 1.01951 25.1078 0.829259 24.639 1.07668C24.3674 1.21963 23.1819 1.74421 22.33 1.74427C21.478 1.74427 21.4161 1.51529 20.7246 1.51529C20.1567 1.5153 19.3666 1.86759 19.0948 1.99156V3.717C19.1073 3.76571 21.0714 11.4372 21.4655 12.046C21.6383 12.1223 21.6385 12.1224 21.6385 12.1224V12.5513L21.3052 12.6561V13.6473H22.8235V15.4582L21.9346 16.0108V21.9194L24.3551 23.5395V21.2523L23.5522 21.0045V20.0799C23.5522 20.0799 23.7287 19.9925 24.318 19.6703C24.8736 18.7839 26.2072 15.0766 26.2072 15.0766V13.0947H26.4784V15.0766C26.4784 15.0766 27.7997 18.7839 28.3677 19.6703C28.9569 20.0019 29.1335 20.0799 29.1335 20.0799V21.0045L28.3311 21.2523V29.1432C29.3806 29.6388 30.4548 30.2014 31.4919 30.8208V29.4867L30.9363 29.2959V28.3713C30.9413 28.3689 31.1176 28.281 31.7016 27.9617C32.268 27.0779 33.412 24.3176 33.4184 24.3022V22.3198H33.6896V24.3022C33.697 24.3201 34.8397 27.0782 35.4059 27.9617C35.9919 28.2915 36.1678 28.3696 36.1716 28.3713V29.2959L35.616 29.4867V33.6988C36.4813 34.4084 36.9939 34.9098 36.9939 35.9519H1.04205C1.04205 34.9098 1.52921 34.4182 2.38842 33.7084V29.4867L1.83277 29.2959V28.3713C1.84024 28.3676 2.01828 28.2787 2.59805 27.9617C3.16339 27.0796 4.30365 24.328 4.31434 24.3022V22.3198H4.58605V24.3022C4.59562 24.3253 5.73672 27.0791 6.30233 27.9617C6.89503 28.2953 7.06812 28.3713 7.06812 28.3713V29.2959L6.51248 29.4867V30.8208C7.54967 30.2014 8.61144 29.6388 9.67333 29.1432V21.2523L8.8709 21.0045V20.0799C8.87773 20.0765 9.05534 19.9879 9.63618 19.6703C10.1918 18.784 11.5255 15.0766 11.5255 15.0766V13.0947H11.7972V15.0766C11.7972 15.0766 13.1185 18.784 13.6865 19.6703C14.2664 19.9967 14.4444 20.0767 14.4517 20.0799V21.0045L13.6493 21.2523V23.5395L16.0693 21.9194V16.0108L15.1804 15.4582V13.6473H16.6992V12.6561L16.366 12.5513V12.1224C16.366 12.1224 16.3815 12.1155 16.539 12.046C16.9333 11.4362 18.8987 3.75949 18.9096 3.717V0H19.0948ZM18.9834 29.8327C17.6252 29.8327 16.539 30.5378 16.539 31.405V33.3014H21.4283V31.405C21.4283 30.5282 20.3416 29.8327 18.9834 29.8327ZM18.8602 23.8C18.8602 23.8 18.1808 24.7147 16.9954 25.5819L17.1312 25.7061V27.7261H20.7862V25.7061L20.922 25.5819C19.7834 24.7125 19.0941 23.815 19.0826 23.8H18.8602Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">Home</span>
+  </a>
+  <a class="tab" href="trips.html">
+    <svg aria-hidden="true" style="left:26.36px; top:8.71px" width="23" height="38" viewBox="0 0 23 38" fill="none" xmlns="http://www.w3.org/2000/svg"><rect y="7.60132" width="22.8041" height="27.5549" rx="5.06757" fill="var(--dvc-primary)"/><rect x="7.60156" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="15.2031" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="6.65137" width="10.4519" height="1.90034" rx="0.950169" fill="var(--dvc-primary)"/><circle cx="5.70112" cy="36.1065" r="1.90034" fill="var(--dvc-primary)"/><circle cx="17.103" cy="36.1066" r="1.90034" fill="var(--dvc-primary)"/><rect x="1.90039" y="28.5051" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><rect x="1.90039" y="26.6049" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><path d="M16.6675 17.6271C16.6675 14.8855 17.9287 13.6271 20.6675 13.6271C17.9287 13.6271 16.6585 12.3686 16.6675 9.62708C16.6675 12.3686 15.4062 13.6271 12.6675 13.6271C15.4062 13.6271 16.6675 14.8945 16.6675 17.6271Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Trips</span>
+  </a>
+  <a class="tab" href="spend.html">
+    <svg aria-hidden="true" style="left:23.57px; top:19.48px" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.1351" cy="10.1351" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10.8973 5.01299C11.3927 5.06572 11.8287 5.18177 12.205 5.36312C12.7452 5.6095 13.158 5.95575 13.4422 6.40113C13.7265 6.84652 13.8691 7.35844 13.8691 7.93649H11.9502C11.9123 7.51006 11.7602 7.18283 11.4949 6.95539C11.3503 6.82686 11.1509 6.73539 10.8973 6.6795V9.36917L10.9542 9.38649C11.229 9.47178 11.5426 9.58044 11.8933 9.71311C12.2532 9.83628 12.5985 10.0075 12.93 10.2253C13.2617 10.4338 13.5319 10.7082 13.7404 11.0493C13.9583 11.3809 14.067 11.7979 14.067 12.3001C14.067 12.9161 13.9204 13.4565 13.6266 13.9208C13.3328 14.3756 12.8968 14.7315 12.3189 14.9873C11.9164 15.1616 11.4423 15.2717 10.8973 15.3226V16.5363H9.51908V15.3238C8.5952 15.2404 7.8741 14.979 7.3577 14.532C6.72298 13.9729 6.38191 13.2191 6.33453 12.2716H8.31034C8.32929 12.6033 8.41069 12.8789 8.55283 13.0969C8.69497 13.305 8.90308 13.4616 9.17762 13.5657C9.28225 13.6054 9.3966 13.634 9.51908 13.6585V10.7227L9.41887 10.6942C8.56634 10.4479 7.88415 10.1068 7.37254 9.67105C6.86084 9.23515 6.6055 8.65666 6.60548 7.93649C6.60548 7.2921 6.76166 6.75167 7.07438 6.31576C7.39655 5.88001 7.8326 5.54843 8.3821 5.32105C8.73064 5.17686 9.10957 5.07811 9.51908 5.02536V3.80054H10.8973V5.01299ZM10.8973 13.6511C11.1881 13.5888 11.4301 13.4863 11.6223 13.3381C11.954 13.0728 12.1197 12.717 12.1197 12.2716C12.1196 12.0254 12.049 11.831 11.9069 11.6889C11.7742 11.5373 11.5841 11.4096 11.3378 11.3054C11.2019 11.2456 11.055 11.1894 10.8973 11.1359V13.6511ZM9.51908 6.6894C9.28001 6.74817 9.08579 6.84143 8.93636 6.97024C8.66172 7.19756 8.52451 7.50496 8.52438 7.89319C8.52438 8.08272 8.57602 8.24964 8.68026 8.39178C8.78437 8.52421 8.91245 8.63737 9.0638 8.73201C9.20761 8.81661 9.36017 8.88782 9.51908 8.94976V6.6894Z" fill="var(--dvc-bg)"/><circle cx="17.7366" cy="17.7365" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.4985 12.6143C18.9939 12.667 19.4299 12.7831 19.8062 12.9644C20.3464 13.2108 20.7591 13.5571 21.0434 14.0024C21.3277 14.4478 21.4703 14.9598 21.4703 15.5378H19.5514C19.5135 15.1114 19.3614 14.7841 19.0961 14.5567C18.9515 14.4282 18.7521 14.3367 18.4985 14.2808V16.9705L18.5554 16.9878C18.8302 17.0731 19.1438 17.1818 19.4945 17.3144C19.8544 17.4376 20.1997 17.6088 20.5312 17.8266C20.8629 18.0351 21.1331 18.3095 21.3416 18.6506C21.5595 18.9822 21.6682 19.3993 21.6682 19.9014C21.6682 20.5174 21.5215 21.0578 21.2278 21.5221C20.934 21.9769 20.498 22.3328 19.9201 22.5886C19.5175 22.763 19.0435 22.873 18.4985 22.9239V24.1376H17.1203V22.9251C16.1964 22.8417 15.4753 22.5804 14.9589 22.1333C14.3242 21.5742 13.9831 20.8204 13.9357 19.873H15.9115C15.9305 20.2046 16.0119 20.4802 16.154 20.6982C16.2962 20.9063 16.5043 21.0629 16.7788 21.1671C16.8834 21.2068 16.9978 21.2353 17.1203 21.2599V18.324L17.0201 18.2955C16.1675 18.0492 15.4853 17.7081 14.9737 17.2724C14.462 16.8365 14.2067 16.258 14.2067 15.5378C14.2067 14.8934 14.3629 14.353 14.6756 13.9171C14.9977 13.4813 15.4338 13.1498 15.9833 12.9224C16.3318 12.7782 16.7108 12.6794 17.1203 12.6267V11.4019H18.4985V12.6143ZM18.4985 21.2524C18.7893 21.1901 19.0313 21.0876 19.2235 20.9394C19.5552 20.6741 19.7209 20.3183 19.7209 19.873C19.7208 19.6267 19.6502 19.4323 19.5081 19.2902C19.3754 19.1387 19.1853 19.0109 18.939 18.9067C18.8031 18.8469 18.6562 18.7907 18.4985 18.7372V21.2524ZM17.1203 14.2907C16.8812 14.3495 16.687 14.4427 16.5376 14.5716C16.2629 14.7989 16.1257 15.1063 16.1256 15.4945C16.1256 15.684 16.1772 15.851 16.2815 15.9931C16.3856 16.1255 16.5136 16.2387 16.665 16.3333C16.8088 16.4179 16.9614 16.4891 17.1203 16.5511V14.2907Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Spend</span>
+  </a>
+  <a class="tab" href="dvc.html">
+        <!-- 19,13 is the board's own coordinate for this mark (Figma 41:1008, the
+         `svg` frame inside the DVC span). Ruled 2026-08-02: unlike the other
+         four footer icons this one is NOT optically compensated — it is
+         placed exactly as drawn. -->
+        <svg aria-hidden="true" style="left:19px; top:13px" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9999 33.3C24.9587 33.3 30.5999 31.5539 30.5999 29.4C30.5999 27.2461 24.9587 25.5 17.9999 25.5C11.0411 25.5 5.3999 27.2461 5.3999 29.4C5.3999 31.5539 11.0411 33.3 17.9999 33.3Z" fill="var(--dvc-bg)"/><path d="M16.7998 30.3C17.0998 23.4 18.7498 17.4 21.5998 13.2L24.1498 15.3C21.1498 19.5 20.5498 24.3 20.8498 30.3H16.7998Z" fill="var(--dvc-primary)"/><path d="M22.6663 9.94336C23.678 8.7376 26.5565 9.48718 29.095 11.6172C31.6333 13.7472 32.8714 16.4515 31.8596 17.6572C30.8479 18.863 27.9694 18.1134 25.4309 15.9834C22.8926 13.8535 21.6548 11.1492 22.6663 9.94336ZM29.6634 2.40039C31.8171 2.40054 33.5627 4.14608 33.5628 6.2998C33.5628 8.45362 31.8171 10.2 29.6634 10.2002C28.2273 10.2002 26.973 9.42332 26.2962 8.26758C25.0103 8.95006 22.8631 9.31033 20.4641 9.14258C20.0036 9.11037 19.5551 9.05923 19.1223 8.99316C18.3776 9.94436 17.3196 10.9242 16.0403 11.7871C12.8812 13.9179 9.56942 14.5316 8.64284 13.1582C7.71634 11.7846 9.52655 8.94345 12.6858 6.8125C13.0558 6.56292 13.428 6.33415 13.7981 6.12695C13.7791 6.02467 13.7723 5.92167 13.7796 5.81836C13.8894 4.24826 17.0603 3.19128 20.8616 3.45703C22.97 3.60446 24.8296 4.12807 26.0491 4.83301C26.6288 3.40625 28.0284 2.40039 29.6634 2.40039Z" fill="var(--dvc-bg)"/><path d="M19.5 14.55C20.7426 14.55 21.75 13.5427 21.75 12.3C21.75 11.0574 20.7426 10.05 19.5 10.05C18.2574 10.05 17.25 11.0574 17.25 12.3C17.25 13.5427 18.2574 14.55 19.5 14.55Z" fill="var(--dvc-primary)"/><path d="M23.8501 15.75C25.0927 15.75 26.1001 14.7426 26.1001 13.5C26.1001 12.2574 25.0927 11.25 23.8501 11.25C22.6075 11.25 21.6001 12.2574 21.6001 13.5C21.6001 14.7426 22.6075 15.75 23.8501 15.75Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">DVC</span>
+  </a>
+  <a class="tab on" href="insights.html" aria-current="page">
+    <svg aria-hidden="true" style="left:22.62px; top:13.49px" width="33" height="30" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.895828 8.81396C0.401075 8.3192 0.400989 7.51357 0.91226 7.03591C7.24023 1.12389 13.8274 -0.727922 20.6736 1.48046C21.3338 1.69342 21.658 2.4228 21.4144 3.07233L21.3583 3.22188C21.1089 3.88711 20.3623 4.21159 19.6841 3.99981C14.0601 2.24352 8.43617 3.89921 2.81221 8.96689C2.29864 9.42966 1.5084 9.42653 1.01956 8.93769L0.895828 8.81396Z" fill="var(--deco)"/><path d="M8.55154 18.6867C8.55154 17.1124 7.27532 15.8362 5.70103 15.8362C4.12674 15.8362 2.85052 17.1124 2.85052 18.6867V26.6048C2.85052 28.1791 4.12674 29.4553 5.70103 29.4553C7.27532 29.4553 8.55154 28.1791 8.55154 26.6048V18.6867Z" fill="var(--primary)"/><path d="M17.7365 12.0356C17.7365 10.4613 16.4603 9.18506 14.886 9.18506C13.3117 9.18506 12.0355 10.4613 12.0355 12.0356V26.6048C12.0355 28.1791 13.3117 29.4553 14.886 29.4553C16.4603 29.4553 17.7365 28.1791 17.7365 26.6048V12.0356Z" fill="var(--primary)"/><path d="M26.9215 15.5195C26.9215 13.9452 25.6453 12.6689 24.071 12.6689C22.4967 12.6689 21.2205 13.9452 21.2205 15.5195V26.6048C21.2205 28.179 22.4967 29.4553 24.071 29.4553C25.6453 29.4553 26.9215 28.179 26.9215 26.6048V15.5195Z" fill="var(--primary)"/><path d="M25.9713 0L27.8717 4.59248L32.4642 6.49282L27.8717 8.39316L25.9713 12.9856L24.071 8.39316L19.4785 6.49282L24.071 4.59248L25.9713 0Z" fill="var(--deco)"/></svg>
+    <span class="label t-13 txt">Insights</span>
+  </a>
+</footer>
+
+<template id="tpl-mixbar">
+  <div class="bleed mixbar"><i></i><i></i><i></i><i></i><i></i></div>
+</template>
+
+<script type="module">
+import { deriveInsights, CATEGORIES } from './js/insights-derive.js';
+import { plural, money } from './js/format.js';
+import { duesRowsFor } from './js/forecast.js';
+import { makeForecastBundle } from './js/forecast-bundle.js';
+import { openIdb } from './js/storage/adapter-idb.js';
+import { createRepo } from './js/storage/repo.js';
+
+/* ══ display labels — the transportation → "Travel" swap happens ONLY here,
+      at the render boundary. Internal keys stay `transportation` everywhere. */
+const LABEL = { transportation: 'Travel', lodging: 'Lodging', food: 'Food',
+                activity: 'Activity', gifts: 'Gifts' };
+
+const $ = sel => document.querySelector(sel);
+const el = (tag, cls, txt) => { const n = document.createElement(tag);
+  if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+
+/* chevron — exact Figma export of `arrows / menu pull down` (57:3730) */
+const CHEV = '<svg class="chev" width="11" height="11" viewBox="0 0 18 11" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 0L9 11L0 0H18Z" fill="currentColor"/></svg>';
+
+/* graph axis — exact Figma export of the L-axis with both arrowheads
+   (335 × 218.97 node; the export is 340 × 224 because the arrowheads bleed) */
+const AXIS = '<svg class="axis" width="340" height="224" viewBox="0 0 340 224" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.33014 0L1.19209e-05 7.5H8.66027L4.33014 0ZM4.33014 218.966H3.58014V219.716H4.33014V218.966ZM339.33 218.966L331.83 214.635V223.296L339.33 218.966ZM4.33014 6.75H3.58014V218.966H4.33014H5.08014V6.75H4.33014ZM4.33014 218.966V219.716H332.58V218.966V218.216H4.33014V218.966Z" fill="currentColor"/></svg>';
+
+/* snack marks — exact Figma exports of the three `icons` components, stored
+   once as viewBox + paths so the Hero card and the graph points share one
+   copy. Fills that Figma binds to a variable use the token; the rest are the
+   literal hex the component carries. The export's clip-path wrapper is
+   dropped: the art is authored inside the viewBox, so it never clipped
+   anything, and duplicate clip ids in one document are invalid. */
+const SNACK_ART = {
+  'mickey-ice-bar': { vb: '0 0 17 24', paths:
+    `<path d="M0 0H6.61111V6.72H10.3889V0H17V6.72H14.1667V9.6H16.0556V18.24H11.3333V24H5.66667V18.24H0.944444V9.6H2.83333V6.72H0V0Z" fill="var(--ink)"/><path d="M1.88892 1.92004H5.66669V7.68004H11.3334V1.92004H15.1111V5.76004H12.2778V10.56H14.1667V16.32H2.83336V10.56H4.72225V5.76004H1.88892V1.92004Z" fill="#5B3A2E"/><path d="M14.1667 2.88H16.0556V4.8H14.1667V2.88ZM12.2778 4.8H14.1667V6.72H12.2778V4.8Z" fill="#FFF6CF"/><path d="M4.72217 9.59998H6.61106V11.52H4.72217V9.59998ZM9.44439 9.59998H11.3333V11.52H9.44439V9.59998Z" fill="var(--surface)"/><path d="M7.55566 18.24H9.44455V23.04H7.55566V18.24Z" fill="#FFF6CF"/><path d="M5.66675 17.28H11.3334V19.2H5.66675V17.28Z" fill="var(--ink)"/>` },
+  'dole-whip': { vb: '0 0 22 24', paths:
+    `<path d="M9 0H13V1.84615H16V3.69231H18V6.46154H20V10.1538H22V13.8462H18V24H4V13.8462H0V10.1538H2V6.46154H4V3.69231H6V1.84615H9V0Z" fill="var(--ink)"/><path d="M9 1.84619H13V3.69235H16V6.46158H18V9.23081H20V12H2V9.23081H4V6.46158H6V3.69235H9V1.84619Z" fill="#FFF6CF"/><path d="M10 3.69226H14V5.53841H16V7.38457H18V9.23072H4V7.38457H7V5.53841H10V3.69226Z" fill="#FFCA35"/><path d="M6 8.30774H19V11.077H3V9.23082H6V8.30774Z" fill="#FFF6CF"/><path d="M6 13.8462H16V22.1539H6V13.8462Z" fill="#C68D00"/><path d="M8 15.6923H10V20.3076H8V15.6923Z" fill="var(--surface)"/><path d="M4 13.8462H18V15.6923H4V13.8462ZM5 22.1539H17V24H5V22.1539Z" fill="var(--ink)"/>` },
+  'churro': { vb: '0 0 18 24', paths:
+    `<path d="M11 0H16V3.69231H18V9.23077H16V13.8462H14V18.4615H12V24H5V18.4615H7V13.8462H9V9.23077H11V0Z" fill="var(--ink)"/><path d="M13 1.84619H15V5.5385H16V8.30773H14V12.9231H12V17.5385H10V22.1539H7V17.5385H9V12.9231H11V8.30773H13V1.84619Z" fill="#B48500"/><path d="M14 2.76929H15V3.69236H14V2.76929ZM13 7.38467H14V8.30775H13V7.38467ZM11 12.9231H12V13.8462H11V12.9231ZM9 17.5385H10V18.4616H9V17.5385Z" fill="#FFF6CF"/><path d="M0 13.8462H10V24H0V13.8462Z" fill="var(--ink)"/><path d="M2 15.6923H8V22.1538H2V15.6923Z" fill="var(--surface)"/><path d="M2 17.5385H8V20.3077H2V17.5385Z" fill="#DE2C47"/>` },
+};
+// Hero card sizes are the board's own per-snack boxes (uniform scale of each
+// component). Graph points use one 23x32 slot for all three, so the art is
+// fitted inside it rather than distorted to fill it.
+const SNACK_CARD_SIZE = { 'mickey-ice-bar': [34.5, 48.71], 'dole-whip': [43.5, 47.45], 'churro': [36, 48] };
+const snackSvg = (id, w, h, attrs = '') => {
+  const a = SNACK_ART[id]; if (!a) return '';
+  return `<svg ${attrs} width="${w}" height="${h}" viewBox="${a.vb}" fill="none"
+    preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${a.paths}</svg>`;
+};
+
+/* Which snack marks which range — read off the board's three `Graphs` line
+   variants (77:3446 / 77:3447 / 77:3448), not chosen here. */
+const RANGE_SNACK = { '3Y': 'mickey-ice-bar', '5Y': 'dole-whip', ALL: 'churro' };
+
+/* `equal` glyph between the snack columns (76:3357) */
+const EQUAL = '<svg class="equal" width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 6.0106V0H24V6.0106H0ZM0 18V11.9894H24V18H0Z" fill="var(--accent)"/></svg>';
+
+/* Sample trips / expenses / dues removed in chunk 5 (2026-07-27): this screen
+   now reads real rows from js/storage/repo.js. Insights writes nothing —
+   it is a presentation layer over the ledger (operating rule 2). */
+
+/* An ISO DATE STRING, not a Date: deriveInsights does today.slice(0, 4), and
+   passing it a Date throws. It lived in the sample block and must survive the
+   block's removal. */
+const TODAY = new Date().toISOString().slice(0, 10);
+
+/* ══════════════════════ boot ══════════════════════ */
+const q = new URLSearchParams(location.search);
+let data = null, snacks = [], expandedYears = new Set(), allTimeOpen = false;
+let view = q.get('view') === 'graph' ? 'graph' : 'cards';   // ?view= deep-links
+let range = { acc: 'ALL', year: '3Y' };            // each graph owns its own
+const VIEWS = ['cards', 'graph'];
+const VIEW_LABEL = { cards: 'Cards view', graph: 'Graph view' };
+const RANGES = ['3Y', '5Y', 'ALL'];
+const RANGE_LABEL = { '3Y': 'Last 3 years', '5Y': 'Last 5 years', ALL: 'All Time' };
+
+const j = url => fetch(url).then(r => r.ok ? r.json() : Promise.reject(url));
+
+Promise.all([
+  j('./data/snacks.json').catch(() => ({ snacks: [] })),
+  Promise.all([
+    j('./data/benchmarks.json'), j('./data/categorizer/fingerprints.json'),
+    j('./data/dvc-canonical.json'), j('./data/categorizer/prefixes.json'),
+  ]).catch(() => null),
+]).then(async ([snackFile, forecastFiles]) => {
+  snacks = snackFile.snacks ?? [];
+
+  /* One definition of the bundle's shape, shared with Trips and Spend — the
+     three screens each building their own is how they came to disagree. */
+  const forecast = forecastFiles ? makeForecastBundle(forecastFiles) : null;
+
+  /* ── real reads (chunk 5) ─────────────────────────────────────────────
+     Insights is a PRESENTATION layer: it reads trips, expenses and DVC
+     contracts and writes nothing (operating rule 2). deriveInsights already
+     drops planning scenarios, so a plan group cannot double-count. */
+  let trips = [], expenses = [], dues = [], segments = [], hotels = [];
+  try {
+    const repo = createRepo(await openIdb());
+    trips = await repo.listTrips();
+    expenses = await repo.listExpenses();
+    /* Segments and hotels feed toForecastTrip: without them a trip forecasts
+       SILENTLY LOW and does not flag itself partial (chunk 6). */
+    segments = (await Promise.all(trips.map(t => repo.segmentsOf(t.id)))).flat();
+    hotels = await repo.listHotels();
+
+    /* Dues are DERIVED, never stored (frozen DVC principle): contract points
+       x the published rate, for the years the contract's tracking window
+       covers. This retires the honest `duesRows: []` stub.
+
+       duesRowsFor() keys on `resort`; DVC contracts store the same value as
+       `resort_hotel_id` (both are the 3-letter datasheet id), so the map is a
+       rename, not a lookup.
+
+       throughYear is THIS year, not the furthest booked trip: dues are a
+       recorded annual cost, and generating them for a year that has not
+       happened would put speculative money on a Year Card. Forecasting
+       forward is chunk 6's job. */
+    if (forecast) {
+      const contracts = (await repo.listContracts())
+        .map(c => ({ ...c, resort: c.resort_hotel_id }));
+      dues = duesRowsFor(contracts, forecast.C, Number(TODAY.slice(0, 4)));
+    }
+  } catch (e) {
+    /* No storage means an empty ledger, which renders the Zero state — the
+       honest reading, and never a crash. */
+    console.error('Insights: storage unavailable —', e);
+  }
+
+  /* dev harness: ?years=N keeps only the most recent N years, so the sparse /
+     zero / 10-year shapes stay reachable for QA. It can only NARROW what
+     storage holds; it never fabricates a year. */
+  const nYears = q.get('years');
+  if (nYears !== null) {
+    const keep = new Set([...new Set(trips.map(t => String(t.start_date).slice(0, 4)))]
+      .sort((a, b) => b - a).slice(0, Number(nYears)));
+    trips = trips.filter(t => keep.has(String(t.start_date).slice(0, 4)));
+    dues = dues.filter(d => keep.has(String(d.year)));
+  }
+
+  data = deriveInsights({ trips, expenses, duesRows: dues, segments, hotels,
+                          forecast, today: TODAY });
+  render();
+});
+
+function render() {
+  const forced = q.get('state');
+  const state = forced || (!data.hasData ? 'zero' : view);
+  document.querySelectorAll('.state').forEach(s =>
+    s.classList.toggle('on', s.dataset.state === state));
+  // Zero has no data, so there is nothing to swap between — no view dots.
+  if (state === 'zero') return;
+  if (state === 'cards') { renderSnacks(); renderAllTime(); renderYears(); }
+  if (state === 'graph') { renderAccumulative(); renderYearGraph(); }
+  renderViewDots(state === 'graph' ? 'v-graph' : 'v-cards');
+}
+
+/* ══ view dots — Cards ⇄ Graph. The swap changes the LENS ONLY: the dataset
+      is derived once on entry and both views read the same tree (frozen). ══ */
+function renderViewDots(hostId) {
+  const host = document.getElementById(hostId);
+  host.innerHTML = '';
+  VIEWS.forEach(v => {
+    const b = el('button');
+    b.type = 'button';
+    b.style.cssText = 'padding:0; width:10px; height:10px; flex:none;';
+    b.setAttribute('aria-label', VIEW_LABEL[v]);
+    b.setAttribute('aria-pressed', String(v === view));
+    const dot = el('i'); if (v === view) dot.classList.add('on');
+    b.append(dot);
+    b.addEventListener('click', () => { if (v !== view) { view = v; render(); } });
+    host.append(b);
+  });
+}
+
+/* ══ cards / insights, overview — snack comparison ══ */
+function renderSnacks() {
+  const host = $('#snacks');
+  host.innerHTML = '';
+  // A missing/null price omits that snack rather than printing Infinity;
+  // all three missing omits the whole line (INSIGHTS-BUILD §5.2).
+  const usable = snacks.filter(s => Number(s.price) > 0);
+  if (!usable.length) return;
+  usable.forEach((s, i) => {
+    if (i) host.insertAdjacentHTML('beforeend', EQUAL);
+    const col = el('div', 'snack');
+    const [w, h] = SNACK_CARD_SIZE[s.id] ?? [36, 48];
+    col.insertAdjacentHTML('beforeend', snackSvg(s.id, w, h));
+    const figs = el('div', 'snack-figures');
+    const n = Math.round(data.allTime.total / s.price);
+    figs.append(el('div', 'snack-count t-h1 txt', String(n)));
+    figs.append(el('div', 'snack-label t-12 txt', n === 1 ? s.label_singular : s.label));
+    col.append(figs);
+    host.append(col);
+  });
+}
+
+/* ══ cards / insights, "all time" ⇄ "all time-expanded" ══ */
+function renderAllTime() {
+  const host = $('#alltime');
+  host.dataset.open = String(allTimeOpen);
+  host.innerHTML = '';
+
+  const trend = el('div', 'data-trend');
+  trend.append(statStack('All time spend', money(data.allTime.total), 'v-accent'));
+  trend.append(statStack('# of trips', String(data.allTime.tripCount), 'v-muted'));
+  host.append(trend);
+
+  const pill = el('div', 'pill');
+  pill.append(discloseButton(
+    allTimeOpen ? 'Tap to hide all time details' : 'Tap to see all time details',
+    () => { allTimeOpen = !allTimeOpen; renderAllTime(); }));
+
+  if (!allTimeOpen) {
+    pill.append(mixbar(data.allTime.byCategory));
+  } else {
+    const s = data.allTime.superlatives;
+    const tiles = el('div', 'trip-card');
+    const row = el('div', 'trip-tiles super-tiles');
+    row.append(superTile('Most Days', s.mostDays, y => plural(y.days, 'day'), 'v-accent'));
+    row.append(superTile('Most Trips', s.mostTrips, y => plural(y.count, 'trip'), 'v-dvc'));
+    row.append(superTile('Largest Burn', s.largestBurn, y => money(y.total), 'v-attn'));
+    tiles.append(row);
+    pill.append(tiles);
+    pill.append(catbars(data.allTime.byCategory));
+  }
+  host.append(pill);
+}
+
+/* ══ scroll container — one card per calendar year, newest first ══ */
+function renderYears() {
+  const host = $('#years');
+  host.innerHTML = '';
+  data.years.forEach(y => {
+    const open = expandedYears.has(y.year);
+    const card = el('article', 'card');
+    card.dataset.open = String(open);
+
+    const trend = el('div', 'data-trend');
+    // year tile is FIXED 200 with the label pinned to its drawn 37px box
+    const yr = el('div', 'stat-tile tile-row year');
+    yr.append(el('div', 'label t-15b txt', String(y.year)));
+    yr.append(el('div', 'value t-h1 txt v-accent', money(y.total)));
+    // trips tile FILLs; value first, then the counted noun — a dues-only year
+    // reads "0 trips", never hidden.
+    const ct = el('div', 'stat-tile tile-row count');
+    ct.append(el('div', 'value t-h1 txt v-muted', String(y.tripCount)));
+    ct.append(el('div', 'label t-15b txt', plural(y.tripCount, 'trip').replace(/^\d+\s/, '')));
+    trend.append(yr, ct);
+    card.append(trend);
+
+    const pill = el('div', 'pill');
+    pill.append(discloseButton(
+      open ? 'Tap to hide trip details' : 'Tap to see trip details',
+      () => { open ? expandedYears.delete(y.year) : expandedYears.add(y.year);
+              renderYears(); }));
+
+    if (!open) {
+      pill.append(mixbar(y.byCategory, y.ghost));
+    } else {
+      y.trips.forEach(t => pill.append(tripCard(t)));
+      pill.append(catbars(y.byCategory));
+    }
+    card.append(pill);
+    host.append(card);
+  });
+}
+
+/* ══ cards / trips, overview — one trip inside an expanded year ══ */
+function tripCard(t) {
+  const wrap = el('div', 'trip-card');
+  const head = el('div', 'trip-head');
+  head.append(el('div', 't-17 txt', t.name));
+  head.append(el('div', 't-13b txt', `from ${usDate(t.start_date)} to ${usDate(t.end_date)}`));
+  wrap.append(head);
+
+  const row = el('div', 'trip-tiles');
+  // A partial forecast renders "—" for BOTH Forecasted and Variance. A
+  // partial forecast is not a smaller forecast; printing its number would be
+  // exactly the fake number the engine exists to avoid.
+  row.append(tripTile('Actual spend', money(t.actual), 'v-accent'));
+  row.append(tripTile('Forecasted', t.forecasted == null ? '—' : money(t.forecasted), 'v-dvc'));
+  row.append(tripTile('Variance', t.variance == null ? '—' : `${t.variance}%`, 'v-attn'));
+  wrap.append(row);
+  return wrap;
+}
+
+function tripTile(label, value, cls) {
+  const tile = el('div', 'stat-tile');
+  tile.append(el('div', 'label t-12 txt', label));
+  tile.append(el('div', `value t-h3 txt ${cls}`, value));
+  return tile;
+}
+
+function superTile(label, crown, fmt, cls) {
+  const tile = el('div', 'stat-tile');
+  tile.append(el('div', 'label t-12 txt', label));
+  const v = el('div', `value super ${cls}`);
+  // YEAR-scoped, always: a year above the metric, never a trip name.
+  v.append(el('div', 'yr txt', crown ? String(crown.year) : '—'));
+  v.append(el('div', 'mt txt', crown ? fmt(crown) : '—'));
+  tile.append(v);
+  return tile;
+}
+
+function statStack(label, value, cls) {
+  const tile = el('div', 'stat-tile tile-stack');
+  tile.append(el('div', 'label t-15b txt', label));
+  tile.append(el('div', `value t-h1 txt ${cls}`, value));
+  return tile;
+}
+
+function discloseButton(caption, onClick) {
+  const b = el('button', 'disclose');
+  b.type = 'button';
+  b.setAttribute('aria-expanded', String(caption.startsWith('Tap to hide')));
+  b.insertAdjacentHTML('beforeend', CHEV);
+  b.append(el('span', 'cap t-12 txt', caption));
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+/* ══ graph bar — the collapsed horizontal mix bar (proportions) ══
+   Uncategorized counts toward the year total but is NEVER a sixth segment,
+   so the bar may not sum to the total. That is correct and intentional. */
+function mixbar(mix, ghost = 0) {
+  const bar = el('div', 'bleed mixbar');
+  const spent = CATEGORIES.reduce((s, c) => s + mix[c], 0);
+  const sum = spent + ghost;
+  CATEGORIES.forEach(c => {
+    const i = el('i');
+    // A year with nothing logged yet (a booked trip, no expenses) collapses
+    // to an empty strip. An even five-way split would claim a spending shape
+    // that does not exist — the same fake-number failure as a partial
+    // forecast printing its number.
+    i.style.width = sum > 0 ? `${(mix[c] / sum) * 100}%` : '0%';
+    i.style.background = `var(--cat-${c})`;
+    bar.append(i);
+  });
+  // Booked-future ghost — money committed to a booked trip but not yet spent.
+  // ONE trailing segment, not a five-way split: `budget_amount` carries no
+  // category, so splitting it would invent a breakdown that does not exist
+  // ("never invent fake numbers", same spec line). Neutral --muted at 50% so
+  // it claims no category. Year mix bars only.
+  if (ghost > 0) {
+    const g = el('i', 'ghost');
+    g.style.width = `${(ghost / sum) * 100}%`;
+    bar.append(g);
+  }
+  bar.setAttribute('role', 'img');
+  bar.setAttribute('aria-label', 'Category mix: ' + CATEGORIES
+    .map(c => `${LABEL[c]} ${money(mix[c])}`).join(', ')
+    + (ghost > 0 ? `; ${money(ghost)} booked but not yet spent` : ''));
+  return bar;
+}
+
+/* ══ graph bar-detail — the expanded vertical category chart ══
+   This is the accessibility affordance: colour is never the only signal, so
+   every segment is named AND priced ("$450 Travel"). */
+/* The threshold is MEASURED from the real CSS, once, rather than restated as
+   17 + 4*2 here — restyling the label would otherwise silently desync the
+   rule from the thing it measures. Measured off a probe attached to the
+   document, because a detached node has no computed style at all. */
+let _catbarThreshold = null;
+function catbarLabelThreshold() {
+  if (_catbarThreshold != null) return _catbarThreshold;
+  const host = el('div', 'bleed catbars'), bar = el('div', 'catbar');
+  bar.append(el('span', 't-9b txt', 'x'));
+  host.append(bar);
+  host.style.cssText = 'position:absolute; visibility:hidden; pointer-events:none';
+  document.body.append(host);
+  _catbarThreshold = parseFloat(getComputedStyle(bar.firstChild).height)
+    + parseFloat(getComputedStyle(bar).paddingBottom) * 2;
+  host.remove();
+  return _catbarThreshold;
+}
+
+function catbars(mix) {
+  const host = el('div', 'bleed catbars');
+  const max = Math.max(...CATEGORIES.map(c => mix[c]), 0);
+  CATEGORIES.forEach(c => {
+    const bar = el('div', 'catbar');
+    const h = max > 0 ? Math.max((mix[c] / max) * 100, 0) : 0;
+    bar.style.height = `${h}px`;
+    bar.style.background = `var(--cat-${c})`;
+    // Conditional placement (the design director, 2026-07-28): the label moves OFF the bar
+    // when the net bar height cannot hold it — its own 17px plus the base
+    // 4px padding at top and bottom, so 25px. Both numbers are read from the
+    // CSS above rather than restated, so restyling the label cannot silently
+    // desync the threshold from the thing it measures.
+    //
+    // The previous rule kept the label ON the bar below 21px and only swapped
+    // the ink. That is what produced the app's worst contrast reading: a
+    // 10px bar leaves the 17px label straddling the bar edge, so whichever
+    // ink is chosen, half the glyphs land on the wrong ground — --ink on
+    // food blue measures 1.17:1. One ink cannot serve two grounds; moving the
+    // label off gives it a single, known ground.
+    const fits = h >= catbarLabelThreshold();
+    bar.classList.toggle('catbar--outside', !fits);
+    // On the bar: the board's own per-category ink. Off it: --ink on --bg,
+    // which is the page's normal body pairing and clears AA everywhere.
+    bar.style.color = fits ? `var(--on-${c})` : 'var(--ink)';
+    bar.append(el('span', 't-9b txt', `${money(mix[c])}\n${LABEL[c]}`));
+    host.append(bar);
+  });
+  return host;
+}
+
+/* ══════════════════════ Graph view ══════════════════════
+   Hand-rolled inline SVG — no charting library (no-build vanilla project).
+   Both graphs plot ACTUALS ONLY: no forecast ghost anywhere in Graph view
+   (frozen 2026-07-20) — that half of the board still needs amending.
+   The milestone snack icons, however, STAY: the design director confirmed 2026-07-26 that
+   each range carries its OWN snack, which the board's three line variants
+   already encode. An earlier record said the icons were cut; it was stale and
+   is superseded.
+
+   Plot geometry, all literal from the frame reads:
+     plot          335 × 235
+     axis          335 × 218.97 at the top of the plot
+     year labels   16px band below the axis (12px Regular, bottom-aligned)
+   Year label centres are evenly spaced with an outer margin of 5/12 of the
+   step — the rule that reproduces BOTH drawn cases (5 years → 29…305 step
+   69; 3 years → 49…285.5 step 118.25) to within 0.3px. */
+const AXIS_H = 218.966, PLOT_W = 335, PLOT_H = 235, LABEL_BAND = 16;
+const xsFor = n => {
+  if (n <= 1) return [PLOT_W / 2];
+  const step = PLOT_W / (n - 1 + 5 / 6);
+  const x0 = (PLOT_W - step * (n - 1)) / 2;
+  return Array.from({ length: n }, (_, i) => x0 + i * step);
+};
+
+function yearLabels(xs, years) {
+  return years.map((y, i) =>
+    `<text x="${xs[i].toFixed(2)}" y="${PLOT_H}" text-anchor="middle"
+       font-family="Manrope" font-size="12" font-weight="400"
+       fill="currentColor">${y}</text>`).join('');
+}
+
+function graphShell(hostId, cls, rangeKey, body, srTable) {
+  const host = document.getElementById(hostId);
+  host.innerHTML = '';
+  const lab = el('div', 'range-label');
+  lab.append(el('span', 't-17 txt', RANGE_LABEL[rangeKey]));
+  host.append(lab);
+  const plot = el('div', 'plot');
+  // Data FIRST, axis LAST — the axis must paint in front of the graph
+  // (the design director 2026-07-26). Bars sit on the baseline, so with the axis behind
+  // them each bar punched a gap in the X axis and the bottom rule read as
+  // broken. Painting the axis over the data keeps that line continuous.
+  plot.insertAdjacentHTML('beforeend',
+    `<svg width="${PLOT_W}" height="${PLOT_H}" viewBox="0 0 ${PLOT_W} ${PLOT_H}"
+       xmlns="http://www.w3.org/2000/svg" role="img" style="color:var(--ink)"
+       aria-label="${srTable.label}">${body}</svg>`);
+  plot.insertAdjacentHTML('beforeend', AXIS);
+  host.append(plot);
+  const t = el('table', 'sr');
+  t.innerHTML = srTable.html;
+  host.append(t);
+}
+
+function renderDots(hostId, active, onPick) {
+  const host = document.getElementById(hostId);
+  host.innerHTML = '';
+  RANGES.forEach(r => {
+    const b = el('button');
+    b.type = 'button';
+    b.style.cssText = 'padding:0; width:10px; height:10px; flex:none;';
+    b.setAttribute('aria-label', RANGE_LABEL[r]);
+    b.setAttribute('aria-pressed', String(r === active));
+    const dot = el('i'); if (r === active) dot.classList.add('on');
+    b.append(dot);
+    b.addEventListener('click', () => onPick(r));
+    host.append(b);
+  });
+}
+
+function renderAccumulative() {
+  const years = data.ranges[range.acc];
+  // Range-scoped: a 3Y page accumulates ONLY the last 3 years from zero, so
+  // its right edge answers "what did the last 3 years cost". The lifetime
+  // total appears on ALL alone (the design director 2026-07-26).
+  const pts = data.cumulativeBy[range.acc];
+  const xs = xsFor(pts.length);
+  const max = Math.max(...pts.map(p => p.total), 1);
+  // A point's $ label hangs 22px below its vertex (icon centre + 16 + gap 6)
+  // and is 9px tall, so a zero-based mapping would drive a small first year's
+  // label through the axis and into the year band. Both ends of the band are
+  // therefore the board's own drawn extremes, converted to plot coordinates:
+  // lowest vertex 174 (its label bottom then clears the axis line by the same
+  // 14px the board draws), highest vertex 49.
+  const Y_BASE = 174, Y_TOP = 49;
+  const yOf = v => Y_BASE - (v / max) * (Y_BASE - Y_TOP);
+
+  const line = pts.length > 1
+    ? `<polyline fill="none" stroke="var(--primary)" stroke-width="1.5"
+         points="${pts.map((p, i) => `${xs[i].toFixed(2)},${yOf(p.total).toFixed(2)}`).join(' ')}"/>`
+    : '';
+  // Point marker, exactly as the board draws it: a 50x47 `cards/graph point`
+  // whose 23x32 snack icon is centred ON the vertex, with the $ label 6px
+  // below it (icon bottom +16, gap 6 → label top at vertex+22). The snack is
+  // per RANGE, not per point — 3Y Mickey Ice Bar, 5Y Dole Whip, ALL Churro,
+  // read off the board's three line variants. The three components have
+  // different aspect ratios, so the art is fitted inside the shared 23x32
+  // slot (xMidYMid meet) rather than stretched to fill it.
+  const snack = RANGE_SNACK[range.acc];
+  const marks = pts.map((p, i) =>
+    snackSvg(snack, 23, 32, `x="${(xs[i] - 11.5).toFixed(2)}" y="${(yOf(p.total) - 16).toFixed(2)}"`)
+  ).join('');
+  const labels = pts.map((p, i) =>
+    `<text x="${xs[i].toFixed(2)}" y="${(yOf(p.total) + 22 + 9).toFixed(2)}"
+       text-anchor="middle" font-family="Manrope" font-size="12"
+       fill="currentColor">${kmoney(p.total)}</text>`).join('');
+
+  graphShell('g-acc', 'line', range.acc, line + marks + labels + yearLabels(xs, years), {
+    label: `Cumulative trip spending, ${RANGE_LABEL[range.acc]}: ` +
+      pts.map(p => `${p.year} ${money(p.total)}`).join(', '),
+    html: '<caption>Cumulative spending by year</caption><tr><th>Year</th><th>Cumulative</th></tr>' +
+      pts.map(p => `<tr><td>${p.year}</td><td>${money(p.total)}</td></tr>`).join(''),
+  });
+  renderDots('d-acc', range.acc, r => { range.acc = r; renderAccumulative(); });
+}
+
+function renderYearGraph() {
+  const years = data.ranges[range.year];
+  const byYear = new Map(data.years.map(y => [y.year, y]));
+  const rows = years.map(y => byYear.get(y)
+    ?? { year: y, total: 0, byCategory: Object.fromEntries(CATEGORIES.map(c => [c, 0])) });
+  const xs = xsFor(rows.length);
+  const max = Math.max(...rows.map(r => CATEGORIES.reduce((s, c) => s + r.byCategory[c], 0)), 1);
+  const band = AXIS_H - 8;                       // clear of the axis arrowhead
+  const W = 16;                                  // bar width, drawn
+
+  // Stacking order is bottom-up gifts → activity → food → lodging →
+  // transportation (the mix-bar order reversed), exactly as the board's
+  // rotated `graph` frames render.
+  const stack = [...CATEGORIES].reverse();
+  const bars = rows.map((r, i) => {
+    const sum = CATEGORIES.reduce((s, c) => s + r.byCategory[c], 0);
+    let y = AXIS_H;
+    return stack.map(c => {
+      const h = sum > 0 ? (r.byCategory[c] / max) * band : 0;
+      if (h <= 0) return '';
+      y -= h;
+      return `<rect x="${(xs[i] - W / 2).toFixed(2)}" y="${y.toFixed(2)}"
+        width="${W}" height="${h.toFixed(2)}" fill="var(--cat-${c})"/>`;
+    }).join('');
+  }).join('');
+
+  graphShell('g-year', 'bar', range.year, bars + yearLabels(xs, years), {
+    label: `Spending by category per year, ${RANGE_LABEL[range.year]}: ` +
+      rows.map(r => `${r.year} ${money(CATEGORIES.reduce((s, c) => s + r.byCategory[c], 0))}`).join(', '),
+    html: '<caption>Spending by category per year</caption><tr><th>Year</th>' +
+      CATEGORIES.map(c => `<th>${LABEL[c]}</th>`).join('') + '</tr>' +
+      rows.map(r => `<tr><td>${r.year}</td>` +
+        CATEGORIES.map(c => `<td>${money(r.byCategory[c])}</td>`).join('') + '</tr>').join(''),
+  });
+  renderDots('d-year', range.year, r => { range.year = r; renderYearGraph(); });
+}
+
+/* ══ helpers ══ */
+const usDate = iso => { const [y, m, d] = iso.split('-'); return `${m}/${d}/${y.slice(2)}`; };
+// graph data labels are compact ("$10k") the way the board writes them;
+// every other number in the tab is full dollars via money().
+function kmoney(n) {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return `$${(k >= 10 ? Math.round(k) : Math.round(k * 10) / 10)}k`;
+  }
+  return money(n);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+ "version": "0.1.0",
+ "effective": "2026-07",
+ "note": "L3 F1 exact-price fingerprints (specs/SPEND-CATEGORIZATION.md \u00a71 L3). match: amount == price (x party multiplier where party:true) within tolerance_usd. Exact prices only \u2014 banded products live in data/benchmarks.json. Sources in research/SOURCES.md.",
+ "products": [
+  {
+   "id": "memory-maker-advance",
+   "price": 185.0,
+   "party": false,
+   "category": "activity",
+   "label": "Memory Maker (advance)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  },
+  {
+   "id": "memory-maker-during",
+   "price": 210.0,
+   "party": false,
+   "category": "activity",
+   "label": "Memory Maker (during trip)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  },
+  {
+   "id": "memory-maker-oneday",
+   "price": 75.0,
+   "party": false,
+   "category": "activity",
+   "label": "Memory Maker One Day",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  },
+  {
+   "id": "dining-plan-standard",
+   "price": 98.59,
+   "party": true,
+   "per_night": true,
+   "category": "food",
+   "label": "Disney Dining Plan (per adult per night)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01,
+   "note": "2026: kids 3-9 free with adult plan \u2014 child multiplier 0"
+  },
+  {
+   "id": "dining-plan-qs",
+   "price": 60.47,
+   "party": true,
+   "per_night": true,
+   "category": "food",
+   "label": "Quick Service Dining Plan (per adult per night)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  },
+  {
+   "id": "dcl-gratuity-standard",
+   "price": 16.0,
+   "party": true,
+   "per_night": true,
+   "category": "transportation",
+   "label": "DCL prepaid gratuities standard (per guest-night)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  },
+  {
+   "id": "dcl-gratuity-concierge",
+   "price": 27.25,
+   "party": true,
+   "per_night": true,
+   "category": "transportation",
+   "label": "DCL prepaid gratuities concierge (per guest-night)",
+   "effective_year": 2026,
+   "tolerance_usd": 0.01
+  }
+ ]
+}

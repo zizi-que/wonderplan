@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<!--
+  DVC — real screen. Visual truth: Figma DVC section 25:511, read via
+  figwright 2026-07-25 (geometry pass: every padding/gap/size/radius/stroke
+  below is a literal auto-layout value from the frame reads, not an estimate).
+  Spec: specs/DVC-SPEC.md · schema: DATA-MODEL.md §5b · logic: js/dvc.js.
+
+  Frame logic (Active Frame = 375×726, Footer 85.8, page 375×812):
+    01 Zero     pad 20        gap 40  primary CENTER  counter CENTER
+    02 SetUp    pad 32/20/16  gap 16  primary CENTER  counter CENTER
+    03/03a/04/04a/05
+                pad 32/20/16  gap 16  primary MIN     counter CENTER
+  Content column is 335 (375 − 20 − 20) everywhere.
+
+  Vectors are exact Figma SVG exports (the sanctioned export under the Token
+  Economy rule): the settings glyph is a FOUR-POINT SPARKLE closing a stack of
+  three rules — not a circle; the 01 hero is the two-line "WELCOME HOME"
+  wordmark as outlined type; each Contract Info row carries a circled-X remove
+  control; the Points Used row carries a filled pencil badge.
+
+  Text boxes use `text-box: trim-both cap alphabetic` so element heights equal
+  Figma's cap-height boxes (SemiBold 19 → 14px, Regular 15 → 11px, Bold 23 →
+  17px …), the same translation law established by the Spend build.
+
+  Numbers are typed directly — inputmode="numeric" text fields, never
+  <input type="number"> (no spinner/scroll buttons anywhere).
+
+  Board-vs-spec drift applied per "spec follows board": Track Annual Dues is a
+  Yes/No text toggle (not a checkbox); reconcile CTA reads RECONCILE. "CANCLE"
+  is a spelling typo on the board and ships as CANCEL.
+
+  CTA grammar settled 2026-07-27 (the design director): every points-logging CTA reads
+  LOG POINTS — the bare LOG is retired. RECONCILE stays as drawn. The card
+  title is Points Reconciliation, renamed from Contract Reconciliation.
+  ✅ BOARD RE-READ 2026-07-27 via figwright: node 57:2222 carries LOG POINTS
+  at width 146 (HUG = 24 + 98 label + 24), and the section text nodes show
+  six LOG POINTS, zero bare LOG, plus "Points Reconciliation". Board and
+  build agree — nothing pending in Figma for either change.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — DVC</title>
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS is the platform this matters on. Safari evicts IndexedDB after 7 days
+     without a visit, and a Home Screen app is exempt — so these tags are not
+     polish, they are what stops a tester losing their ledger by not opening
+     the app for a week. `apple-mobile-web-app-capable` is still required:
+     iOS only began honouring the manifest's display mode in 16.4. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
+<script src="js/theme.js"></script>
+<style>
+/* ══ Theme tokens live in css/theme.css — ONE copy for all five screens ══ */
+
+/* ══ Structural tokens — Figma variables, values verified in the frame reads ══ */
+:root {
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --surface-overlay: #FFFFFF8C;       /* color/Surface-Overlay — points-usage card */
+  --radius-card: 14px;                /* radius/card */
+  --radius-compact-card: 12px;        /* radius/compact-card — points-usage */
+  --radius-input: 10px;               /* radius/input */
+  --radius-field: 8.035714px;         /* Contract Info / trip box (unbound on board) */
+  --radius-points: 7px;               /* Points box, 05 allocation */
+  --radius-pill: 16px;                /* year pill */
+  --space-1: 8px; --space-3: 16px; --space-4: 24px;
+  --cta-h: 48px;                      /* size/cta-height */
+  --border-default: 1px;              /* border/default */
+  --border-strong: 1.5px;             /* border/strong */
+  --stroke-field: 1.2053571px;        /* Contract Info inner boxes */
+  --stroke-card: 0.8035714px;         /* no-trop / log-points card outline */
+  --footer-h: 85.802238px;
+  --disabled: 0.5;                    /* opacity/disabled */
+  --shadow-card: 0 1px 3px rgba(30,30,30,0.10);
+  --ink-deep: #063E66;                /* raw on board — trip/placeholder copy */
+  --card-stroke: #FFEEA4;             /* raw on board — active-card outline */
+  --col: 335px;                       /* content column */
+}
+
+/* ══ Base ══ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+/* ══ The app frame (the design director, 2026-07-27) ══════════════════════════════════
+   The five screens used to disagree above 375px: Home and Trips pinned their
+   content left (states positioned at literal board coordinates), while Spend,
+   DVC and Insights centred theirs. the design director chose centred for all.
+
+   The whole frame is capped and centred — content AND footer together — so a
+   wide window shows one phone-width column, not a narrow column sitting on a
+   full-width bar. html carries the page colour so the margins match.
+
+   At 375 and below this is completely inert, which is why it changes no
+   audited pixel: 375 is the drawn width and the QA viewport.
+
+   Home and Trips keep literal board coordinates INSIDE the frame — those are
+   the drawn Figma values, and re-expressing them as flex gaps would mean
+   inventing spacing nobody drew. Centring the frame achieves the chosen
+   behaviour without touching them. */
+html { background: var(--dvc-bg); }
+body { font-family: var(--font); background: var(--dvc-bg); color: var(--ink);
+  width: 100%;
+  display: flex; flex-direction: column; overflow: hidden; }
+button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+input, select { font: inherit; color: inherit; }
+/* Figma cap-height vertical trim — makes element heights equal Figma's boxes */
+.txt { text-box: trim-both cap alphabetic; }
+
+/* ══ Text styles — Figma text styles, verbatim ══ */
+.t-h1   { font-weight: 700; font-size: 23px; line-height: 145%; }  /* text_1thrppw */
+.t-h3   { font-weight: 600; font-size: 19px; line-height: 135%; }  /* text_zt8bqg  */
+.t-cta  { font-weight: 600; font-size: 17px; line-height: 120%; }  /* text_10ind90 */
+.t-17   { font-weight: 400; font-size: 17px; line-height: 120%; }  /* text_1f5ioj9 */
+.t-15b  { font-weight: 600; font-size: 15px; line-height: 120%; }  /* text_6dw2sm  */
+.t-15   { font-weight: 400; font-size: 15px; line-height: 120%; }  /* text_1w8fsoj */
+.t-12   { font-weight: 400; font-size: 12px; line-height: 120%; }  /* text_k3kfra  */
+.t-12u  { font-weight: 400; font-size: 12px; line-height: 120%; text-decoration: underline; } /* text_1aecybr */
+.t-13   { font-weight: 600; font-size: 13px; line-height: 120%; }  /* text_7izqjk — footer */
+
+/* ══ Active Frame ══ */
+/* The app column is 375 and the FOOTER BAND is not (the design director 2026-08-01,
+   option 1). The constraint used to sit on `body`, so the white band ended
+   with the app: at any window wider than 375 the column centred and theme
+   background showed on BOTH sides of the band, which read as the footer
+   stopping short. The column now lives on `main`, and `body` is free to be as
+   wide as the window — so the band spans it while the five 75px tabs stay
+   centred on 375 by the footer's own `justify-content: center`.
+   Nothing drawn moves: `main` is the positioned ancestor on Home and Trips,
+   so every absolute coordinate inside it is unchanged. */
+/* overflow-x restored 2026-08-01. Moving the 375 column from `body` to `main`
+   also moved the CLIP: `body { overflow: hidden }` used to crop everything to
+   375, and with `body` now as wide as the window that guard was silently gone,
+   so anything overflowing this column could paint into the side gutters.
+   `clip`, not `hidden`, because these mains scroll vertically and `hidden`
+   would make this box a scroll container on both axes. */
+main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-direction: column;
+  width: 100%; max-width: 375px; margin-inline: auto; }
+.state { display: none; min-height: 100%; flex-direction: column; }
+.state.on { display: flex; }
+.frame-zero  { padding: 20px;             gap: 40px; align-items: center; justify-content: center; }
+.frame-setup { padding: 32px 20px 16px;   gap: 16px; align-items: center; justify-content: center; }
+.frame-active{ padding: 32px 20px 16px;   gap: 16px; align-items: center; }
+.state > * { width: var(--col); flex: none; }
+
+/* ══ 01 Zero ══ */
+.hero { width: 277.456px; height: 105.655px; }
+.zero-copy { width: 319px; text-align: center; color: var(--dvc-primary); }
+
+/* ══ headers / header-DVC ══ */
+.header-dvc { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 35.840828px; }
+.header-dvc .title { width: 183px; height: 27px; display: flex; align-items: center; color: var(--dvc-primary); }
+.icon-gear { width: 35px; height: 35.840828px; flex: none; display: block; overflow: visible; }
+
+/* ══ Rule / dvc ══
+   Figma rules are ZERO-height lines with a centre-aligned stroke: they must
+   contribute 0 to layout, or every element below drifts down by the stroke
+   width. A border-top would add 1.5px each — measured as +1.5/+3 drift. */
+.rule { width: 100%; height: 0; position: relative; }
+.rule::after { content: ""; position: absolute; left: 0; right: 0;
+  top: calc(var(--border-strong) / -2); height: var(--border-strong); background: var(--dvc-primary); }
+.rule.thin::after { top: calc(var(--border-default) / -2); height: var(--border-default); background: var(--ink); }
+
+/* ══ cards · category=dvc · type="points overview" ══
+   Grid is 4 FLEX columns, 24 column-gap, 8 row-gap → 65.75 per column at 335.
+   The drawn children are narrower than their column and sit at the column
+   start (58 for the label column, 60 for the three value columns), so they
+   are pinned rather than stretched. Heights are pinned to Figma's cap boxes
+   (27 / 12) — browser cap metrics land at 12.24 and would accumulate. */
+.overview { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; row-gap: 8px; align-items: end; }
+.overview > * { justify-self: start; width: 60px; }
+.overview > .rowlabel, .overview > .colhead { width: 58px; }
+.overview .yr { height: 27px; border-radius: var(--radius-pill); display: flex; align-items: center; justify-content: center; }
+.overview .yr.now { background: var(--dvc-primary); }
+.overview .yr:not(.now) { background: var(--surface); }
+/* figwright reports color/ink for this text on every pill, but the deduped
+   instance hides the active pill's override — the board render shows white
+   (which is also the only AA-passing choice on --dvc-primary). */
+.overview .yr span { color: var(--ink); }
+.overview .yr.now span { color: var(--on-primary); }
+.overview .cell { height: 12px; text-align: center; color: var(--ink); }
+.overview .cell.now { font-weight: 600; }
+.overview .rowlabel { height: 12px; color: var(--ink); text-align: center; }
+
+/* ══ Points Used section ══ */
+.pu-section { display: flex; flex-direction: column; gap: 8px; }
+.pu-label { height: 14px; color: var(--dvc-primary); }
+
+/* ══ cards · category=dvc · type=points-usage ══ */
+.usage { border-radius: var(--radius-compact-card); background: var(--surface-overlay);
+  padding: 6px 0 8px; display: flex; flex-direction: column; gap: 5px; }
+.usage .head { height: 24px; padding: 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.usage .head .who { display: flex; align-items: center; gap: 4px; }
+.usage .head .trip { color: var(--dvc-primary); }
+.usage .head .days { width: 78px; color: var(--dvc-primary); }
+.icon-pencil { width: 24px; height: 24px; flex: none; display: block; filter: drop-shadow(0 1px 1.5px rgba(30,30,30,0.10)); }
+.usage .grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; row-gap: 5px; }
+.usage .grid > * { justify-self: start; width: 60px; height: 11px; text-align: center; color: var(--ink); }
+.usage .grid > .rowlabel { width: 58px; }
+
+/* ══ DVC-cards ══ */
+.card { width: 100%; border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-card);
+  padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+/* Figma strokeAlign INSIDE draws the stroke within the frame's own size, so it
+   must NOT grow an auto-height box the way a CSS border does (measured: +1.6px
+   per card, +2.4px per field, compounding down the column). Inset rings give
+   the same pixels with zero layout cost. */
+.card.outlined { box-shadow: var(--shadow-card), inset 0 0 0 var(--stroke-card) var(--card-stroke); }
+.card .h3 { height: 14px; color: var(--ink); }
+
+/* Container — centres the active card in the leftover height (board: Container
+   FILL vertical, primary CENTER; the 81px symmetric padding on 03/04 has no
+   visual effect once centred, and 04a/05 read 0). */
+.container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.container.top { justify-content: flex-start; }
+
+/* ══ cta-buttons ══ */
+.cta { height: var(--cta-h); border-radius: calc(var(--cta-h) / 2); padding: 0 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 17px; line-height: 120%; }
+.cta-fill { background: var(--dvc-primary); color: var(--on-primary); }
+.cta-outline { background: transparent; color: var(--ink); border: var(--border-default) solid var(--ink); }
+.cta[disabled], .cta.off { opacity: var(--disabled); cursor: default; pointer-events: none; }
+.cta-row { display: flex; align-items: center; gap: 8px; justify-content: center; }
+/* 35x36 with 232 / 437px of clear space — full 44, nothing drawn moves. */
+[data-open-setup] { position: relative; }
+[data-open-setup]::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px; }
+/* 9 -> 44 (the design director 2026-08-01). The weakest control in the app: a 9px-tall
+   button 16px from its neighbour, so a hit-area overlay could only reach 25
+   before the two collided. This one buys the height instead — ⚠ it GROWS the
+   drawn block ~35px, so the board is amended rather than the change left
+   silent (rule 6); logged in TODO. */
+.add-more { height: 44px; color: var(--ink); text-align: center; }
+
+/* ══ Input Fields · dvc · Contract Info ══ */
+.contract { width: 305px; box-shadow: inset 0 0 0 var(--border-default) var(--border); border-radius: var(--radius-field);
+  background: var(--surface); padding: 8px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.contract .r1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.contract .r1 .name { color: var(--ink); }
+.icon-x { width: 16px; height: 16px; flex: none; display: block; }
+.contract .resort { display: flex; align-items: center; gap: 4px; }
+.contract .resort > .lbl { color: var(--ink); flex: none; }
+.pill { flex: 1; height: 20px; box-shadow: inset 0 0 0 var(--border-default) var(--border); border-radius: 10px;
+  padding: 4px 12px; display: flex; align-items: center; gap: 4px; position: relative; overflow: hidden; }
+/* Long resort names truncate here too (the design director 2026-08-01), the same call as
+   Track Your Points and Spend's trip picker. The pill already clips with
+   `overflow: hidden`, so `flex: none` meant a long name was CUT rather than
+   ellipsised — and it pushed the arrow out of the pill on its way. */
+.pill .val { color: var(--ink); flex: 0 1 auto; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill .spacer { flex: 1; display: flex; justify-content: flex-end; align-items: center; }
+.pill select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; cursor: pointer; }
+.arrow { width: 18px; height: 11px; flex: none; display: block; }
+.contract .r3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.contract .fields { width: 153.25px; display: flex; flex-direction: column; gap: 8px; }
+/* Board rows are 14 / 14 / 12 tall with 8 gaps → the fields column is exactly
+   56. A bare input takes its own line-height (~18px) and inflated each row. */
+.fieldline { height: 14px; display: flex; align-items: flex-start; gap: 8px; }
+.fieldline.dues-row { height: 12px; }
+.fieldline .k { color: var(--ink); flex: none; }
+.fieldline .line { width: 90px; height: 14px; box-shadow: inset 0 -1px 0 var(--border); display: flex; align-items: flex-end; }
+.fieldline .line input { width: 100%; height: 13px; border: 0; background: transparent; outline: none;
+  font-weight: 400; font-size: 15px; line-height: 13px; color: var(--ink); padding: 0; }
+.dues { color: var(--ink); display: flex; align-items: baseline; gap: 0;
+  white-space: nowrap; }  /* board: hug-width label overflowing its column, never wrapped */
+.dues .opt { cursor: pointer; }
+.dues .opt.sel { font-weight: 600; font-size: 17px; color: var(--ink); }
+.dues .opt:not(.sel) { font-weight: 400; font-size: 15px; color: var(--muted); }
+.points-box { width: 74px; align-self: stretch; box-shadow: inset 0 0 0 var(--stroke-field) var(--border);
+  border-radius: var(--radius-field); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; }
+.points-box input { width: 100%; height: 17px; text-align: center; border: 0; background: transparent; outline: none;
+  font-weight: 700; font-size: 23px; line-height: 17px; color: var(--muted); }
+.points-box .unit { color: var(--muted); }
+
+/* ══ reconcile row ══ */
+/* The reconcile card carries a title + a FORM FIELD row — no header strip
+   (that belongs to the Contract Info box, which has its own name + remove
+   control). So the contract name here is field-weight, not the SemiBold 19
+   that read as a section header. the design director 2026-07-25. */
+/* 1fr auto 1fr keeps the year optically centred in the card's content box
+   whatever the contract name's length — space-between would have parked it
+   wherever the name happened to end. min-width:0 stops a long name from
+   stealing width off the centre track. */
+.rec-row { min-height: 20px; display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 16px; }
+.rec-row .who { color: var(--ink); grid-column: 1; justify-self: start; position: relative;
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-row .who select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; cursor: pointer; }
+.rec-row .yr { color: var(--ink); grid-column: 2; justify-self: center; text-align: center; position: relative; }
+.rec-row .yr select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; cursor: pointer; }
+.rec-row .amt { grid-column: 3; justify-self: end; display: flex; align-items: baseline; gap: 6px; }
+.rec-row .unit { color: var(--muted); }
+/* the underline IS the field: it hugs the input rather than trailing past the
+   right-aligned text as a stray bar, and the whole box focuses it. Width is
+   sized to the values that actually arrive: point usages run to a few
+   thousand, ~10,000 at the very top, so the original 90px rule was drawn for
+   numbers that never show up. Measured at Regular 17: "2400" = 40.1px,
+   "10000" = 48.1px, and "99999" (the maxlength-5 ceiling) = 52.8px — 60px
+   holds any of them with caret room to spare. */
+.rec-row .line { width: 60px; height: 20px; flex: none; box-shadow: inset 0 -1px 0 var(--border);
+  display: flex; align-items: flex-end; cursor: text; }
+.rec-row .act { width: 100%; height: 18px; padding: 0 0 1px; text-align: right;
+  border: 0; background: transparent; outline: none;
+  font-weight: 400; font-size: 17px; line-height: 18px; color: var(--ink); }
+.rec-row .act::placeholder { color: var(--muted); }
+.rec-row .line:focus-within { box-shadow: inset 0 -1.5px 0 var(--dvc-primary); }
+/* Focus indicator — the same rule the other screens carry. DVC was missing it,
+   so 18 controls focused invisibly (WCAG 2.4.7). tools/focus-walk.js. */
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* ══ trip box (03 empty · 04 selected) ══ */
+.tripbox { width: 100%; box-shadow: inset 0 0 0 var(--stroke-field) var(--card-stroke); border-radius: var(--radius-field);
+  background: var(--surface); padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.tripbox.h65 { height: 65px; }
+/* Two lines, then truncate (the design director 2026-08-01). The board draws one line and
+   the 2026-07-28 min-height rule lets a long title grow; this caps that growth
+   at two rather than letting a 57-character name take three or four.
+   -webkit-box is the only cross-browser line clamp that ships today, and it is
+   supported everywhere this app runs. */
+.tripbox .muted-copy { color: var(--ink-deep);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; }
+.tripbox .stay { display: flex; align-items: center; gap: 4px; }
+.tripbox .stay .lead { color: var(--ink-deep); flex: none; }
+/* Long resort names truncate (the design director 2026-08-01), the same call as Spend's
+   trip-name picker. `flex: none` meant the name could not shrink, so
+   "Disney's Grand Californian Hotel & Spa" pushed the row wider than the box
+   instead of ending in an ellipsis.
+   The name shrinks; `.lead` ("staying at") and `.spacer` do not. The spacer
+   keeps its default `min-width: auto`, which is deliberate — it holds the
+   stay-picker arrow AND the invisible <select> over it, so letting it collapse
+   would truncate the name by making a control unhittable. */
+.tripbox .stay .resort { color: var(--ink); flex: 0 1 auto; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tripbox .stay .spacer { flex: 1; display: flex; justify-content: flex-end; align-items: center; position: relative; }
+/* inset -16, not 0 (2026-08-01). This is the stay picker: an invisible
+   <select> sized to the 18x11 arrow it sits over, which makes it an 18x11 tap
+   target — and the touch-target audit could not catch it, because it only
+   exists when a household has TWO OR MORE eligible stays and the seeded ledger
+   has one. Negative inset grows the hit area to 50x43 without moving the drawn
+   arrow, the same trick Insights' view dots already use. */
+.tripbox .stay .spacer select { position: absolute; inset: -16px; opacity: 0; width: auto; height: auto; border: 0; cursor: pointer; }
+.tripbox .dates { color: var(--ink-deep); }
+/* min-height, not height (the design director 2026-07-28, from a screenshot of the real
+   ledger): the board draws one line per row, so 11px IS the drawn cap box —
+   but a trip title long enough to wrap still OCCUPIED 11px, and its second
+   line painted straight through "staying at …" below it. The same fix chunk 7
+   applied to Home's text nodes: keep the drawn box as a floor and let real
+   content grow it. The `.stay` row keeps its own line pinned, since the
+   resort name sits beside a label rather than under one. */
+.tripbox > * { min-height: 11px; flex: none; }
+.tripbox.h65 > * { height: auto; }
+/* Board draws this frame 305 wide inside a 335 card whose padding box is 303 —
+   a HUG artifact that overflows the padding by 1px a side and centres (x=15). */
+.trip-group { width: 305px; display: flex; flex-direction: column; gap: 8px; }
+.trip-group.empty { width: 305.5px; }
+.trip-group .h3 { height: 14px; }
+
+/* ══ 05 Add Reservation — points-allocation-form ══ */
+.alloc-head { width: 100%; border-radius: var(--radius-field); background: var(--surface);
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+/* min-height, not height (2026-08-01). This is the SAME defect the 2026-07-28
+   note above describes and fixes for `.tripbox` — and state 05 is a parallel
+   block that never got it, because it is different markup (`.alloc-head` with
+   `#resv-*` ids, not `.tripbox`). A hard 11px pinned each row while its content
+   wrapped, so "staying at" and a long resort name painted straight through the
+   title above and the dates below. Same remedy: keep the drawn box as a floor
+   and let real content grow it. */
+.alloc-head > * { min-height: 11px; height: auto; flex: none; }
+/* The row must be allowed to shrink before its name can truncate — a flex
+   item defaults to min-width: auto and refuses to go below its content. */
+.alloc-head .stay { min-width: 0; }
+/* "staying at" does not shrink — only the name does. `.tripbox`'s equivalent
+   carries `.lead { flex: none }`; this block's label is an inline-styled span
+   with no class, so it was shrinking to "staying / at" over two lines and
+   making the row 29px tall. */
+.alloc-head .stay > span:first-child { flex: none; }
+/* Long resort names truncate here too (the design director 2026-08-01), matching Track Your
+   Points and the contract card. This one is an id, not `.resort`, which is why
+   the `.tripbox .stay .resort` rule never reached it. */
+.alloc-head .stay > #resv-resort { min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The trip title wraps to two lines then truncates, as on Track Your Points.
+   `.card .h3` pins 14px for every heading in a card, which is right for the
+   one-line ones ("Points Allocation") and wrong for a real trip name. Scoped
+   to this title so nothing else moves. */
+#resv-trip { height: auto; min-height: 14px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; }
+/* Board: a 187×0 LINE stroked white — invisible, and zero-height, so it only
+   contributes its two flex gaps (8 + 8). A border-top would add a 1px row. */
+.alloc-spacer { width: 187px; height: 0; }
+.alloc { width: 100%; box-shadow: inset 0 0 0 var(--border-strong) var(--border); border-radius: var(--radius-input);
+  background: var(--surface); padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.alloc .meta { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.alloc .meta .who, .alloc .meta .avail { color: var(--ink); }
+.alloc .box { width: 74px; height: 48px; flex: none; box-shadow: inset 0 0 0 var(--border-default) var(--border);
+  border-radius: var(--radius-points); background: var(--surface);
+  display: flex; align-items: center; justify-content: center; padding: 8px 14px; }
+.alloc .box input { width: 100%; height: 17px; text-align: center; border: 0; background: transparent; outline: none;
+  font-weight: 700; font-size: 23px; line-height: 17px; color: var(--muted); }
+/* Board draws the Total row's number bare — the bordered box belongs to the
+   editable contract rows only. */
+.alloc.total .box { box-shadow: none; }
+.alloc.total .box input { color: var(--muted); }
+.cta-bleed { width: calc(100% + 32px); margin: 0 -16px; display: flex; align-items: center; justify-content: center; }
+
+/* ══ Footer · variant DVC ══ */
+footer.footer { flex: none; height: var(--footer-h); background: var(--surface);
+  border-top: 1.900338px solid var(--deco); display: flex; justify-content: center; }
+.tab { position: relative; width: 75px; height: 83.901894px;
+  display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+.tab .label { position: absolute; top: 60px; left: 0; right: 0; text-align: center; color: var(--ink); }
+.tab.on .label { color: var(--primary); }
+.tab svg { position: absolute; }
+/* ══ iOS safe areas (the design director, 2026-08-02) ═══════════════════════════════════
+   Reported on the live beta: a yellow strip under the footer, on every
+   screen. Without `viewport-fit=cover` Safari keeps the layout OUT of the
+   safe areas and paints them with the html background — which is the theme
+   colour, so the home-indicator band read as the footer stopping short.
+   Cover hands the layout those bands; `padding-top` on body puts the
+   content back exactly where it sat before, and the footer's own white now
+   reaches the physical bottom edge. Nothing drawn moves — where there is no
+   inset (every desktop browser, and any phone without an indicator) both
+   values resolve to 0, so this is inert off iOS. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+footer.footer {
+  height: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+</style>
+</head>
+<body>
+
+<main>
+  <!-- ══════ 01. Zero ══════ -->
+  <section class="state frame-zero" data-state="01">
+    <svg class="hero" viewBox="0 0 278 106" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Welcome Home">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M120.5 66C126.44 66.0001 130.913 67.7243 133.92 71.1709C136.963 74.5808 138.484 79.4389 138.484 85.7451C138.484 92.0518 136.944 96.9473 133.864 100.431C130.821 103.914 126.237 105.655 120.114 105.655C113.991 105.655 109.408 104.005 106.364 100.705C103.358 97.3685 101.855 92.5654 101.854 86.2959C101.854 79.9893 103.468 75.0386 106.694 71.4453C109.958 67.8153 114.56 66 120.5 66ZM120.225 67.1553C119.125 67.1553 118.171 67.3024 117.364 67.5957C116.594 67.8891 115.953 68.4025 115.439 69.1357C114.926 69.8689 114.505 70.6388 114.175 71.4453C113.881 72.252 113.643 73.3888 113.46 74.8555C113.24 76.9821 113.13 80.1174 113.13 84.2607V88.2207C113.13 92.6936 113.295 95.8834 113.625 97.79C113.992 99.66 114.431 100.999 114.944 101.806C116.081 103.602 117.841 104.5 120.225 104.5C123.121 104.5 124.992 103.29 125.835 100.87C126.715 98.4134 127.154 94.16 127.154 88.1104V84.04C127.154 77.331 126.825 73.0962 126.165 71.3359C125.432 69.3193 124.386 68.0724 123.029 67.5957C122.259 67.3024 121.325 67.1553 120.225 67.1553Z" fill="var(--dvc-primary)"/>
+      <path d="M76.7188 67.6504H73.5283V84.7002H84.4736V67.6504H81.2285V66.6055H98.4434V67.6504H95.1982V104.061H98.4434V105.105H81.2285V104.061H84.4736V86.1309H73.5283V104.061H76.7188V105.105H59.5586V104.061H62.8037V67.6504H59.5586V66.6055H76.7188V67.6504Z" fill="var(--dvc-primary)"/>
+      <path d="M164.282 94.9307L170.882 66.6055H185.567V67.6504H182.542V104.061H185.567V105.105H168.792V104.061H171.817V69.6855H171.598L163.348 105.105H156.473L146.792 69.5205H146.572V104.061H149.598V105.105H142.117V104.061H145.143V67.6504H142.117V66.6055H156.967L164.282 94.9307Z" fill="var(--dvc-primary)"/>
+      <path d="M217.238 77.4951H216.249C214.709 73.7919 213.095 71.2619 211.408 69.9053C209.722 68.5121 207.247 67.8154 203.983 67.8154H202.059V84.8105H203.929C205.652 84.8105 207.1 84.1689 208.273 82.8857C209.447 81.5657 210.272 79.8055 210.749 77.6055H211.573V93.8857H210.639C209.979 91.1357 209.08 89.1733 207.943 88C206.843 86.827 205.322 86.2403 203.379 86.2402H202.059V103.896H204.148C207.522 103.896 210.382 102.887 212.729 100.87C215.112 98.8535 216.744 96.2685 217.624 93.1152H218.724L218.283 105.105H188.089V103.896H191.334V67.8154H188.089V66.6055H216.688L217.238 77.4951Z" fill="var(--dvc-primary)"/>
+      <path d="M17.875 1.65039H14.0254L22.9902 27.9951L27.5557 12.1553L24.2559 1.65039H21.1201V0.605469H38.1709V1.65039H34.9258L43.1201 27.665L49.7207 1.65039H44.165V0.605469H55.165V1.65039H51.5352L41.415 39.6553H36.5205L28.3809 14.7959L21.2305 39.6553H16.4453L2.58496 1.65039H0V0.605469H17.875V1.65039Z" fill="var(--dvc-primary)"/>
+      <path d="M143.254 0C145.491 0 147.672 0.294194 149.799 0.880859C151.962 1.43077 153.227 1.70499 153.594 1.70508C153.96 1.70508 154.236 1.63202 154.419 1.48535C154.602 1.30201 154.804 1.00875 155.024 0.605469H155.629L156.069 12.54H155.079C153.429 8.83685 151.724 6.01359 149.964 4.07031C148.241 2.09053 146.261 1.10073 144.024 1.10059C138.341 1.10059 135.499 6.58256 135.499 17.5459V21.8906C135.499 27.0971 136.251 31.1853 137.754 34.1553C139.257 37.0886 141.476 38.5557 144.409 38.5557C148.442 38.5555 152.145 34.6317 155.519 26.7852H156.509L156.124 39.0508H155.519C155.299 38.6475 155.097 38.3723 154.914 38.2256C154.731 38.0423 154.456 37.9502 154.089 37.9502C153.759 37.9502 152.439 38.2435 150.129 38.8301C147.819 39.3801 145.472 39.6553 143.089 39.6553C137.112 39.6553 132.474 38.0421 129.174 34.8154C125.911 31.5888 124.279 26.749 124.279 20.2959C124.279 13.8059 125.984 8.80027 129.394 5.28027C132.84 1.76028 137.461 4.0381e-06 143.254 0Z" fill="var(--dvc-primary)"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M179.232 0C185.172 0 189.646 1.72423 192.652 5.1709C195.696 8.58083 197.218 13.4387 197.218 19.7451C197.218 26.0518 195.678 30.9473 192.598 34.4307C189.554 37.9139 184.971 39.6552 178.848 39.6553C172.724 39.6553 168.141 38.0051 165.098 34.7051C162.091 31.3685 160.588 26.5656 160.588 20.2959C160.588 13.9892 162.201 9.03865 165.428 5.44531C168.691 1.81546 173.293 2.01734e-05 179.232 0ZM178.958 1.15527C177.858 1.15527 176.904 1.30238 176.098 1.5957C175.328 1.88904 174.686 2.40241 174.173 3.13574C173.66 3.86906 173.237 4.63867 172.907 5.44531C172.614 6.25198 172.376 7.3888 172.192 8.85547C171.972 10.9821 171.862 14.1174 171.862 18.2607V22.2207C171.862 26.6936 172.027 29.8834 172.357 31.79C172.724 33.66 173.164 34.999 173.678 35.8057C174.814 37.6022 176.575 38.5 178.958 38.5C181.854 38.4999 183.724 37.29 184.567 34.8701C185.447 32.4134 185.888 28.1601 185.888 22.1104V18.04C185.888 11.3308 185.557 7.09614 184.897 5.33594C184.164 3.31938 183.119 2.07243 181.763 1.5957C180.993 1.30241 180.058 1.15532 178.958 1.15527Z" fill="var(--dvc-primary)"/>
+      <path d="M85.7812 11.4951H84.791C83.2511 7.79196 81.6378 5.2619 79.9512 3.90527C78.2646 2.512 75.7895 1.81547 72.5264 1.81543H70.6016V18.8105H72.4707C74.194 18.8105 75.6431 18.1691 76.8164 16.8857C77.9897 15.5657 78.8143 13.8055 79.291 11.6055H80.1162V27.8857H79.1807C78.5207 25.1357 77.623 23.1733 76.4863 22C75.3863 20.8267 73.8642 20.2402 71.9209 20.2402H70.6016V37.8955H72.6914C76.0646 37.8954 78.9249 36.8867 81.2715 34.8701C83.6546 32.8535 85.2861 30.2684 86.166 27.1152H87.2656L86.8262 39.1055H56.6309V37.8955H59.876V1.81543H56.6309V0.605469H85.2314L85.7812 11.4951Z" fill="var(--dvc-primary)"/>
+      <path d="M110.752 1.81543H104.923V37.8955H106.902C110.019 37.8955 112.494 36.9418 114.327 35.0352C116.197 33.1285 118.086 30.1953 119.992 26.2354H121.147L120.103 39.1055H90.9521V37.8955H94.1973V1.81543H90.9521V0.605469H110.752V1.81543Z" fill="var(--dvc-primary)"/>
+      <path d="M223.015 28.9307L229.615 0.605469H244.3V1.65039H241.275V38.0605H244.3V39.1055H227.525V38.0605H230.55V3.68555H230.33L222.08 39.1055H215.205L205.525 3.52051H205.305V38.0605H208.33V39.1055H200.851V38.0605H203.875V1.65039H200.851V0.605469H215.7L223.015 28.9307Z" fill="var(--dvc-primary)"/>
+      <path d="M275.972 11.4951H274.981C273.441 7.79196 271.828 5.2619 270.142 3.90527C268.455 2.512 265.98 1.81547 262.717 1.81543H260.792V18.8105H262.661C264.384 18.8105 265.833 18.1691 267.007 16.8857C268.18 15.5657 269.005 13.8055 269.481 11.6055H270.307V27.8857H269.371C268.711 25.1357 267.813 23.1733 266.677 22C265.577 20.8267 264.055 20.2402 262.111 20.2402H260.792V37.8955H262.882C266.255 37.8954 269.115 36.8867 271.462 34.8701C273.845 32.8535 275.477 30.2684 276.356 27.1152H277.456L277.017 39.1055H246.821V37.8955H250.066V1.81543H246.821V0.605469H275.422L275.972 11.4951Z" fill="var(--dvc-primary)"/>
+    </svg>
+    <p class="zero-copy t-h3 txt">Your membership, organized without the spreadsheets.</p>
+    <button class="cta cta-fill" data-open-setup><span class="txt">SET UP YOUR CONTRACT</span></button>
+  </section>
+
+  <!-- ══════ 02. Contract SetUp ══════ -->
+  <section class="state frame-setup" data-state="02">
+    <div class="card">
+      <p class="h3 t-h3 txt">Contract Set Up</p>
+      <div id="setup-rows" style="display:flex; flex-direction:column; gap:16px; align-items:center;"></div>
+      <button class="add-more t-12u txt" id="add-contract">+ add more contract</button>
+      <div class="cta-row">
+        <button class="cta cta-outline" style="width:115px" data-close-setup><span class="txt">CANCEL</span></button>
+        <button class="cta cta-fill" style="width:112px" id="save-contracts"><span class="txt">SAVE</span></button>
+      </div>
+    </div>
+    <div class="rule thin"></div>
+    <div class="card">
+      <!-- "Points Reconciliation" (the design director, 2026-07-27) — renamed from
+           "Contract Reconciliation"; board re-read confirms it matches. -->
+      <p class="h3 t-h3 txt" style="width:100%">Points Reconciliation</p>
+      <div id="rec-rows" style="width:100%; display:flex; flex-direction:column; gap:12px;"></div>
+      <button class="add-more t-12 txt" id="add-rec">+ add more reconciliation</button>
+      <div class="cta-row">
+        <button class="cta cta-outline" style="width:112px" data-close-setup><span class="txt">CANCEL</span></button>
+        <button class="cta cta-fill" style="width:142px" id="save-rec"><span class="txt">RECONCILE</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ 03 / 03a / 04 / 04a — Active ══════ -->
+  <section class="state frame-active" data-state="active">
+    <div class="header-dvc">
+      <span class="title t-h1 txt">Points Summary</span>
+      <button data-open-setup aria-label="Contract settings" style="display:flex">
+        <!-- icon-edit · setting-dvc (74:2339) — three rules closed by a four-point sparkle -->
+        <svg class="icon-gear" viewBox="1.5 20 35 35.84" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M36.4999 46.5C30.1452 46.5 27.2187 49.4388 27.2187 55.8411C27.2187 49.4598 24.2922 46.5 17.9375 46.5C24.2697 46.5 27.198 43.582 27.2186 37.2268C27.2187 43.582 30.1677 46.5 36.4999 46.5Z" fill="var(--dvc-primary)" stroke="var(--dvc-primary)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M1.5 20H34.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M1.5 32H34.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M1.5 44H12.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="overview" id="ov-active"></div>
+    <div class="rule"></div>
+    <div class="pu-section">
+      <p class="pu-label t-h3 txt">Points Used</p>
+      <div id="pu-active" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+    <div class="rule"></div>
+    <div class="container" id="active-container"></div>
+  </section>
+
+  <!-- ══════ 05 / 05a — Add Reservation ══════ -->
+  <section class="state frame-active" data-state="05">
+    <div class="header-dvc">
+      <span class="title t-h1 txt">Points Summary</span>
+      <button data-open-setup aria-label="Contract settings" style="display:flex">
+        <svg class="icon-gear" viewBox="1.5 20 35 35.84" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M36.4999 46.5C30.1452 46.5 27.2187 49.4388 27.2187 55.8411C27.2187 49.4598 24.2922 46.5 17.9375 46.5C24.2697 46.5 27.198 43.582 27.2186 37.2268C27.2187 43.582 30.1677 46.5 36.4999 46.5Z" fill="var(--dvc-primary)" stroke="var(--dvc-primary)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M1.5 20H34.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M1.5 32H34.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M1.5 44H12.5" stroke="var(--dvc-primary)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="overview" id="ov-resv"></div>
+    <div class="rule"></div>
+    <div class="pu-section">
+      <p class="pu-label t-h3 txt">Points Used</p>
+      <div id="pu-resv" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+    <div class="rule"></div>
+    <div class="container top">
+      <div class="card">
+        <div style="width:305.5px; display:flex; flex-direction:column; gap:8px;">
+          <p class="h3 t-h3 txt" id="resv-trip">Trip Name</p>
+          <div class="alloc-head">
+            <div class="stay" style="display:flex; align-items:center; gap:4px;">
+              <span class="t-15 txt" style="color:var(--ink-deep)">staying at&nbsp;</span>
+              <span class="t-15b txt" style="color:var(--ink-deep)" id="resv-resort">Resort Name</span>
+            </div>
+            <span class="t-15 txt" style="color:var(--ink-deep)" id="resv-dates">from 00/00/00 through 00/00/00</span>
+          </div>
+          <div class="alloc-spacer"></div>
+          <p class="h3 t-h3 txt">Points Allocation</p>
+          <div id="resv-rows" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+        <div class="cta-bleed">
+          <div class="cta-row">
+            <button class="cta cta-outline" style="width:115px" id="resv-cancel"><span class="txt">CANCEL</span></button>
+            <!-- LOG POINTS (the design director, 2026-07-27). 146 is the board's own width,
+                 confirmed at node 57:2222: the cta-buttons instance HUGS its
+                 label, so 146 = 24 padding + 98 label + 24 padding. If this
+                 copy ever changes again the board re-hugs and this fixed
+                 width must be re-read — it is not a free number. -->
+            <button class="cta cta-fill" style="width:146px" id="resv-save"><span class="txt">LOG POINTS</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <a class="tab" href="index.html">
+    <svg aria-hidden="true" style="left:17.74px; top:8.85px" width="41" height="36" viewBox="0 0 41 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M40.5405 15.8387C37.1394 15.8387 35.5731 17.4049 35.5731 20.8172C35.5731 17.4161 34.0068 15.8387 30.6056 15.8387C34.0068 15.8387 35.5731 14.2724 35.5731 10.8602C35.5619 14.2724 37.1394 15.8387 40.5405 15.8387ZM5.54925 7.3877C3.64729 7.3877 2.77462 8.26033 2.77462 10.1622C2.77462 8.26033 1.90196 7.3877 0 7.3877C1.90196 7.3877 2.77462 6.51506 2.77462 4.61316C2.77462 6.50388 3.64729 7.3877 5.54925 7.3877ZM26.6786 4.33777C24.7766 4.33777 23.904 5.2104 23.904 7.1123C23.904 5.2104 23.0313 4.33777 21.1293 4.33777C23.0313 4.33777 23.904 3.46513 23.904 1.56323C23.904 3.46513 24.7766 4.33777 26.6786 4.33777Z" fill="var(--dvc-bg)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.0948 0V0.0763244C19.2306 0.0477366 19.5022 1.64076e-05 19.9588 0C21.3912 0 22.4163 0.857887 23.5893 0.857887C24.1697 0.857884 25.1082 0.695958 25.3799 0.934211C25.4779 1.01951 25.1078 0.829259 24.639 1.07668C24.3674 1.21963 23.1819 1.74421 22.33 1.74427C21.478 1.74427 21.4161 1.51529 20.7246 1.51529C20.1567 1.5153 19.3666 1.86759 19.0948 1.99156V3.717C19.1073 3.76571 21.0714 11.4372 21.4655 12.046C21.6383 12.1223 21.6385 12.1224 21.6385 12.1224V12.5513L21.3052 12.6561V13.6473H22.8235V15.4582L21.9346 16.0108V21.9194L24.3551 23.5395V21.2523L23.5522 21.0045V20.0799C23.5522 20.0799 23.7287 19.9925 24.318 19.6703C24.8736 18.7839 26.2072 15.0766 26.2072 15.0766V13.0947H26.4784V15.0766C26.4784 15.0766 27.7997 18.7839 28.3677 19.6703C28.9569 20.0019 29.1335 20.0799 29.1335 20.0799V21.0045L28.3311 21.2523V29.1432C29.3806 29.6388 30.4548 30.2014 31.4919 30.8208V29.4867L30.9363 29.2959V28.3713C30.9413 28.3689 31.1176 28.281 31.7016 27.9617C32.268 27.0779 33.412 24.3176 33.4184 24.3022V22.3198H33.6896V24.3022C33.697 24.3201 34.8397 27.0782 35.4059 27.9617C35.9919 28.2915 36.1678 28.3696 36.1716 28.3713V29.2959L35.616 29.4867V33.6988C36.4813 34.4084 36.9939 34.9098 36.9939 35.9519H1.04205C1.04205 34.9098 1.52921 34.4182 2.38842 33.7084V29.4867L1.83277 29.2959V28.3713C1.84024 28.3676 2.01828 28.2787 2.59805 27.9617C3.16339 27.0796 4.30365 24.328 4.31434 24.3022V22.3198H4.58605V24.3022C4.59562 24.3253 5.73672 27.0791 6.30233 27.9617C6.89503 28.2953 7.06812 28.3713 7.06812 28.3713V29.2959L6.51248 29.4867V30.8208C7.54967 30.2014 8.61144 29.6388 9.67333 29.1432V21.2523L8.8709 21.0045V20.0799C8.87773 20.0765 9.05534 19.9879 9.63618 19.6703C10.1918 18.784 11.5255 15.0766 11.5255 15.0766V13.0947H11.7972V15.0766C11.7972 15.0766 13.1185 18.784 13.6865 19.6703C14.2664 19.9967 14.4444 20.0767 14.4517 20.0799V21.0045L13.6493 21.2523V23.5395L16.0693 21.9194V16.0108L15.1804 15.4582V13.6473H16.6992V12.6561L16.366 12.5513V12.1224C16.366 12.1224 16.3815 12.1155 16.539 12.046C16.9333 11.4362 18.8987 3.75949 18.9096 3.717V0H19.0948ZM18.9834 29.8327C17.6252 29.8327 16.539 30.5378 16.539 31.405V33.3014H21.4283V31.405C21.4283 30.5282 20.3416 29.8327 18.9834 29.8327ZM18.8602 23.8C18.8602 23.8 18.1808 24.7147 16.9954 25.5819L17.1312 25.7061V27.7261H20.7862V25.7061L20.922 25.5819C19.7834 24.7125 19.0941 23.815 19.0826 23.8H18.8602Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">Home</span>
+  </a>
+  <a class="tab" href="trips.html">
+    <svg aria-hidden="true" style="left:26.36px; top:8.71px" width="23" height="38" viewBox="0 0 23 38" fill="none" xmlns="http://www.w3.org/2000/svg"><rect y="7.60132" width="22.8041" height="27.5549" rx="5.06757" fill="var(--dvc-primary)"/><rect x="7.60156" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="15.2031" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="6.65137" width="10.4519" height="1.90034" rx="0.950169" fill="var(--dvc-primary)"/><circle cx="5.70112" cy="36.1065" r="1.90034" fill="var(--dvc-primary)"/><circle cx="17.103" cy="36.1066" r="1.90034" fill="var(--dvc-primary)"/><rect x="1.90039" y="28.5051" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><rect x="1.90039" y="26.6049" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><path d="M16.6675 17.6271C16.6675 14.8855 17.9287 13.6271 20.6675 13.6271C17.9287 13.6271 16.6585 12.3686 16.6675 9.62708C16.6675 12.3686 15.4062 13.6271 12.6675 13.6271C15.4062 13.6271 16.6675 14.8945 16.6675 17.6271Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Trips</span>
+  </a>
+  <a class="tab" href="spend.html">
+    <svg aria-hidden="true" style="left:23.57px; top:19.48px" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.1351" cy="10.1351" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10.8973 5.01299C11.3927 5.06572 11.8287 5.18177 12.205 5.36312C12.7452 5.6095 13.158 5.95575 13.4422 6.40113C13.7265 6.84652 13.8691 7.35844 13.8691 7.93649H11.9502C11.9123 7.51006 11.7602 7.18283 11.4949 6.95539C11.3503 6.82686 11.1509 6.73539 10.8973 6.6795V9.36917L10.9542 9.38649C11.229 9.47178 11.5426 9.58044 11.8933 9.71311C12.2532 9.83628 12.5985 10.0075 12.93 10.2253C13.2617 10.4338 13.5319 10.7082 13.7404 11.0493C13.9583 11.3809 14.067 11.7979 14.067 12.3001C14.067 12.9161 13.9204 13.4565 13.6266 13.9208C13.3328 14.3756 12.8968 14.7315 12.3189 14.9873C11.9164 15.1616 11.4423 15.2717 10.8973 15.3226V16.5363H9.51908V15.3238C8.5952 15.2404 7.8741 14.979 7.3577 14.532C6.72298 13.9729 6.38191 13.2191 6.33453 12.2716H8.31034C8.32929 12.6033 8.41069 12.8789 8.55283 13.0969C8.69497 13.305 8.90308 13.4616 9.17762 13.5657C9.28225 13.6054 9.3966 13.634 9.51908 13.6585V10.7227L9.41887 10.6942C8.56634 10.4479 7.88415 10.1068 7.37254 9.67105C6.86084 9.23515 6.6055 8.65666 6.60548 7.93649C6.60548 7.2921 6.76166 6.75167 7.07438 6.31576C7.39655 5.88001 7.8326 5.54843 8.3821 5.32105C8.73064 5.17686 9.10957 5.07811 9.51908 5.02536V3.80054H10.8973V5.01299ZM10.8973 13.6511C11.1881 13.5888 11.4301 13.4863 11.6223 13.3381C11.954 13.0728 12.1197 12.717 12.1197 12.2716C12.1196 12.0254 12.049 11.831 11.9069 11.6889C11.7742 11.5373 11.5841 11.4096 11.3378 11.3054C11.2019 11.2456 11.055 11.1894 10.8973 11.1359V13.6511ZM9.51908 6.6894C9.28001 6.74817 9.08579 6.84143 8.93636 6.97024C8.66172 7.19756 8.52451 7.50496 8.52438 7.89319C8.52438 8.08272 8.57602 8.24964 8.68026 8.39178C8.78437 8.52421 8.91245 8.63737 9.0638 8.73201C9.20761 8.81661 9.36017 8.88782 9.51908 8.94976V6.6894Z" fill="var(--dvc-bg)"/><circle cx="17.7366" cy="17.7365" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.4985 12.6143C18.9939 12.667 19.4299 12.7831 19.8062 12.9644C20.3464 13.2108 20.7591 13.5571 21.0434 14.0024C21.3277 14.4478 21.4703 14.9598 21.4703 15.5378H19.5514C19.5135 15.1114 19.3614 14.7841 19.0961 14.5567C18.9515 14.4282 18.7521 14.3367 18.4985 14.2808V16.9705L18.5554 16.9878C18.8302 17.0731 19.1438 17.1818 19.4945 17.3144C19.8544 17.4376 20.1997 17.6088 20.5312 17.8266C20.8629 18.0351 21.1331 18.3095 21.3416 18.6506C21.5595 18.9822 21.6682 19.3993 21.6682 19.9014C21.6682 20.5174 21.5215 21.0578 21.2278 21.5221C20.934 21.9769 20.498 22.3328 19.9201 22.5886C19.5175 22.763 19.0435 22.873 18.4985 22.9239V24.1376H17.1203V22.9251C16.1964 22.8417 15.4753 22.5804 14.9589 22.1333C14.3242 21.5742 13.9831 20.8204 13.9357 19.873H15.9115C15.9305 20.2046 16.0119 20.4802 16.154 20.6982C16.2962 20.9063 16.5043 21.0629 16.7788 21.1671C16.8834 21.2068 16.9978 21.2353 17.1203 21.2599V18.324L17.0201 18.2955C16.1675 18.0492 15.4853 17.7081 14.9737 17.2724C14.462 16.8365 14.2067 16.258 14.2067 15.5378C14.2067 14.8934 14.3629 14.353 14.6756 13.9171C14.9977 13.4813 15.4338 13.1498 15.9833 12.9224C16.3318 12.7782 16.7108 12.6794 17.1203 12.6267V11.4019H18.4985V12.6143ZM18.4985 21.2524C18.7893 21.1901 19.0313 21.0876 19.2235 20.9394C19.5552 20.6741 19.7209 20.3183 19.7209 19.873C19.7208 19.6267 19.6502 19.4323 19.5081 19.2902C19.3754 19.1387 19.1853 19.0109 18.939 18.9067C18.8031 18.8469 18.6562 18.7907 18.4985 18.7372V21.2524ZM17.1203 14.2907C16.8812 14.3495 16.687 14.4427 16.5376 14.5716C16.2629 14.7989 16.1257 15.1063 16.1256 15.4945C16.1256 15.684 16.1772 15.851 16.2815 15.9931C16.3856 16.1255 16.5136 16.2387 16.665 16.3333C16.8088 16.4179 16.9614 16.4891 17.1203 16.5511V14.2907Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Spend</span>
+  </a>
+  <a class="tab on" href="dvc.html" aria-current="page">
+        <!-- 19,13 is the board's own coordinate for this mark (Figma 41:1008, the
+         `svg` frame inside the DVC span). Ruled 2026-08-02: unlike the other
+         four footer icons this one is NOT optically compensated — it is
+         placed exactly as drawn. -->
+        <svg aria-hidden="true" style="left:19px; top:13px" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9999 33.3C24.9587 33.3 30.5999 31.5539 30.5999 29.4C30.5999 27.2461 24.9587 25.5 17.9999 25.5C11.0411 25.5 5.3999 27.2461 5.3999 29.4C5.3999 31.5539 11.0411 33.3 17.9999 33.3Z" fill="var(--deco)"/><path d="M16.7998 30.3C17.0998 23.4 18.7498 17.4 21.5998 13.2L24.1498 15.3C21.1498 19.5 20.5498 24.3 20.8498 30.3H16.7998Z" fill="var(--primary)"/><path d="M22.6663 9.94336C23.678 8.7376 26.5565 9.48718 29.095 11.6172C31.6333 13.7472 32.8714 16.4515 31.8596 17.6572C30.8479 18.863 27.9694 18.1134 25.4309 15.9834C22.8926 13.8535 21.6548 11.1492 22.6663 9.94336ZM29.6634 2.40039C31.8171 2.40054 33.5627 4.14608 33.5628 6.2998C33.5628 8.45362 31.8171 10.2 29.6634 10.2002C28.2273 10.2002 26.973 9.42332 26.2962 8.26758C25.0103 8.95006 22.8631 9.31033 20.4641 9.14258C20.0036 9.11037 19.5551 9.05923 19.1223 8.99316C18.3776 9.94436 17.3196 10.9242 16.0403 11.7871C12.8812 13.9179 9.56942 14.5316 8.64284 13.1582C7.71634 11.7846 9.52655 8.94345 12.6858 6.8125C13.0558 6.56292 13.428 6.33415 13.7981 6.12695C13.7791 6.02467 13.7723 5.92167 13.7796 5.81836C13.8894 4.24826 17.0603 3.19128 20.8616 3.45703C22.97 3.60446 24.8296 4.12807 26.0491 4.83301C26.6288 3.40625 28.0284 2.40039 29.6634 2.40039Z" fill="var(--deco)"/><path d="M19.5 14.55C20.7426 14.55 21.75 13.5427 21.75 12.3C21.75 11.0574 20.7426 10.05 19.5 10.05C18.2574 10.05 17.25 11.0574 17.25 12.3C17.25 13.5427 18.2574 14.55 19.5 14.55Z" fill="var(--primary)"/><path d="M23.8501 15.75C25.0927 15.75 26.1001 14.7426 26.1001 13.5C26.1001 12.2574 25.0927 11.25 23.8501 11.25C22.6075 11.25 21.6001 12.2574 21.6001 13.5C21.6001 14.7426 22.6075 15.75 23.8501 15.75Z" fill="var(--primary)"/></svg>
+    <span class="label t-13 txt">DVC</span>
+  </a>
+  <a class="tab" href="insights.html">
+    <svg aria-hidden="true" style="left:22.62px; top:13.49px" width="33" height="30" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.895828 8.81396C0.401075 8.3192 0.400989 7.51357 0.91226 7.03591C7.24023 1.12389 13.8274 -0.727922 20.6736 1.48046C21.3338 1.69342 21.658 2.4228 21.4144 3.07233L21.3583 3.22188C21.1089 3.88711 20.3623 4.21159 19.6841 3.99981C14.0601 2.24352 8.43617 3.89921 2.81221 8.96689C2.29864 9.42966 1.5084 9.42653 1.01956 8.93769L0.895828 8.81396Z" fill="var(--dvc-bg)"/><path d="M8.55154 18.6867C8.55154 17.1124 7.27532 15.8362 5.70103 15.8362C4.12674 15.8362 2.85052 17.1124 2.85052 18.6867V26.6048C2.85052 28.1791 4.12674 29.4553 5.70103 29.4553C7.27532 29.4553 8.55154 28.1791 8.55154 26.6048V18.6867Z" fill="var(--dvc-primary)"/><path d="M17.7365 12.0356C17.7365 10.4613 16.4603 9.18506 14.886 9.18506C13.3117 9.18506 12.0355 10.4613 12.0355 12.0356V26.6048C12.0355 28.1791 13.3117 29.4553 14.886 29.4553C16.4603 29.4553 17.7365 28.1791 17.7365 26.6048V12.0356Z" fill="var(--dvc-primary)"/><path d="M26.9215 15.5195C26.9215 13.9452 25.6453 12.6689 24.071 12.6689C22.4967 12.6689 21.2205 13.9452 21.2205 15.5195V26.6048C21.2205 28.179 22.4967 29.4553 24.071 29.4553C25.6453 29.4553 26.9215 28.179 26.9215 26.6048V15.5195Z" fill="var(--dvc-primary)"/><path d="M25.9713 0L27.8717 4.59248L32.4642 6.49282L27.8717 8.39316L25.9713 12.9856L24.071 8.39316L19.4785 6.49282L24.071 4.59248L25.9713 0Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Insights</span>
+  </a>
+</footer>
+
+<script type="module">
+import { currentUY, uyFor, balance, outlook, eligibleSegments, prefillPoints,
+  canSaveReservation, reservationsForTrip, setDuesTracking, isDuesTracked,
+  contractLabel } from './js/dvc.js';
+import { openIdb } from './js/storage/adapter-idb.js';
+import { createRepo } from './js/storage/repo.js';
+
+const UY_NAME = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TODAY = new Date();
+
+/* Storage failure degrades to "cannot save", never to a dead screen. */
+let repo = null;
+try { repo = createRepo(await openIdb()); }
+catch (e) { console.error('DVC: storage unavailable, running read-only —', e); }
+
+/* The 19 DVC resorts ship as a datasheet (data/hotels.json) and are seeded on
+   every boot — seedHotels fills gaps, and overwrites only where the shipped
+   row carries a higher `seed_rev` than the stored one (a deliberate datasheet
+   correction), so this never clobbers a stored row or the off-property hotels
+   Trips creates. HOTELS was four hardcoded resorts
+   before chunk 4b; it is now every seeded property, keyed by the same
+   3-letter id that joins the dues table and renders the summary row label.
+
+   TWO maps, not one (the design director 2026-08-01). HOTELS resolves ANY hotel id to a
+   name, because a stay booked on points can be at a non-villa resort through
+   the Disney Collection — Track Your Points has to be able to name it.
+   DVC_HOTELS is the subset a CONTRACT can be at, and a contract's home resort
+   is a DVC resort by definition.
+   ⚠ This split is a REGRESSION FIX, not a new feature. The home-resort picker
+   reads `Object.entries(...)`, and until 2026-07-28 data/hotels.json shipped
+   19 rows that were all `dvc_villa` — so it was DVC-only by accident. Growing
+   the datasheet to 44 rows to build the Trips hotel picker silently put Pop
+   Century, Swan and Shades of Green into the list of resorts you can own
+   points at. 19 rows, not 44, and deliberately fewer than the on-property
+   list Trips offers. */
+const HOTELS = {};
+const DVC_HOTELS = {};
+async function loadHotels() {
+  if (!repo) return;
+  try {
+    const sheet = await fetch('./data/hotels.json').then(r => r.json());
+    await repo.seedHotels(sheet.hotels ?? []);
+  } catch (e) { console.warn('DVC: resort seed unavailable —', e.message); }
+  for (const h of await repo.listHotels()) {
+    HOTELS[h.id] = h.name;
+    /* is_dvc is the schema's own answer to "can points be owned here", so it
+       is what filters — not the category string, which also has to serve the
+       Trips picker's value/moderate/deluxe grouping. */
+    if (h.is_dvc && h.active !== false) DVC_HOTELS[h.id] = h.name;
+  }
+}
+
+/* Everything below is read from storage, never sampled. Segments come from
+   Trips (chunk 2b): a stay is offered here only when its on_points box is
+   ticked — eligibleSegments() keys on that flag, not on the hotel's category,
+   so a stay booked at a free-text hotel still qualifies. */
+let contracts = [], trips = [], segments = [], reservations = [], entries = [];
+
+async function loadAll() {
+  if (!repo) return;
+  contracts = await repo.listContracts();
+  trips = await repo.listTrips();
+  segments = (await Promise.all(trips.map(t => repo.segmentsOf(t.id)))).flat();
+  reservations = await repo.listReservations();
+  entries = (await Promise.all(contracts.map(c => repo.entriesForContract(c.id)))).flat();
+}
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const states = [...document.querySelectorAll('.state')];
+function show(id) { states.forEach(s => s.classList.toggle('on', s.dataset.state === id)); $('main').scrollTop = 0; }
+
+const fmtDate = iso => { const [y,m,d] = iso.split('-'); return `${m}/${d}/${y.slice(2)}`; };
+const checkOut = seg => { const d = new Date(seg.check_in+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+seg.nights); return d.toISOString().slice(0,10); };
+
+/* ══ cards · points overview ══
+   Board draws three year pills with the MIDDLE one active (2025 / **2026** /
+   2027 against a 2026 "today"), i.e. previous · current · next — which is one
+   column earlier than DVC-SPEC §3's "current / next / next+1" wording. Board
+   wins (frozen rule); the spec line needs syncing. Columns are per contract,
+   since each contract's use year starts in its own month. */
+function outlookYears(c) { const uy = currentUY(c, TODAY); return [uy-1, uy, uy+1]; }
+function renderOverview(el) {
+  const first = contracts[0];
+  const head = first ? outlookYears(first) : [];
+  let html = `<div class="colhead"></div>` + head.map((y,i) =>
+    `<div class="yr ${i===1?'now':''}"><span class="t-15b txt">${y}</span></div>`).join('');
+  contracts.forEach(c => {
+    /* derived "abbr + ordinal" (the design director 2026-07-27) — never the free-text
+       nickname, which nothing guarantees is short or even present */
+    html += `<div class="rowlabel t-17 txt">${esc(contractLabel(c, contracts))}</div>`;
+    html += outlookYears(c).map((uy,i) =>
+      `<div class="cell t-17 txt ${i===1?'now':''}" title="UY ${uy}">${balance(c, uy, entries)}</div>`).join('');
+  });
+  el.innerHTML = html;
+}
+
+/* ══ cards · points-usage ══ */
+function renderPointsUsed(el) {
+  const used = trips.filter(t => reservationsForTrip(t, segments, reservations).length);
+  el.innerHTML = used.map(t => {
+    const resvs = reservationsForTrip(t, segments, reservations);
+    const segIds = new Set(resvs.map(r => r.id));
+    const nights = segments.filter(s => s.trip_id === t.id && resvs.some(r => r.segment_id === s.id))
+      .reduce((n,s) => n + s.nights, 0);
+    const rows = contracts.map(c => {
+      const cells = outlookYears(c).map((uy,i) => {
+        const n = -entries.filter(e => e.contract_id===c.id && e.use_year===uy && segIds.has(e.reservation_id))
+          .reduce((s,e) => s+e.points, 0);
+        return `<span class="${i===1?'t-15b':'t-15'} txt">${n}</span>`;
+      }).join('');
+      return `<span class="rowlabel t-15 txt">${esc(contractLabel(c, contracts))}</span>${cells}`;
+    }).join('');
+    return `<div class="usage">
+      <div class="head">
+        <div class="who">
+          <span class="trip t-15b txt">${esc(t.title)}&nbsp;</span>
+          <span class="days t-15 txt">${nights} Days</span>
+        </div>
+        <svg class="icon-pencil" viewBox="3 2 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="2" width="24" height="24" rx="12" fill="var(--dvc-primary)"/>
+          <path d="M8.00049 20.5005C8.00049 20.2243 8.39223 20.0005 8.87546 20.0005H21.125C21.6083 20.0005 22 20.2243 22 20.5005C22 20.7766 21.6083 21.0005 21.125 21.0005H8.87546C8.39223 21.0005 8.00049 20.7766 8.00049 20.5005Z" fill="#fff"/>
+          <path d="M20.206 5.71492C19.1809 4.763 17.5188 4.76299 16.4936 5.71491L9.64847 12.0711C9.4885 12.2197 9.37258 12.4041 9.31199 12.6065L8.03676 16.8664C7.83617 17.5364 8.5003 18.1531 9.22189 17.9668L13.8094 16.7827C14.0274 16.7264 14.226 16.6188 14.386 16.4703L21.2311 10.1141C22.2563 9.16215 22.2563 7.61877 21.2311 6.66684L20.206 5.71492Z" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="grid">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══ DVC-cards · no-trop (03) / log-points (04) ══ */
+let pullIndex = 0;
+function renderActiveCard(el) {
+  const elig = eligibleSegments(segments, reservations, trips, TODAY);
+  if (!elig.length) {
+    el.innerHTML = `<div class="card outlined" style="gap:18px">
+      <div class="trip-group empty">
+        <p class="h3 t-h3 txt">Track Your Points</p>
+        <div class="tripbox h65">
+          <span class="muted-copy t-15 txt">No trips to link.<br>Plan your trips first.</span>
+        </div>
+      </div>
+      <button class="cta cta-fill off" style="width:146px"><span class="txt">LOG POINTS</span></button>
+    </div>`;
+    return;
+  }
+  const seg = elig[pullIndex % elig.length];
+  const trip = trips.find(t => t.id === seg.trip_id);
+  el.innerHTML = `<div class="card outlined" style="gap:18px">
+    <div class="trip-group">
+      <p class="h3 t-h3 txt">Track Your Points</p>
+      <div class="tripbox">
+        <span class="muted-copy t-15 txt">${esc(trip.title)}</span>
+        <div class="stay">
+          <span class="lead t-15 txt">staying at&nbsp;</span>
+          <span class="resort t-15b txt">${esc(HOTELS[seg.hotel_id] ?? seg.hotel_id)}</span>
+          <span class="spacer">
+            ${elig.length > 1 ? `<svg class="arrow" viewBox="0 0 18 11" fill="none"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg>
+            <select id="seg-pick" aria-label="Choose stay">${elig.map((s,i) =>
+              `<option value="${i}" ${i===pullIndex%elig.length?'selected':''}>${esc(trips.find(t=>t.id===s.trip_id).title)} — ${esc(HOTELS[s.hotel_id]??s.hotel_id)}</option>`).join('')}</select>` : ''}
+          </span>
+        </div>
+        <span class="dates t-15 txt">from ${fmtDate(seg.check_in)} through ${fmtDate(checkOut(seg))}</span>
+      </div>
+    </div>
+    <button class="cta cta-fill" style="width:146px" id="log-points"><span class="txt">LOG POINTS</span></button>
+  </div>`;
+  $('#seg-pick')?.addEventListener('change', e => { pullIndex = +e.target.value; renderActive(); });
+  $('#log-points')?.addEventListener('click', () => openReservation(seg));
+}
+
+/* ══ 05 Add Reservation ══ */
+let activeSeg = null, alloc = [], allocTotal = 0;
+function openReservation(seg) {
+  activeSeg = seg;
+  const trip = trips.find(t => t.id === seg.trip_id);
+  $('#resv-trip').textContent = trip.title;
+  $('#resv-resort').textContent = HOTELS[seg.hotel_id] ?? seg.hotel_id;
+  $('#resv-dates').textContent = `from ${fmtDate(seg.check_in)} through ${fmtDate(checkOut(seg))}`;
+  alloc = prefillPoints(contracts, seg, 0);   // user types the confirmation's points per contract
+  renderOverview($('#ov-resv'));
+  renderPointsUsed($('#pu-resv'));
+  renderAllocRows();
+  show('05');
+}
+function renderAllocRows() {
+  const host = $('#resv-rows');
+  host.innerHTML = alloc.map((a,i) => {
+    const c = contracts.find(cc => cc.id === a.contract_id);
+    return `<div class="alloc">
+      <div class="meta">
+        <span class="who t-15 txt">${esc(c.nickname)} • ${UY_NAME[c.use_year_month]} UY</span>
+        <span class="avail t-15 txt">${balance(c, a.use_year, entries)} pts available</span>
+      </div>
+      <div class="box"><input type="text" inputmode="numeric" data-i="${i}" value="${a.points||''}" placeholder="000" aria-label="${esc(c.nickname)} points"></div>
+    </div>`;
+  }).join('') + `<div class="alloc total" id="alloc-total">
+      <div class="meta"><span class="who t-15 txt">Total Points</span><span class="avail t-15 txt">Used</span></div>
+      <div class="box"><input type="text" inputmode="numeric" id="total-out" value="0" readonly tabindex="-1" aria-label="Total points used"></div>
+    </div>`;
+  host.querySelectorAll('input[data-i]').forEach(inp => inp.addEventListener('input', e => {
+    const v = e.target.value.replace(/[^0-9]/g,''); e.target.value = v;
+    alloc[+e.target.dataset.i].points = v === '' ? 0 : +v;
+    syncTotal();
+  }));
+  syncTotal();
+}
+function syncTotal() {
+  allocTotal = alloc.reduce((s,a) => s + (a.points||0), 0);
+  $('#total-out').value = allocTotal;
+  const ok = canSaveReservation(alloc, allocTotal) && allocTotal > 0;
+  $('#alloc-total').classList.toggle('bad', !ok);
+  $('#resv-save').toggleAttribute('disabled', !ok);
+}
+$('#resv-cancel').addEventListener('click', () => renderActive());
+$('#resv-save').addEventListener('click', async () => {
+  if (!repo || !activeSeg) return;
+  const btn = $('#resv-save');
+  if (btn.disabled) return;
+  btn.disabled = true;                       /* no double-post */
+  try {
+    /* One reservation per SEGMENT, never per trip (DATA-MODEL §5b): a split
+       stay on points is two reservations, exactly as the DVC website shows.
+       saveReservation writes one negative ledger entry per contract, so the
+       balance falls out of the ledger and is never stored. */
+    await repo.saveReservation(
+      { segment_id: activeSeg.id, points_total: allocTotal, notes: null }, alloc);
+  } catch (e) {
+    console.warn('DVC: reservation rejected —', e.message);
+    btn.disabled = false;
+    return;
+  }
+  pullIndex = 0;
+  await loadAll();
+  renderActive();
+});
+
+/* ══ 02 Contract SetUp ══ */
+let draft = [];
+function renderSetup() {
+  $('#setup-rows').innerHTML = draft.map((c,i) => `
+    <div class="contract">
+      <div class="r1">
+        <span class="name t-h3 txt">Contract ${i+1}</span>
+        <button data-del="${i}" aria-label="Remove contract ${i+1}" style="display:flex">
+          <svg class="icon-x" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8ZM6.16569 5.03431C5.85327 4.7219 5.34673 4.7219 5.03431 5.03431C4.7219 5.34673 4.7219 5.85327 5.03431 6.16569L6.86863 8L5.03431 9.83432C4.7219 10.1467 4.7219 10.6533 5.03431 10.9657C5.34673 11.2781 5.85327 11.2781 6.16569 10.9657L8 9.13137L9.83432 10.9657C10.1467 11.2781 10.6533 11.2781 10.9657 10.9657C11.2781 10.6533 11.2781 10.1467 10.9657 9.83432L9.13137 8L10.9657 6.16569C11.2781 5.85327 11.2781 5.34673 10.9657 5.03431C10.6533 4.7219 10.1467 4.7219 9.83432 5.03431L8 6.86863L6.16569 5.03431Z" fill="var(--ink)"/>
+          </svg>
+        </button>
+      </div>
+      <div class="resort">
+        <span class="lbl t-15 txt">Home Resort:</span>
+        <div class="pill">
+          <span class="val t-15b txt">${c.resort_hotel_id ? esc(HOTELS[c.resort_hotel_id]) : 'Resort Name'}</span>
+          <span class="spacer"><svg class="arrow" viewBox="0 0 18 11" fill="none"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg></span>
+          <select data-i="${i}" data-f="resort_hotel_id" aria-label="Home resort">
+            <option value="" ${!c.resort_hotel_id?'selected':''} disabled>Resort Name</option>
+            ${Object.entries(DVC_HOTELS).map(([id,n]) => `<option value="${id}" ${id===c.resort_hotel_id?'selected':''}>${esc(n)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="r3">
+        <div class="fields">
+          <div class="fieldline"><span class="k t-15 txt">Use Year:</span>
+            <span class="line"><input type="text" inputmode="numeric" maxlength="3" data-i="${i}" data-f="use_year_month" value="${c.use_year_month?UY_NAME[c.use_year_month]:''}" aria-label="Use year month"></span></div>
+          <div class="fieldline"><span class="k t-15 txt">Expiring in:</span>
+            <span class="line"><input type="text" inputmode="numeric" maxlength="4" data-i="${i}" data-f="expiry_year" value="${c.expiry_year||''}" aria-label="Expiry year"></span></div>
+          <div class="fieldline dues-row"><span class="dues t-15 txt">Track Annual Dues:&nbsp;<button type="button" class="opt ${c.track_dues?'sel':''}" data-i="${i}" data-dues="1" aria-pressed="${c.track_dues?'true':'false'}">Yes</button>&nbsp;/&nbsp;<button type="button" class="opt ${c.track_dues?'':'sel'}" data-i="${i}" data-dues="0" aria-pressed="${c.track_dues?'false':'true'}">No</button></span></div>
+        </div>
+        <div class="points-box">
+          <input type="text" inputmode="numeric" maxlength="4" data-i="${i}" data-f="points_per_year" value="${c.points_per_year||''}" placeholder="000" aria-label="Points per year">
+          <span class="unit t-12 txt">points</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  $('#setup-rows').querySelectorAll('select[data-f], input[data-f]').forEach(el =>
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', e => {
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      if (f === 'points_per_year' || f === 'expiry_year') {
+        const v = e.target.value.replace(/[^0-9]/g,''); e.target.value = v;
+        // expiry_year is nullable — an empty field must stay absent, not
+        // become 0, which repo.saveContract rejects as an invalid year.
+        draft[i][f] = v === '' ? (f === 'expiry_year' ? null : 0) : +v;
+      } else if (f === 'use_year_month') {
+        const m = UY_NAME.findIndex(n => n.toLowerCase() === e.target.value.trim().toLowerCase());
+        draft[i][f] = m > 0 ? m : draft[i][f];
+      } else { draft[i][f] = e.target.value; if (f==='resort_hotel_id') renderSetup(); }
+    }));
+  $('#setup-rows').querySelectorAll('[data-dues]').forEach(el => el.addEventListener('click', e => {
+    const b = e.target.closest('[data-dues]');
+    draft[+b.dataset.i].track_dues = b.dataset.dues === '1'; renderSetup();
+  }));
+  $('#setup-rows').querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', e => {
+    draft.splice(+e.currentTarget.dataset.del, 1); if (!draft.length) draft.push(blankContract()); renderSetup();
+  }));
+}
+const blankContract = () => ({ id:'c'+Date.now()+Math.random(), nickname:'', resort_hotel_id:'', use_year_month:0, points_per_year:0, expiry_year:null, track_dues:false });
+$('#add-contract').addEventListener('click', () => { draft.push(blankContract()); renderSetup(); });
+$('#save-contracts').addEventListener('click', async () => {
+  if (!repo) return;
+  const keep = draft.filter(c => c.points_per_year > 0 && c.use_year_month > 0);
+  /* A contract removed from the draft is removed from storage. deleteContract
+     refuses while ledger entries exist (FK restrict), so a contract that has
+     already spent points cannot be silently dropped along with its history. */
+  const keepIds = new Set(keep.map(c => c.id));
+  for (const old of await repo.listContracts()) {
+    if (keepIds.has(old.id)) continue;
+    try { await repo.deleteContract(old.id); }
+    catch (e) { console.warn('DVC: kept ' + old.id + ' —', e.message); }
+  }
+  const year = TODAY.getFullYear();
+  for (const [i, c] of keep.entries()) {
+    /* The board's Yes/No toggle is a boolean; storage keeps a WINDOW so an
+       opt-out stops future dues without erasing the years already tracked
+       (js/dvc.js setDuesTracking). track_dues never reaches the store. */
+    const { track_dues, ...row } = setDuesTracking(c, Boolean(c.track_dues), year);
+    try {
+      await repo.saveContract({ ...row, nickname: c.nickname || `Contract ${i+1}` });
+    } catch (e) {
+      /* saveContract enforces points > 0, a 1-12 use year and a sane expiry.
+         There is no drawn error state, so nothing is invented — the reason
+         goes to the console and the user stays in setup. */
+      console.warn('DVC: contract rejected —', e.message);
+      return;
+    }
+  }
+  await loadAll();
+  renderActive();
+});
+
+/* ══ Reconcile — rows are per (contract, use year) and independently
+   addable: a household may reconcile only some contracts, or one contract
+   across two use years (banked/borrowed). Never capped at contracts.length.
+   delta = typed − derived; a zero delta writes no entry. ══ */
+let recDraft = [];
+const blankRec = () => { const c = contracts[0];
+  return { contract_id: c?.id ?? '', use_year: c ? currentUY(c, TODAY) : TODAY.getFullYear(), actual: '' }; };
+function renderRec() {
+  if (!recDraft.length && contracts.length) recDraft = [blankRec()];
+  $('#rec-rows').innerHTML = recDraft.map((r,i) => {
+    const c = contracts.find(cc => cc.id === r.contract_id);
+    const yrs = c ? outlookYears(c) : [];
+    return `<div class="rec-row">
+      <span class="who t-17 txt">${c ? esc(c.nickname) : '—'}
+        <select data-i="${i}" data-f="contract_id" aria-label="Contract">${contracts.map(cc =>
+          `<option value="${cc.id}" ${cc.id===r.contract_id?'selected':''}>${esc(cc.nickname)}</option>`).join('')}</select>
+      </span>
+      <span class="yr t-17 txt">${r.use_year}
+        <select data-i="${i}" data-f="use_year" aria-label="Use year">${yrs.map(y =>
+          `<option value="${y}" ${y===r.use_year?'selected':''}>${y}</option>`).join('')}</select>
+      </span>
+      <span class="amt">
+        <span class="line"><input class="act" type="text" inputmode="numeric" maxlength="5"
+          data-i="${i}" data-f="actual" value="${r.actual}" placeholder="000"
+          aria-label="Actual points balance"></span>
+        <span class="unit t-15 txt">points</span>
+      </span>
+    </div>`;
+  }).join('');
+  $('#rec-rows').querySelectorAll('select[data-f], input[data-f]').forEach(el =>
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', e => {
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      if (f === 'actual') { const v = e.target.value.replace(/[^0-9-]/g,''); e.target.value = v; recDraft[i].actual = v; }
+      else if (f === 'use_year') recDraft[i].use_year = +e.target.value;
+      else { recDraft[i].contract_id = e.target.value;
+        const c = contracts.find(cc => cc.id === e.target.value);
+        recDraft[i].use_year = c ? currentUY(c, TODAY) : recDraft[i].use_year; renderRec(); }
+    }));
+}
+$('#add-rec').addEventListener('click', () => { if (contracts.length) { recDraft.push(blankRec()); renderRec(); } });
+$('#save-rec').addEventListener('click', async () => {
+  if (!repo) return;
+  for (const r of recDraft) {
+    if (r.actual === '' || !r.contract_id) continue;
+    const c = contracts.find(cc => cc.id === r.contract_id);
+    if (!c) continue;
+    /* delta = what the member actually sees on dvcmember.com minus what the
+       ledger derives. A zero delta writes nothing: reconciling a balance that
+       already agrees should leave no trace. */
+    const delta = Number(r.actual) - balance(c, r.use_year, entries);
+    if (delta === 0) continue;
+    try {
+      await repo.saveLedgerEntry({ contract_id: r.contract_id, use_year: r.use_year,
+        points: delta, reservation_id: null, note: 'reconcile' });
+    } catch (e) { console.warn('DVC: reconcile rejected —', e.message); return; }
+  }
+  recDraft = [];
+  await loadAll();
+  renderActive();
+});
+
+/* ══ entry points ══ */
+function renderActive() {
+  if (!contracts.length) { show('01'); return; }   /* 01 Zero: no contract yet */
+  renderOverview($('#ov-active'));
+  renderPointsUsed($('#pu-active'));
+  renderActiveCard($('#active-container'));
+  show('active');
+}
+document.querySelectorAll('[data-open-setup]').forEach(b => b.addEventListener('click', () => {
+  draft = contracts.length ? contracts.map(c => ({...c})) : [blankContract()];
+  recDraft = []; renderSetup(); renderRec(); show('02');
+}));
+document.querySelectorAll('[data-close-setup]').forEach(b => b.addEventListener('click', () => renderActive()));
+
+/* dev harness — ?state=01|02|active|05, ?contracts=N, ?resv=none.
+   These can only NARROW what storage holds; they never fabricate rows. */
+const q = new URLSearchParams(location.search);
+await loadHotels();
+await loadAll();
+if (q.get('contracts') !== null) contracts = contracts.slice(0, +q.get('contracts'));
+if (q.get('resv') === 'none') { reservations = []; entries = []; }
+renderActive();
+if (q.get('state') === '02') document.querySelector('[data-open-setup]').click();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+ "version": "1.0.0",
+ "effective": "2026-07",
+ "note": "Insights Hero snack-comparison table (INSIGHTS-SPEC §4 / INSIGHTS-BUILD §5.2). FUN TABLE ONLY — these are display-conversion constants for 'your all-time spend = N Dole Whips', never a forecasting benchmark and never a categorizer fingerprint. Deliberately NOT held to the Phase R 2-source protocol: provenance is the design director, single source. Do not import into data/benchmarks.json or fingerprints.json — the amounts collide with real Disney snack prices and would create false exact-price matches. Refresh occasionally; drift is cosmetic.",
+ "source": "the design director, 2026-07-20 (in-session)",
+ "snacks": [
+  {
+   "id": "mickey-ice-bar",
+   "label": "Mickey Ice Bars",
+   "label_singular": "Mickey Ice Bar",
+   "price": 6.50
+  },
+  {
+   "id": "dole-whip",
+   "label": "Dole Whips",
+   "label_singular": "Dole Whip",
+   "price": 5.99
+  },
+  {
+   "id": "churro",
+   "label": "Churros",
+   "label_singular": "Churro",
+   "price": 6.25
+  }
+ ]
+}

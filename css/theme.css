@@ -1,0 +1,179 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   theme.css — the 16 character palettes, ONE canonical copy.
+
+   Source of truth: styleguide.html v2 blocks. Generated from them, verified
+   token-for-token against all five screens (zero value conflicts) when the
+   shared shell was extracted in Chunk 1, 2026-07-27.
+
+   Before this file the palette was hand-copied into five documents and had
+   already drifted: dvc.html and insights.html were each missing 63 tokens
+   (--surface-raised on the 15 non-default themes, plus --header-bg,
+   --header-ink and --dvc-on-primary outright). None of the missing tokens
+   were referenced, so folding them back in changed no pixel — but the next
+   screen edit would have diverged them again. Edit palettes HERE only.
+
+   The active theme is written to <html data-theme="…"> by js/theme.js,
+   which must load synchronously in <head> so the stored theme is set
+   before first paint. :root carries apple as the default.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root, [data-theme="apple"] {
+  --bg: #FFF6CF; --surface: #FFFFFF; --surface-raised: #FFFBE9; --border: #FFE573;
+  --ink: #305B75; --muted: #427CA1; --primary: #DE2C47; --on-primary: #FFFFFF;
+  --accent: #9B6D00; --deco: #FFCA35; --header-bg: #DE2C47; --header-ink: #FFFFFF;
+  --dvc-bg: #C7E7FD; --dvc-primary: #0A64A5; --dvc-on-primary: #FFFFFF;
+  --primary-text: #D72342;
+}
+[data-theme="lagoon"] {
+  --bg: #E5F5E2; --surface: #FFFFFF; --surface-raised: #F3FBF2; --border: #D1EDCB;
+  --ink: #3E3069; --muted: #5B469A; --primary: #338260; --on-primary: #FFFFFF;
+  --accent: #7E6EA4; --deco: #A497C4; --header-bg: #594597; --header-ink: #FFFFFF;
+  --dvc-bg: #E8E4F0; --dvc-primary: #594597; --dvc-on-primary: #FFFFFF;
+  --primary-text: #2B7B59;
+}
+[data-theme="canyon"] {
+  --bg: #FCF1D9; --surface: #FFFFFF; --surface-raised: #FEF9EE; --border: #F9E3B3;
+  --ink: #652814; --muted: #A14020; --primary: #418083; --on-primary: #FFFFFF;
+  --accent: #A86700; --deco: #DA9740; --header-bg: #418083; --header-ink: #FFFFFF;
+  --dvc-bg: #F9E6E2; --dvc-primary: #B84018; --dvc-on-primary: #FFFFFF;
+  --primary-text: #38777A;
+}
+[data-theme="crimson"] {
+  --bg: #FDF8CF; --surface: #FFFFFF; --surface-raised: #FEFCE9; --border: #F9E863;
+  --ink: #253B66; --muted: #38599A; --primary: #7C404A; --on-primary: #FFFFFF;
+  --accent: #3F816F; --deco: #69A997; --header-bg: #7C404A; --header-ink: #FFFFFF;
+  --dvc-bg: #DAE6BE; --dvc-primary: #314E88; --dvc-on-primary: #FFFFFF;
+  --primary-text: var(--primary);   /* --primary already clears AA on --bg */
+}
+[data-theme="coral"] {
+  --bg: #FFF6EC; --surface: #FFFFFF; --surface-raised: #FFFBF6; --border: #FFE0BE;
+  --ink: #3F201B; --muted: #713930; --primary: #D53F32; --on-primary: #FFFFFF;
+  --accent: #008196; --deco: #6EC9DA; --header-bg: #D53F32; --header-ink: #FFFFFF;
+  --dvc-bg: #F6EADF; --dvc-primary: #7F4A1D; --dvc-on-primary: #FFFFFF;
+  --primary-text: #CF382C;
+}
+[data-theme="rose"] {
+  --bg: #EFF3F5; --surface: #FFFFFF; --surface-raised: #F8FAFB; --border: #DFE7EB;
+  --ink: #6C1A38; --muted: #A62856; --primary: #CF3C71; --on-primary: #FFFFFF;
+  --accent: #9A6F00; --deco: #F8CB49; --header-bg: #CF3C71; --header-ink: #FFFFFF;
+  --dvc-bg: #F8E5F0; --dvc-primary: #B6357E; --dvc-on-primary: #FFFFFF;
+  --primary-text: #C7336A;
+}
+[data-theme="oasis"] {
+  --bg: #E1F6F3; --surface: #FFFFFF; --surface-raised: #F2FBFA; --border: #C6EEE8;
+  --ink: #26605E; --muted: #33817E; --primary: #128480; --on-primary: #FFFFFF;
+  --accent: #927100; --deco: #FCD53B; --header-bg: #128480; --header-ink: #FFFFFF;
+  --dvc-bg: #FFEA94; --dvc-primary: #246466; --dvc-on-primary: #FFFFFF;
+  --primary-text: #007B77;
+}
+[data-theme="meadow"] {
+  --bg: #E8F6FF; --surface: #FFFFFF; --surface-raised: #F5FBFF; --border: #C9EAFF;
+  --ink: #425D61; --muted: #577A7F; --primary: #36852F; --on-primary: #FFFFFF;
+  --accent: #717C00; --deco: #D6E45D; --header-bg: #36852F; --header-ink: #FFFFFF;
+  --dvc-bg: #EDF0B2; --dvc-primary: #36614F; --dvc-on-primary: #FFFFFF;
+  --primary-text: #2E7E27;
+}
+[data-theme="olive"] {
+  --bg: #F8F3CD; --surface: #FFFFFF; --surface-raised: #FCFAE8; --border: #F1E79C;
+  --ink: #30423B; --muted: #4E6B60; --primary: #697D3B; --on-primary: #FFFFFF;
+  --accent: #628026; --deco: #BDD395; --header-bg: #697D3B; --header-ink: #FFFFFF;
+  --dvc-bg: #E6EDD4; --dvc-primary: #4C7163; --dvc-on-primary: #FFFFFF;
+  --primary-text: #617432;
+}
+[data-theme="highland"] {
+  --bg: #F4E8DA; --surface: #FFFFFF; --surface-raised: #FAF5EE; --border: #F2E3D2;
+  --ink: #3E3F3F; --muted: #616363; --primary: #6C3B27; --on-primary: #FFFFFF;
+  --accent: #4E7B95; --deco: #7FA3B8; --header-bg: #6C3B27; --header-ink: #FFFFFF;
+  --dvc-bg: #D1E5EF; --dvc-primary: #173442; --dvc-on-primary: #FFFFFF;
+  --primary-text: var(--primary);   /* --primary already clears AA on --bg */
+}
+[data-theme="heather"] {
+  --bg: #EBF4F3; --surface: #FFFFFF; --surface-raised: #F6FAFA; --border: #D7E9E7;
+  --ink: #35403E; --muted: #556764; --primary: #A42384; --on-primary: #FFFFFF;
+  --accent: #388175; --deco: #7DBBB0; --header-bg: #A42384; --header-ink: #FFFFFF;
+  --dvc-bg: #E6E9FA; --dvc-primary: #1D318B; --dvc-on-primary: #FFFFFF;
+  --primary-text: var(--primary);   /* --primary already clears AA on --bg */
+}
+[data-theme="sky"] {
+  --bg: #EDF6FB; --surface: #FFFFFF; --surface-raised: #F7FBFD; --border: #D4E9F5;
+  --ink: #384F5E; --muted: #53758B; --primary: #357DAA; --on-primary: #FFFFFF;
+  --accent: #007CBD; --deco: #65B4E4; --header-bg: #357DAA; --header-ink: #FFFFFF;
+  --dvc-bg: #D1E9F4; --dvc-primary: #275F83; --dvc-on-primary: #FFFFFF;
+  --primary-text: #2D76A2;
+}
+[data-theme="gold"] {
+  --bg: #FFF1C2; --surface: #FFFFFF; --surface-raised: #FFF9E4; --border: #FFE48A;
+  --ink: #513A07; --muted: #93690D; --primary: #B23848; --on-primary: #FFFFFF;
+  --accent: #976F00; --deco: #CB9B1E; --header-bg: #B23848; --header-ink: #FFFFFF;
+  --dvc-bg: #FADF89; --dvc-primary: #3B60B6; --dvc-on-primary: #FFFFFF;
+  --primary-text: var(--primary);   /* --primary already clears AA on --bg */
+}
+[data-theme="glacier"] {
+  --bg: #ECEEF6; --surface: #FFFFFF; --surface-raised: #F6F7FB; --border: #E2E5F1;
+  --ink: #063A52; --muted: #0B6995; --primary: #177FA0; --on-primary: #FFFFFF;
+  --accent: #0080A4; --deco: #82D4ED; --header-bg: #177FA0; --header-ink: #FFFFFF;
+  --dvc-bg: #C9EDF7; --dvc-primary: #0A5F87; --dvc-on-primary: #FFFFFF;
+  --primary-text: #007495;
+}
+[data-theme="lavender"] {
+  --bg: #FDF0F3; --surface: #FFFFFF; --surface-raised: #FEF8FA; --border: #FBDEE5;
+  --ink: #4C2E5C; --muted: #73468C; --primary: #9A61AA; --on-primary: #FFFFFF;
+  --accent: #A85C9A; --deco: #DAAFD2; --header-bg: #9A61AA; --header-ink: #FFFFFF;
+  --dvc-bg: #EBE9F2; --dvc-primary: #77488F; --dvc-on-primary: #FFFFFF;
+  --primary-text: #9158A1;
+}
+[data-theme="jade"] {
+  --bg: #E6F3F0; --surface: #FFFFFF; --surface-raised: #F4FAF8; --border: #D1E9E4;
+  --ink: #153C45; --muted: #266C7C; --primary: #2D6F73; --on-primary: #FFFFFF;
+  --accent: #478069; --deco: #71A992; --header-bg: #2D6F73; --header-ink: #FFFFFF;
+  --dvc-bg: #D9ECE8; --dvc-primary: #234F59; --dvc-on-primary: #FFFFFF;
+  --primary-text: var(--primary);   /* --primary already clears AA on --bg */
+}
+
+/* ── reduced motion (Interaction Pass, cross-cutting, 2026-08-01) ─────────
+   Loaded by all five screens, so honouring the preference is a property of
+   the app rather than something each animation has to remember. The app's
+   motion surface is small — a toast fade and a chevron rotate — and that is
+   exactly when a per-animation guard rots: insights.html guarded its chevron
+   and spend.html's toast was never guarded at all.
+
+   Near-zero rather than `none`: a 0s transition never fires transitionend,
+   and code that waits on it would hang. .01ms completes immediately and
+   still fires.
+
+   Building a reduced-motion ALTERNATIVE (the Spend pixie-dust reveal is
+   spec'd to degrade to a fade) means opting that element out with
+   [data-motion-safe] and authoring the fade against it — the blanket rule
+   below deliberately does not know the difference between a fade and a
+   movement, and guessing would be worse. */
+@media (prefers-reduced-motion: reduce) {
+  *:not([data-motion-safe]),
+  *:not([data-motion-safe])::before,
+  *:not([data-motion-safe])::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── touch targets (Interaction Pass, the design director 2026-08-01) ───────────────────
+   Grows the HIT AREA without moving ink: the painted control keeps its drawn
+   size and a transparent overlay carries the tap. That is why these are not
+   board amendments — rule 7 is about what is rendered, and nothing rendered
+   changes. `max()` means the overlay never SHRINKS a control that is already
+   bigger than the target.
+
+   Sized per case because the only real limit is overlapping a neighbour's hit
+   area, which causes mis-taps: --tap-w / --tap-h default to 44 and are
+   overridden where a measured gap says 44 would collide.
+
+   Not usable on <input>: replaced elements do not render ::after reliably.
+   Spend's manual row is handled there by growing the row itself. */
+.tap { position: relative; }
+.tap::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, var(--tap-w, 44px));
+  height: max(100%, var(--tap-h, 44px));
+}

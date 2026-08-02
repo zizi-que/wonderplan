@@ -1,0 +1,312 @@
+{
+ "version": "0.1.0",
+ "effective": "2026-07",
+ "note": "DVC canonical dataset (workshop amendment 2026-07-19 late: dues history = 5 years from point-service aggregators, superseding the a manual feed plan; g_resort derived from this table). Point calendar: official 2026 BLT chart (Disney CDN PDF); travel-period date structure is shared across WDW resorts, magnitudes differ. demand_index = period avg pts/night ÷ year avg — the date-based demand trend proxy for ticket-curve F2 and season logic. Sources in research/SOURCES.md §D.",
+ "dues_history": {
+  "years": [
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "unit": "usd_per_point",
+  "resorts": [
+   {
+    "id": "AKV",
+    "name": "Animal Kingdom Villas",
+    "dues": {
+     "2022": 8.24,
+     "2023": 8.81,
+     "2024": 9.08,
+     "2025": 9.647,
+     "2026": 10.1608
+    },
+    "g_resort": 0.0538
+   },
+   {
+    "id": "AUL",
+    "name": "Aulani",
+    "dues": {
+     "2022": 8.67,
+     "2023": 9.14,
+     "2024": 9.76,
+     "2025": 10.1219,
+     "2026": 10.9572
+    },
+    "g_resort": 0.0603
+   },
+   {
+    "id": "BCV",
+    "name": "Beach Club Villas",
+    "dues": {
+     "2022": 7.54,
+     "2023": 8.17,
+     "2024": 8.63,
+     "2025": 9.1207,
+     "2026": 9.8113
+    },
+    "g_resort": 0.068
+   },
+   {
+    "id": "BLT",
+    "name": "Bay Lake Tower",
+    "dues": {
+     "2022": 7.08,
+     "2023": 7.43,
+     "2024": 7.59,
+     "2025": 8.015,
+     "2026": 8.7415
+    },
+    "g_resort": 0.0541
+   },
+   {
+    "id": "BRV",
+    "name": "Boulder Ridge",
+    "dues": {
+     "2022": 8.15,
+     "2023": 8.51,
+     "2024": 8.68,
+     "2025": 9.1885,
+     "2026": 9.7672
+    },
+    "g_resort": 0.0464
+   },
+   {
+    "id": "BWV",
+    "name": "BoardWalk Villas",
+    "dues": {
+     "2022": 8.08,
+     "2023": 8.53,
+     "2024": 8.67,
+     "2025": 9.057,
+     "2026": 9.6717
+    },
+    "g_resort": 0.0459
+   },
+   {
+    "id": "CCV",
+    "name": "Copper Creek",
+    "dues": {
+     "2022": 7.6,
+     "2023": 7.92,
+     "2024": 8.09,
+     "2025": 8.4914,
+     "2026": 9.02
+    },
+    "g_resort": 0.0438
+   },
+   {
+    "id": "CFW",
+    "name": "The Cabins at Fort Wilderness",
+    "dues": {
+     "2025": 11.8769,
+     "2026": 12.2756
+    },
+    "g_resort": 0.0336,
+    "g_provisional": true,
+    "note": "Opened <5yr: g_resort is a single year-over-year change, NOT the 4-year CAGR every other resort carries. Escalation past 2026 is noisier here. Replace with a fitted rate once five years of history exist."
+   },
+   {
+    "id": "HHI",
+    "name": "Hilton Head",
+    "dues": {
+     "2022": 10.07,
+     "2023": 10.73,
+     "2024": 11.31,
+     "2025": 11.9207,
+     "2026": 12.8621
+    },
+    "g_resort": 0.063
+   },
+   {
+    "id": "OKW",
+    "name": "Old Key West",
+    "dues": {
+     "2022": 8.81,
+     "2023": 9.36,
+     "2024": 9.87,
+     "2025": 10.5049,
+     "2026": 11.2054
+    },
+    "g_resort": 0.0621
+   },
+   {
+    "id": "PVB",
+    "name": "Disney's Polynesian Villas & Bungalows",
+    "dues": {
+     "2022": 7.39,
+     "2023": 7.95,
+     "2024": 8.23,
+     "2025": 7.9263,
+     "2026": 8.3334
+    },
+    "g_resort": 0.0304,
+    "association": "Disney's Polynesian Villas & Bungalows condominium association"
+   },
+   {
+    "id": "RIV",
+    "name": "Riviera",
+    "dues": {
+     "2022": 8.38,
+     "2023": 8.5,
+     "2024": 8.85,
+     "2025": 9.0572,
+     "2026": 9.4553
+    },
+    "g_resort": 0.0308
+   },
+   {
+    "id": "SSR",
+    "name": "Saratoga Springs",
+    "dues": {
+     "2022": 7.33,
+     "2023": 7.86,
+     "2024": 8.14,
+     "2025": 8.5394,
+     "2026": 9.1877
+    },
+    "g_resort": 0.0582
+   },
+   {
+    "id": "VB",
+    "name": "Vero Beach",
+    "dues": {
+     "2022": 11.94,
+     "2023": 12.85,
+     "2024": 13.86,
+     "2025": 14.3026,
+     "2026": 14.8939
+    },
+    "g_resort": 0.0568
+   },
+   {
+    "id": "VDH",
+    "name": "Villas at Disneyland Hotel",
+    "dues": {
+     "2025": 9.8207,
+     "2026": 10.5354
+    },
+    "g_resort": 0.0728,
+    "g_provisional": true,
+    "note": "Opened <5yr: g_resort is a single year-over-year change, NOT the 4-year CAGR every other resort carries. Escalation past 2026 is noisier here. Replace with a fitted rate once five years of history exist."
+   },
+   {
+    "id": "VGC",
+    "name": "Grand Californian Villas",
+    "dues": {
+     "2022": 7.48,
+     "2023": 8.04,
+     "2024": 8.55,
+     "2025": 8.7974,
+     "2026": 9.5203
+    },
+    "g_resort": 0.0621
+   },
+   {
+    "id": "VGF",
+    "name": "Grand Floridian Villas",
+    "dues": {
+     "2022": 7.01,
+     "2023": 7.33,
+     "2024": 7.57,
+     "2025": 7.9298,
+     "2026": 8.3142
+    },
+    "g_resort": 0.0434
+   },
+   {
+    "id": "PIT",
+    "name": "Polynesian Island Tower",
+    "note": "the design director 2026-08-01: the Island Tower is FULLY INTEGRATED into the existing Disney's Polynesian Villas & Bungalows condominium association — not a new association, and not a separate one charging alike. Dues are declared once for the association, which is why the 2026 table lists only Polynesian Villas & Bungalows. Resolved at compile time, never copied, so the two can never drift apart.",
+    "association_of": "PVB"
+   }
+  ],
+  "excluded": "LSL (Lakeshore Lodge) — no published dues; DVC has not declared rates for its mid-2027 opening. PIT was excluded here until 2026-08-01, when the design director ruled it shares PVB's dues; it is now an alias, not an exclusion."
+ },
+ "point_calendar_2026": {
+  "resort": "BLT",
+  "room": "deluxe_studio_resort_view",
+  "weekend_days": "Fri-Sat",
+  "year_avg_pts_per_night": 17.921,
+  "periods": [
+   {
+    "p": 1,
+    "date_ranges": [
+     "2026-09-01..2026-09-30"
+    ],
+    "weekday_pts": 13,
+    "weekend_pts": 16,
+    "days": 30,
+    "demand_index": 0.77
+   },
+   {
+    "p": 2,
+    "date_ranges": [
+     "2026-01-01..2026-01-31",
+     "2026-05-01..2026-05-14"
+    ],
+    "weekday_pts": 15,
+    "weekend_pts": 17,
+    "days": 45,
+    "demand_index": 0.872
+   },
+   {
+    "p": 3,
+    "date_ranges": [
+     "2026-05-15..2026-06-10",
+     "2026-12-01..2026-12-23"
+    ],
+    "weekday_pts": 16,
+    "weekend_pts": 18,
+    "days": 50,
+    "demand_index": 0.924
+   },
+   {
+    "p": 4,
+    "date_ranges": [
+     "2026-02-01..2026-02-15",
+     "2026-06-11..2026-08-31"
+    ],
+    "weekday_pts": 17,
+    "weekend_pts": 19,
+    "days": 97,
+    "demand_index": 0.981
+   },
+   {
+    "p": 5,
+    "date_ranges": [
+     "2026-10-01..2026-11-24",
+     "2026-11-28..2026-11-30"
+    ],
+    "weekday_pts": 18,
+    "weekend_pts": 21,
+    "days": 58,
+    "demand_index": 1.054
+   },
+   {
+    "p": 6,
+    "date_ranges": [
+     "2026-02-16..2026-03-28",
+     "2026-04-06..2026-04-30",
+     "2026-11-25..2026-11-27"
+    ],
+    "weekday_pts": 19,
+    "weekend_pts": 22,
+    "days": 69,
+    "demand_index": 1.106
+   },
+   {
+    "p": 7,
+    "date_ranges": [
+     "2026-03-29..2026-04-05",
+     "2026-12-24..2026-12-31"
+    ],
+    "weekday_pts": 26,
+    "weekend_pts": 29,
+    "days": 16,
+    "demand_index": 1.493
+   }
+  ]
+ }
+}

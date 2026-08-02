@@ -1,0 +1,1730 @@
+{
+ "version": "0.4.0",
+ "effective": "2026-07",
+ "note": "v1 vocabulary built from a labelled statement sample + known Disney POS names. category:null = venue-only rule: identifies the merchant but defers category to L3/L4 (folio-style descriptors are inherently ambiguous). forecast_modeled (2026-07-20): transportation rules the forecast engine already prices with its own term (parking addon, cruise fare). forecastTrip carries only UNFLAGGED transportation actuals, so flagging prevents a double count. Airlines (2026-07-20): the engine cannot predict airfare (it does not know where a household flies from), so airfare is disclosed as excluded and carried from actuals the moment the user records one. Prefixes are deliberately narrow - AMERICAN AIR not AMERICAN (Amex), UNITED AIR not UNITED (United Way), FRONTIER AIR not FRONTIER (Frontier Communications). OTAs (Expedia/Priceline) are intentionally absent: they bundle hotel+air and would guess wrong. Cruise fare = LODGING (the design director 2026-07-20, overrules the earlier fares->transportation mapping): the stateroom is where you sleep and on land+sea the ship replaces hotel nights, same logic as the frozen DVC-dues=lodging. Filing it under Travel made a cruise trip read as if the family never stayed anywhere.",
+ "rules": [
+  {
+   "id": "lyft",
+   "match": {
+    "type": "prefix",
+    "value": "LYFT"
+   },
+   "merchant": "Lyft",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false
+  },
+  {
+   "id": "uber",
+   "match": {
+    "type": "prefix",
+    "value": "UBER"
+   },
+   "merchant": "Uber",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false
+  },
+  {
+   "id": "uber-pending",
+   "match": {
+    "type": "prefix",
+    "value": "UBR*"
+   },
+   "merchant": "Uber",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false
+  },
+  {
+   "id": "dcl-reservations",
+   "match": {
+    "type": "prefix",
+    "value": "DCL RESERVATIONS"
+   },
+   "merchant": "Disney Cruise Line reservations",
+   "venue": "DCL",
+   "category": "lodging",
+   "ambiguous": true
+  },
+  {
+   "id": "disney-cruise-line",
+   "match": {
+    "type": "prefix",
+    "value": "DISNEY CRUISE LINE"
+   },
+   "merchant": "Disney Cruise Line",
+   "venue": "DCL",
+   "category": "lodging",
+   "ambiguous": true
+  },
+  {
+   "id": "mears",
+   "match": {
+    "type": "prefix",
+    "value": "MEARS"
+   },
+   "merchant": "Mears Transportation",
+   "venue": "WDW",
+   "category": "transportation",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-ticket-addon",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TICKET ADD ON"
+   },
+   "merchant": "WDW ticket add-on (Genie+/LL)",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-lightning-lane",
+   "match": {
+    "type": "prefix",
+    "value": "WDW LIGHTNING LANE"
+   },
+   "merchant": "WDW Lightning Lane",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-expedited",
+   "match": {
+    "type": "prefix",
+    "value": "WDW EXPEDITED ACCES"
+   },
+   "merchant": "WDW expedited access (Genie+)",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "undercover-tourist",
+   "match": {
+    "type": "prefix",
+    "value": "UNDERCOVERTOURIST"
+   },
+   "merchant": "Undercover Tourist (ticket reseller)",
+   "venue": null,
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-tickets",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TICKETS"
+   },
+   "merchant": "WDW tickets",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "dolphin-encounter",
+   "match": {
+    "type": "exact",
+    "value": "DOLPHIN ENCOUNTER"
+   },
+   "merchant": "port excursion: dolphin encounter",
+   "venue": "DCL",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "caseys-corner",
+   "match": {
+    "type": "prefix",
+    "value": "CASEY'S CORNER"
+   },
+   "merchant": "Casey's Corner (MK QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "sleepy-hollow",
+   "match": {
+    "type": "prefix",
+    "value": "WDW SLEEPY HOLLOW"
+   },
+   "merchant": "Sleepy Hollow (MK QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "westward-ho",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WESTWARD HO"
+   },
+   "merchant": "Westward Ho (MK QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "popcorn-carts",
+   "match": {
+    "type": "prefix",
+    "value": "WDW POPCORN CARTS"
+   },
+   "merchant": "WDW popcorn carts",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "aloha-isle",
+   "match": {
+    "type": "prefix",
+    "value": "WDW ALOHA ISLE"
+   },
+   "merchant": "Aloha Isle (MK QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "roaring-fork",
+   "match": {
+    "type": "prefix",
+    "value": "WDW ROARING FORK"
+   },
+   "merchant": "Roaring Fork (WL QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "contempo-cafe",
+   "match": {
+    "type": "token",
+    "value": "CONTEMPO CAFE"
+   },
+   "merchant": "Contempo Cafe (CR QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "kona-cafe",
+   "match": {
+    "type": "token",
+    "value": "KONA CAFE"
+   },
+   "merchant": "Kona Cafe (Poly TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "artists-palette",
+   "match": {
+    "type": "token",
+    "value": "ARTISTS PALETTE"
+   },
+   "merchant": "Artist's Palette (SSR QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "pineapple-lanai",
+   "match": {
+    "type": "token",
+    "value": "PINEAPPLE LANAI"
+   },
+   "merchant": "Pineapple Lanai (Poly QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "fife-and-drum",
+   "match": {
+    "type": "token",
+    "value": "FIFE AND DRUM"
+   },
+   "merchant": "Fife & Drum (Epcot QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "ronto-roasters",
+   "match": {
+    "type": "prefix",
+    "value": "RONTO ROASTERS"
+   },
+   "merchant": "Ronto Roasters (HS QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "milk-stand",
+   "match": {
+    "type": "prefix",
+    "value": "MILK STAND"
+   },
+   "merchant": "Milk Stand (HS QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "docking-bay",
+   "match": {
+    "type": "prefix",
+    "value": "DOCKING BAY 7"
+   },
+   "merchant": "Docking Bay 7 (HS QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "fantasmic-food",
+   "match": {
+    "type": "prefix",
+    "value": "WDW FANTASMIC FOOD"
+   },
+   "merchant": "Fantasmic! food carts",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "amorettes",
+   "match": {
+    "type": "prefix",
+    "value": "WDW AMORETTE'S"
+   },
+   "merchant": "Amorette's Patisserie (DS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "boathouse",
+   "match": {
+    "type": "token",
+    "value": "BOATHOUSE"
+   },
+   "merchant": "The Boathouse (DS TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "morimoto",
+   "match": {
+    "type": "prefix",
+    "value": "MORIMOTO ASIA"
+   },
+   "merchant": "Morimoto Asia (DS TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "yak-yeti",
+   "match": {
+    "type": "prefix",
+    "value": "YAK & YETI"
+   },
+   "merchant": "Yak & Yeti (AK TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "steakhouse-71",
+   "match": {
+    "type": "prefix",
+    "value": "WDW STEAKHOUSE 71"
+   },
+   "merchant": "Steakhouse 71 (CR TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "scifi-dinein",
+   "match": {
+    "type": "prefix",
+    "value": "WDW SCI-FI DINE-IN"
+   },
+   "merchant": "Sci-Fi Dine-In (HS TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "katsura",
+   "match": {
+    "type": "prefix",
+    "value": "KATSURAGRILL"
+   },
+   "merchant": "Katsura Grill (Epcot QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "joffreys",
+   "match": {
+    "type": "token",
+    "value": "JOFFREY"
+   },
+   "merchant": "Joffrey's Coffee",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "food-hall",
+   "match": {
+    "type": "prefix",
+    "value": "FOOD HALL"
+   },
+   "merchant": "cruise/port food hall",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "grubhub-seamless",
+   "match": {
+    "type": "prefix",
+    "value": "SEAMLSS"
+   },
+   "merchant": "Grubhub/Seamless (concatenated form)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "doordash",
+   "match": {
+    "type": "prefix",
+    "value": "DOORDASH"
+   },
+   "merchant": "DoorDash",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "instacart",
+   "match": {
+    "type": "prefix",
+    "value": "INSTACART"
+   },
+   "merchant": "Instacart",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "cibo-express",
+   "match": {
+    "type": "token",
+    "value": "CIBO EXPRESS"
+   },
+   "merchant": "Cibo Express (airport)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "canteen",
+   "match": {
+    "type": "prefix",
+    "value": "CANTEEN"
+   },
+   "merchant": "Canteen vending",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "world-of-disney",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WORLD OF DISNEY"
+   },
+   "merchant": "World of Disney (DS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "emporium",
+   "match": {
+    "type": "prefix",
+    "value": "WDW EMPORIUM"
+   },
+   "merchant": "Emporium (MK)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "bayview-gifts",
+   "match": {
+    "type": "token",
+    "value": "BAYVIEW GIFTS"
+   },
+   "merchant": "Bay View Gifts",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "creations-shop",
+   "match": {
+    "type": "prefix",
+    "value": "WDW CREATIONS SHOP"
+   },
+   "merchant": "Creations Shop (Epcot)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "treasure-xandar",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TREASURE XANDAR"
+   },
+   "merchant": "Treasures of Xandar (Epcot)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "tatooine-traders",
+   "match": {
+    "type": "prefix",
+    "value": "TATOOINE TRADERS"
+   },
+   "merchant": "Tatooine Traders (HS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "curtain-call",
+   "match": {
+    "type": "prefix",
+    "value": "CURTAIN CALL COLLEC"
+   },
+   "merchant": "Curtain Call Collectibles",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "days-christmas",
+   "match": {
+    "type": "prefix",
+    "value": "WDW DAYS CHRISTMAS"
+   },
+   "merchant": "Days of Christmas (DS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "goofys-candy",
+   "match": {
+    "type": "prefix",
+    "value": "WDW GOOFY'S CANDY"
+   },
+   "merchant": "Goofy's Candy Co. (DS treats)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "lego-ds",
+   "match": {
+    "type": "prefix",
+    "value": "LEGO DISNEY SPRINGS"
+   },
+   "merchant": "LEGO Store (DS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "uniqlo",
+   "match": {
+    "type": "prefix",
+    "value": "UNIQLO"
+   },
+   "merchant": "Uniqlo (DS)",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "basin",
+   "match": {
+    "type": "token",
+    "value": "BASIN"
+   },
+   "merchant": "Basin (DS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "japan-pavilion",
+   "match": {
+    "type": "prefix",
+    "value": "JAPAN PAVILION"
+   },
+   "merchant": "Japan Pavilion (Epcot)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": true
+  },
+  {
+   "id": "bibbidi",
+   "match": {
+    "type": "prefix",
+    "value": "BIBBIDI BOBBIDI"
+   },
+   "merchant": "Bibbidi Bobbidi Boutique",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "disney-springs-store",
+   "match": {
+    "type": "token",
+    "value": "DISNEY SPRINGS"
+   },
+   "merchant": "Disney Springs store (numbered)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": true
+  },
+  {
+   "id": "shopdisney",
+   "match": {
+    "type": "prefix",
+    "value": "SHOPDISNEY"
+   },
+   "merchant": "shopDisney online",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "hampton-inn",
+   "match": {
+    "type": "prefix",
+    "value": "HAMPTON INN"
+   },
+   "merchant": "Hampton Inn",
+   "venue": null,
+   "category": "lodging",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-first-aid",
+   "match": {
+    "type": "prefix",
+    "value": "WDW FIRST AID"
+   },
+   "merchant": "WDW first aid / sundries",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "wilderness-mercantile",
+   "match": {
+    "type": "prefix",
+    "value": "WILDERNESS MERCANTI"
+   },
+   "merchant": "Wilderness Lodge mercantile",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "dcl-ship-folio",
+   "match": {
+    "type": "prefix",
+    "value": "DCL SHIP"
+   },
+   "merchant": "DCL onboard folio",
+   "venue": "DCL",
+   "category": null,
+   "ambiguous": true,
+   "folio": true
+  },
+  {
+   "id": "dcl-onboard",
+   "match": {
+    "type": "prefix",
+    "value": "DCL ONBOARD"
+   },
+   "merchant": "DCL onboard folio",
+   "venue": "DCL",
+   "category": null,
+   "ambiguous": true,
+   "folio": true
+  },
+  {
+   "id": "wdw-disney-resorts-folio",
+   "match": {
+    "type": "prefix",
+    "value": "WDW DISNEY RESORTS"
+   },
+   "merchant": "WDW resort folio",
+   "venue": "WDW",
+   "category": null,
+   "ambiguous": true,
+   "folio": true,
+   "examples": [
+    "WDW DISNEY RESORTS ORLANDO FL"
+   ]
+  },
+  {
+   "id": "disney-resorts-folio",
+   "match": {
+    "type": "token",
+    "value": "DISNEY RESORTS"
+   },
+   "merchant": "WDW resort folio",
+   "venue": "WDW",
+   "category": null,
+   "ambiguous": true,
+   "folio": true
+  },
+  {
+   "id": "wdw-generic",
+   "match": {
+    "type": "prefix",
+    "value": "WDW"
+   },
+   "merchant": "WDW (unspecified POS)",
+   "venue": "WDW",
+   "category": null,
+   "ambiguous": true
+  },
+  {
+   "id": "splitsville",
+   "match": {
+    "type": "token",
+    "value": "SPLITSVILLE"
+   },
+   "merchant": "Splitsville (DS bowling+dining)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "raglan-road",
+   "match": {
+    "type": "prefix",
+    "value": "RAGLAN ROAD"
+   },
+   "merchant": "Raglan Road (DS TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "geyser-point",
+   "match": {
+    "type": "prefix",
+    "value": "WDW GEYSER POINT"
+   },
+   "merchant": "Geyser Point (WL)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "jungle-skipper",
+   "match": {
+    "type": "prefix",
+    "value": "WDW JUNGLE SKIPPER"
+   },
+   "merchant": "Jungle Navigation Skipper Canteen (MK TS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "sunshine-tree",
+   "match": {
+    "type": "prefix",
+    "value": "WDW SUNSHINE TREE"
+   },
+   "merchant": "Sunshine Tree Terrace (MK QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-marina",
+   "match": {
+    "type": "prefix",
+    "value": "WDW MARINA"
+   },
+   "merchant": "WDW resort marina snacks",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "cracker-barrel",
+   "match": {
+    "type": "prefix",
+    "value": "CRACKER BARREL"
+   },
+   "merchant": "Cracker Barrel",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "ihop",
+   "match": {
+    "type": "prefix",
+    "value": "IHOP"
+   },
+   "merchant": "IHOP",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "essex-burger",
+   "match": {
+    "type": "token",
+    "value": "ESSEX BURGER"
+   },
+   "merchant": "Essex Burger Market (LGA)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "torn-basil",
+   "match": {
+    "type": "prefix",
+    "value": "TORN BASIL"
+   },
+   "merchant": "Torn Basil (FLL)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "stellar-news",
+   "match": {
+    "type": "prefix",
+    "value": "STELLAR NEWS"
+   },
+   "merchant": "Stellar News (MCO snacks)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "via-napoli",
+   "match": {
+    "type": "prefix",
+    "value": "VIA NAPOLI"
+   },
+   "merchant": "Via Napoli (Epcot Italy)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "france-food-festival",
+   "match": {
+    "type": "prefix",
+    "value": "FRANCE FOOD FESTIVAL"
+   },
+   "merchant": "Epcot France festival booth",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "germany-bierline",
+   "match": {
+    "type": "prefix",
+    "value": "GERMANY BIERLINE"
+   },
+   "merchant": "Epcot Germany beer stand",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "event-kiosk",
+   "match": {
+    "type": "prefix",
+    "value": "EVENT KIOSK"
+   },
+   "merchant": "Epcot festival event kiosk",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "pecos-bill",
+   "match": {
+    "type": "prefix",
+    "value": "PECOS BILL"
+   },
+   "merchant": "Pecos Bill Tall Tale Inn (MK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "ghirardelli",
+   "match": {
+    "type": "prefix",
+    "value": "GHIRARDELLI"
+   },
+   "merchant": "Ghirardelli (Disney Springs)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "roaring-forks",
+   "match": {
+    "type": "prefix",
+    "value": "ROARING FORKS"
+   },
+   "merchant": "Roaring Fork (Wilderness Lodge QS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "prime-time-cafe",
+   "match": {
+    "type": "prefix",
+    "value": "PRIME TIME CAFE"
+   },
+   "merchant": "50's Prime Time Café (HS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "teppan-edo",
+   "match": {
+    "type": "prefix",
+    "value": "TEPPAN EDO"
+   },
+   "merchant": "Teppan Edo (Epcot Japan)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "space-220",
+   "match": {
+    "type": "prefix",
+    "value": "SPACE 220"
+   },
+   "merchant": "Space 220 (Epcot)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "mexico-pavilion",
+   "match": {
+    "type": "prefix",
+    "value": "MEXICO PAVILION"
+   },
+   "merchant": "Mexico Pavilion dining (Epcot)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "vivoli-gelato",
+   "match": {
+    "type": "prefix",
+    "value": "VIVOLI IL GELATO"
+   },
+   "merchant": "Vivoli il Gelato (Disney Springs)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "cake-bake-shop",
+   "match": {
+    "type": "prefix",
+    "value": "CAKE BAKE SHOP"
+   },
+   "merchant": "The Cake Bake Shop (BoardWalk)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "sci-fi-dine-in",
+   "match": {
+    "type": "prefix",
+    "value": "SCI-FI DINE-IN"
+   },
+   "merchant": "Sci-Fi Dine-In Theater (HS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "folio-dining-line",
+   "match": {
+    "type": "prefix",
+    "value": "DINING -"
+   },
+   "merchant": "Resort folio dining line item",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "contemporary-pos",
+   "match": {
+    "type": "token",
+    "value": "CONTEMPORARY"
+   },
+   "merchant": "Contemporary resort POS (numbered)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "wdw-ale-compass",
+   "match": {
+    "type": "prefix",
+    "value": "WDW ALE & COMPASS"
+   },
+   "merchant": "Ale & Compass (Yacht Club)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-storybook",
+   "match": {
+    "type": "prefix",
+    "value": "WDW STORYBOOKDINING"
+   },
+   "merchant": "Storybook Dining (Wilderness Lodge)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-topolinos",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TOPOLINO"
+   },
+   "merchant": "Topolino's Terrace (Riviera)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-narcoossees",
+   "match": {
+    "type": "prefix",
+    "value": "WDW NARCOOSSEE"
+   },
+   "merchant": "Narcoossee's (Grand Floridian)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-whispering-canyon",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WHISPER CANYON"
+   },
+   "merchant": "Whispering Canyon Café (WL)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-boma",
+   "match": {
+    "type": "prefix",
+    "value": "WDW BOMA"
+   },
+   "merchant": "Boma (Animal Kingdom Lodge)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-ohana",
+   "match": {
+    "type": "prefix",
+    "value": "WDW OHANA"
+   },
+   "merchant": "'Ohana (Polynesian)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-chef-mickeys",
+   "match": {
+    "type": "prefix",
+    "value": "WDW CHEF MICKEY"
+   },
+   "merchant": "Chef Mickey's (Contemporary)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-main-st-bakery",
+   "match": {
+    "type": "prefix",
+    "value": "WDW MAIN ST. BAKERY"
+   },
+   "merchant": "Main Street Bakery (MK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-morocco-juice",
+   "match": {
+    "type": "prefix",
+    "value": "WDW MOROCCO JUICE"
+   },
+   "merchant": "Morocco juice stand (Epcot)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-beer-truck",
+   "match": {
+    "type": "prefix",
+    "value": "WDW BEER TRUCK"
+   },
+   "merchant": "WDW beer truck",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-tamu-tamu",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TAMU TAMU"
+   },
+   "merchant": "Tamu Tamu Refreshments (AK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-harambe-market",
+   "match": {
+    "type": "prefix",
+    "value": "WDW HARAMBE MARKET"
+   },
+   "merchant": "Harambe Market (AK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-epic-eats",
+   "match": {
+    "type": "prefix",
+    "value": "WDW EPIC EATS"
+   },
+   "merchant": "Epic Eats (HS)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-lunching-pad",
+   "match": {
+    "type": "prefix",
+    "value": "WDW LUNCHING PAD"
+   },
+   "merchant": "The Lunching Pad (MK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-liberty-square",
+   "match": {
+    "type": "prefix",
+    "value": "WDW LIBERTY SQUARE"
+   },
+   "merchant": "Liberty Square Market (MK)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-westward-ho",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WESTWARD HO"
+   },
+   "merchant": "Westward Ho (MK cart)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "amazon-fresh",
+   "match": {
+    "type": "prefix",
+    "value": "AMAZON FRESH"
+   },
+   "merchant": "Amazon Fresh grocery delivery",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "publix",
+   "match": {
+    "type": "prefix",
+    "value": "PUBLIX"
+   },
+   "merchant": "Publix grocery",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "starbucks",
+   "match": {
+    "type": "token",
+    "value": "STARBUCKS"
+   },
+   "merchant": "Starbucks",
+   "venue": null,
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "sprinkles",
+   "match": {
+    "type": "prefix",
+    "value": "SPRINKLES"
+   },
+   "merchant": "Sprinkles Cupcakes (Disney Springs)",
+   "venue": "WDW",
+   "category": "food",
+   "ambiguous": false
+  },
+  {
+   "id": "airport-lga",
+   "match": {
+    "type": "token",
+    "value": "LGA"
+   },
+   "merchant": "LaGuardia airport concession (travel day)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "airport-fll",
+   "match": {
+    "type": "token",
+    "value": "FLL"
+   },
+   "merchant": "Fort Lauderdale airport concession (travel day)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "airport-oia",
+   "match": {
+    "type": "token",
+    "value": "OIA"
+   },
+   "merchant": "Orlando airport concession (travel day)",
+   "venue": null,
+   "category": "food",
+   "ambiguous": true
+  },
+  {
+   "id": "mouse-gear",
+   "match": {
+    "type": "prefix",
+    "value": "MOUSE GEAR"
+   },
+   "merchant": "Mouse Gear / Creations Shop (Epcot)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "coca-cola-orlando",
+   "match": {
+    "type": "prefix",
+    "value": "COCA COLA ORLANDO"
+   },
+   "merchant": "Coca-Cola Store (Disney Springs)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "days-of-christmas",
+   "match": {
+    "type": "prefix",
+    "value": "DISNEY DAYS OF CHRI"
+   },
+   "merchant": "Disney's Days of Christmas (DS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "rfc-retail",
+   "match": {
+    "type": "prefix",
+    "value": "RFC DISNEY"
+   },
+   "merchant": "Rainforest Cafe retail (WDW)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "magic-of-disney",
+   "match": {
+    "type": "prefix",
+    "value": "MAGIC OF DISNEY"
+   },
+   "merchant": "Magic of Disney (MCO airport store)",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "havaianas-disney",
+   "match": {
+    "type": "prefix",
+    "value": "HAVAIANAS DISNEY"
+   },
+   "merchant": "Havaianas (Disney Springs)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "pandora-disney",
+   "match": {
+    "type": "prefix",
+    "value": "PANDORA @DISNEY"
+   },
+   "merchant": "Pandora (Disney Springs)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "ink-by-hudson",
+   "match": {
+    "type": "prefix",
+    "value": "INK BY HUDSON"
+   },
+   "merchant": "Ink by Hudson (airport newsstand)",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "quicktag",
+   "match": {
+    "type": "prefix",
+    "value": "QUICKTAG"
+   },
+   "merchant": "QuickTag engraving kiosk",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "ctm-pressed-pennies",
+   "match": {
+    "type": "prefix",
+    "value": "CTM GROUP"
+   },
+   "merchant": "CTM pressed-coin machines",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "long-tech",
+   "match": {
+    "type": "prefix",
+    "value": "LONG TECH"
+   },
+   "merchant": "Long Tech novelty machines",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": true
+  },
+  {
+   "id": "tb-ret",
+   "match": {
+    "type": "prefix",
+    "value": "TB RET"
+   },
+   "merchant": "Airport boutique retail (TB RET)",
+   "venue": null,
+   "category": "gifts",
+   "ambiguous": true
+  },
+  {
+   "id": "wdw-glas-porzellan",
+   "match": {
+    "type": "prefix",
+    "value": "WDW GLAS PORZELLAN"
+   },
+   "merchant": "Glas und Porzellan (Epcot Germany)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-trading-post",
+   "match": {
+    "type": "prefix",
+    "value": "WDW TRADING POST"
+   },
+   "merchant": "WDW trading post shop",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-wild-mercantile",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WILD MERCANTILE"
+   },
+   "merchant": "Wild Mercantile shop",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-mickeys-of-hollywood",
+   "match": {
+    "type": "prefix",
+    "value": "WDW MICKEY'S OF HOL"
+   },
+   "merchant": "Mickey's of Hollywood (HS)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-golden-outpost",
+   "match": {
+    "type": "prefix",
+    "value": "WDW GOLDEN OUTPOST"
+   },
+   "merchant": "Golden Outpost shop (AK)",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-community-hall",
+   "match": {
+    "type": "prefix",
+    "value": "WDW COMMUNITY HALL"
+   },
+   "merchant": "DVC Community Hall crafts",
+   "venue": "WDW",
+   "category": "gifts",
+   "ambiguous": false
+  },
+  {
+   "id": "arcade",
+   "match": {
+    "type": "token",
+    "value": "ARCADE"
+   },
+   "merchant": "Resort arcade",
+   "venue": null,
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wilderness-lodge-arcade",
+   "match": {
+    "type": "prefix",
+    "value": "WILDERNESS LDG ARCA"
+   },
+   "merchant": "Wilderness Lodge arcade",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "horseback-riding",
+   "match": {
+    "type": "prefix",
+    "value": "HORSEBACK RIDING"
+   },
+   "merchant": "Tri-Circle-D horseback riding (WDW)",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-exp-reservation",
+   "match": {
+    "type": "prefix",
+    "value": "WDW EXP RESERVATION"
+   },
+   "merchant": "WDW experience reservation (tours/parties)",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-win-place-show",
+   "match": {
+    "type": "prefix",
+    "value": "WDW WIN PLACE SHOW"
+   },
+   "merchant": "Win Place or Show arcade (Saratoga)",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "wdw-grand-flo-spa",
+   "match": {
+    "type": "prefix",
+    "value": "WDW GRAND FLO SPA"
+   },
+   "merchant": "Grand Floridian spa",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "vend-massage-chair",
+   "match": {
+    "type": "prefix",
+    "value": "API VENDMASSAGE"
+   },
+   "merchant": "Massage chair vending",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "working-advantages",
+   "match": {
+    "type": "prefix",
+    "value": "WORKING ADV"
+   },
+   "merchant": "Working Advantages discount tickets",
+   "venue": null,
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "tiffany-town-car",
+   "match": {
+    "type": "prefix",
+    "value": "TIFFANY TOWN CAR"
+   },
+   "merchant": "Tiffany Towncar (port/airport transfer)",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false
+  },
+  {
+   "id": "contemporary-arcade",
+   "match": {
+    "type": "prefix",
+    "value": "CONTEMPORARY ARCADE"
+   },
+   "merchant": "Contemporary resort arcade",
+   "venue": "WDW",
+   "category": "activity",
+   "ambiguous": false
+  },
+  {
+   "id": "parking-generic",
+   "match": {
+    "type": "token",
+    "value": "PARKING"
+   },
+   "merchant": "Parking (theme park / airport)",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "forecast_modeled": true
+  },
+  {
+   "id": "delta",
+   "match": {
+    "type": "prefix",
+    "value": "DELTA AIR"
+   },
+   "merchant": "Delta Air Lines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "united-air",
+   "match": {
+    "type": "prefix",
+    "value": "UNITED AIR"
+   },
+   "merchant": "United Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "american-air",
+   "match": {
+    "type": "prefix",
+    "value": "AMERICAN AIR"
+   },
+   "merchant": "American Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "southwest-air",
+   "match": {
+    "type": "prefix",
+    "value": "SOUTHWEST AIR"
+   },
+   "merchant": "Southwest Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "jetblue",
+   "match": {
+    "type": "prefix",
+    "value": "JETBLUE"
+   },
+   "merchant": "JetBlue Airways",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "alaska-air",
+   "match": {
+    "type": "prefix",
+    "value": "ALASKA AIR"
+   },
+   "merchant": "Alaska Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "spirit-air",
+   "match": {
+    "type": "prefix",
+    "value": "SPIRIT AIR"
+   },
+   "merchant": "Spirit Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "frontier-air",
+   "match": {
+    "type": "prefix",
+    "value": "FRONTIER AIR"
+   },
+   "merchant": "Frontier Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "allegiant-air",
+   "match": {
+    "type": "prefix",
+    "value": "ALLEGIANT"
+   },
+   "merchant": "Allegiant Air",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  },
+  {
+   "id": "hawaiian-air",
+   "match": {
+    "type": "prefix",
+    "value": "HAWAIIAN AIR"
+   },
+   "merchant": "Hawaiian Airlines",
+   "venue": null,
+   "category": "transportation",
+   "ambiguous": false,
+   "transport_kind": "air"
+  }
+ ]
+}
