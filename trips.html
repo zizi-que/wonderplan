@@ -527,6 +527,19 @@ select.input.is-chosen { color: var(--ink); }
 .mini-row .label { flex: none; }
 .mini-row .input { height: var(--mini-h); border-radius: var(--radius-chip);
   flex: 1 1 auto; padding: 0 16px; font-weight: 400; font-size: 15px; }
+/* Split-stay From/To are DATE PICKERS (the design director, 2026-08-02). They shipped as
+   `type="text" inputmode="numeric"` needing a hand-typed `2026-12-18` — and an
+   iOS numeric keypad has no hyphen, so on the primary platform the field could
+   not be filled at all, while readSegments was reading it for `check_in` and
+   `nights`. Same defect family as DVC's use-year field: the affordance
+   contradicted the format the code required.
+   The fix reuses the main field's construct exactly — designed face + a native
+   date input at zero opacity — so the drawn pill is untouched: same 32 height,
+   same chip radius, same 15px muted ink, same 16px padding. Only the calendar
+   glyph is absent, because the board does not draw one on the mini row. */
+.date-field--mini { height: var(--mini-h); border-radius: var(--radius-chip);
+  flex: 1 1 auto; padding: 0 16px; gap: 0; }
+.date-field--mini .date-val { font-size: 15px; }
 
 .add-more { color: var(--ink); text-decoration: underline; text-align: center;
   align-self: center; width: auto; padding: 0; }
@@ -998,6 +1011,12 @@ const at = d => Date.parse(d + 'T00:00:00Z');
 const usDate = d => { const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y}`; };
 const countdown = d => Math.ceil((at(d) - T0) / DAY);
 const nightsBetween = (a, b) => Math.round((at(b) - at(a)) / DAY);
+/* The split-stay pill's EMPTY face (the design director, 2026-08-02): "tomorrow", computed
+   when the row is drawn, replacing the board's hard-coded 2026-12-18/12-30.
+   Off T0, which is already the local date normalised to UTC midnight, so this
+   is the user's tomorrow rather than UTC's. A literal sample date goes stale
+   and eventually reads as a date in the past. */
+const tomorrowISO = () => new Date(T0 + DAY).toISOString().slice(0, 10);
 
 const HEADING = { next: 'Next Trip', coming: 'Coming Up', planning: 'Planning' };
 
@@ -1333,17 +1352,24 @@ stays.addEventListener('change', e => {
 /* Split-stay (78:3651) adds the per-hotel from–to row. Single stay shows none:
    the trip window is implied. check_in = from, nights = to − from. */
 function splitHTML(n) {
+  const sample = tomorrowISO();
   return `
     <div class="split">
       ${hotelHTML('Hotel ' + n)}
       <div class="mini-row">
         <div class="div">
           <span class="label t-12 txt">From</span>
-          <input class="input input--center" type="text" inputmode="numeric" placeholder="2026-12-18" autocomplete="off">
+          <div class="date-field date-field--mini">
+            <span class="date-val txt" data-date-face data-empty="${sample}">${sample}</span>
+            <input type="date" aria-label="Stay ${n} from">
+          </div>
         </div>
         <div class="div">
           <span class="label t-12 txt">To</span>
-          <input class="input input--center" type="text" inputmode="numeric" placeholder="2026-12-30" autocomplete="off">
+          <div class="date-field date-field--mini">
+            <span class="date-val txt" data-date-face data-empty="${sample}">${sample}</span>
+            <input type="date" aria-label="Stay ${n} to">
+          </div>
         </div>
       </div>
     </div>`;
@@ -1359,6 +1385,12 @@ function renderStays() {
   stays.style.gap = '8px';
   form.querySelector('[data-add-stay]').textContent =
     stayCount === 1 ? '+add split stay' : '+add another split stay';
+  /* the row's date fields are brand new DOM, so their faces have never been
+     painted; the listeners are delegated and need no rewiring. A row added by
+     `+add split stay` is exactly the case chaining is for — it arrives empty,
+     right after a row whose To is usually already set. */
+  chainStays();
+  paintDates();
 }
 
 form.querySelector('[data-add-stay]').addEventListener('click', () => {
@@ -1395,8 +1427,10 @@ function gate() {
      declared above and are safe. */
   const c = comps();
   const row = {
-    start_date: form.querySelector('#f-from').value || null,
-    end_date: form.querySelector('#f-to').value || null,
+    /* `chosen`, not `.value`: an ARMED date is a picker hint, so the gate must
+       not go green on an end date nobody has actually picked. */
+    start_date: chosen(form.querySelector('#f-from')) || null,
+    end_date: chosen(form.querySelector('#f-to')) || null,
     adults: form.querySelector('#f-adults').value,
     include_lodging: c.lodging, include_parks: c.parks,
     include_cruise: c.cruise, include_abd: c.abd,
@@ -1441,9 +1475,11 @@ function liveSegments(row) {
     const hotel = el.matches('.hotel') ? el : el.querySelector('.hotel');
     const picked = pickedHotel(hotel);
     if (picked.kind === 'none') continue;
-    const mini = el.querySelectorAll('.mini-row .input');
-    const from = (mini[0]?.value.trim() || row.start_date) || null;
-    const to = (mini[1]?.value.trim() || row.end_date) || null;
+    const mini = el.querySelectorAll('.mini-row input[type="date"]');
+    /* same rule as readSegments — the live forecast must price the trip the
+       save would write, so an armed hint is not a stay boundary here either */
+    const from = (chosen(mini[0]) || row.start_date) || null;
+    const to = (chosen(mini[1]) || row.end_date) || null;
     /* An off-property stay has no seeded row to forecast a tier from, and this
        function never writes, so it stays null rather than inventing one. */
     out.push({ hotel_id: picked.kind === 'id' ? picked.id : null,
@@ -1515,18 +1551,90 @@ for (const i of form.querySelectorAll('[data-comp]')) {
    .date-field note — and only wraps if the face is allowed to break, which
    `white-space: nowrap` prevents. */
 const EMPTY_DATE = 'YYYY-MM-DD';
-for (const f of form.querySelectorAll('.date-field')) {
-  const input = f.querySelector('input');
-  const face = f.querySelector('[data-date-face]');
-  const paint = () => { face.textContent = input.value || EMPTY_DATE; gate(); };
-  paint();
-  input.addEventListener('change', paint);
-  f.addEventListener('click', e => {
-    if (e.target === input && typeof input.showPicker === 'function') {
-      try { input.showPicker(); } catch { /* gesture rules differ per browser */ }
-    }
-  });
+
+/* DELEGATED, not wired per field. Split-stay rows are rendered by renderStays()
+   long after this runs, so a per-element loop would reach the two trip dates
+   and never the split ones — they would paint nothing and seed nothing. The
+   mini faces carry their own drawn empty string (the board's sample date)
+   in data-empty; the trip fields fall back to the drawn `YYYY-MM-DD`. */
+const paintDate = f => {
+  const input = f.querySelector('input[type="date"]');
+  const face  = f.querySelector('[data-date-face]');
+  if (input && face) face.textContent = input.value || face.dataset.empty || EMPTY_DATE;
+};
+const paintDates = () => form.querySelectorAll('.date-field').forEach(paintDate);
+paintDates();
+
+/* Picking one date ARMS THE OTHER PICKER on the same day (the design director, 2026-08-02),
+   so the OS picker opens on that month instead of scrolling back from today.
+   Only ever fills an EMPTY neighbour — a date the user already chose is never
+   overwritten — and `min` then stops To preceding From. Applies to the trip
+   window and to every split-stay row, since both are a two-picker row. */
+/* An armed date is a HINT, not an answer. It exists so the OS picker opens on
+   the right month; the user has still not chosen it. The distinction is
+   load-bearing in three places, and without it arming would quietly change
+   what a trip means:
+     · a split row the user never touched used to inherit the trip window;
+       armed-and-counted it would save as a ZERO-NIGHT stay instead
+     · the CTA gate would go green on a trip whose end date nobody picked,
+       against the 2026-08-01 ruling that save stays off until the form is
+       genuinely complete
+     · a hint must be REPLACEABLE — if stay 1's To moves, stay 2's From has to
+       follow, which it cannot do if the first guess has already set hard.
+   So: `arm` writes a value and marks it, `chosen` reads only unmarked values,
+   and the mark is cleared the moment the user edits that field themselves. */
+const arm    = (el, v) => { if (el && v) { el.value = v; el.dataset.autofill = '1'; } };
+const chosen = el => (el && !el.dataset.autofill && el.value) ? el.value : '';
+const clearArmed = () =>
+  form.querySelectorAll('[data-autofill]').forEach(el => delete el.dataset.autofill);
+
+function seedNeighbour(input) {
+  const row = input.closest('.field-row, .mini-row');
+  if (!row) return;
+  const pair = [...row.querySelectorAll('.date-field input[type="date"]')];
+  if (pair.length !== 2) return;
+  const [from, to] = pair;
+  if (input === from && (!to.value   || to.dataset.autofill))   arm(to,   from.value);
+  if (input === to   && (!from.value || from.dataset.autofill)) arm(from, to.value);
+  if (from.value) to.min = from.value;
 }
+
+/* CHAINING (the design director, 2026-08-02) — the same theory one row further out. A
+   split trip is continuous: you check out of one hotel and into the next the
+   same day, so stay N's From is stay N-1's To, and stay 1's From is the trip's
+   own start. Seeding them means a two-hotel trip is four pickers that each
+   open on the right month instead of on today.
+   Same rule as seedNeighbour and for the same reason: it only ever fills an
+   EMPTY field, so a date the user chose is never moved, and re-running it is
+   therefore idempotent — which is what lets it be called on every change. */
+function chainStays() {
+  const tripStart = form.querySelector('#f-from');
+  let prev = tripStart ? tripStart.value : '';
+  for (const row of stays.querySelectorAll('.mini-row')) {
+    const [from, to] = [...row.querySelectorAll('.date-field input[type="date"]')];
+    if (!from || !to) continue;
+    if (prev && (!from.value || from.dataset.autofill)) arm(from, prev);
+    if (from.value && (!to.value || to.dataset.autofill)) arm(to, from.value);
+    if (from.value) to.min = from.value;
+    prev = to.value || from.value || prev;
+  }
+}
+
+form.addEventListener('change', e => {
+  const input = e.target.closest?.('.date-field input[type="date"]');
+  if (!input) return;
+  delete input.dataset.autofill;   /* the user just chose this one — it is real now */
+  seedNeighbour(input);
+  chainStays();
+  paintDates();
+  gate();
+});
+form.addEventListener('click', e => {
+  const input = e.target.closest?.('.date-field input[type="date"]');
+  if (input && typeof input.showPicker === 'function') {
+    try { input.showPicker(); } catch { /* gesture rules differ per browser */ }
+  }
+});
 
 /* ── chips ─────────────────────────────────────────────────────────────── */
 for (const group of form.querySelectorAll('[data-chips]')) {
@@ -1566,8 +1674,9 @@ function readTrip(status) {
   return {
     title: fval('#f-name') || null,
     status,
-    start_date: fval('#f-from') || null,
-    end_date: fval('#f-to') || null,
+    /* armed dates are picker hints, never stored as if the user chose them */
+    start_date: chosen(form.querySelector('#f-from')) || null,
+    end_date: chosen(form.querySelector('#f-to')) || null,
     adults: fnum('#f-adults'),
     kids_under_7: fnum('#f-kids'),
     budget_amount: fnum('#f-budget'),
@@ -1605,9 +1714,12 @@ async function readSegments(trip) {
     const hotel = el.matches('.hotel') ? el : el.querySelector('.hotel');
     const picked = pickedHotel(hotel);
     if (picked.kind === 'none') continue;   /* an unnamed stay is not a segment */
-    const mini = el.querySelectorAll('.mini-row .input');
-    const from = (mini[0]?.value.trim() || trip.start_date) || null;
-    const to   = (mini[1]?.value.trim() || trip.end_date)   || null;
+    const mini = el.querySelectorAll('.mini-row input[type="date"]');
+    /* `chosen`, so a row left on its armed hint still inherits the trip window
+       exactly as it did before arming existed — rather than saving as a
+       zero-night stay because both pickers were pre-filled with the same day. */
+    const from = (chosen(mini[0]) || trip.start_date) || null;
+    const to   = (chosen(mini[1]) || trip.end_date)   || null;
     out.push({
       /* A seeded row is pointed at, never copied: ensureOffPropertyHotel is
          now reached only by the Off Property branch, which is what it was
@@ -1699,12 +1811,20 @@ async function fillForm(t) {
       syncHotelCard(hotel, { keepSecond: true });   /* the points line follows the row */
     }
     const pts = hotel.querySelector('[data-on-points]'); if (pts) pts.checked = Boolean(seg.on_points);
-    const mini = el.querySelectorAll('.mini-row .input');
+    const mini = el.querySelectorAll('.mini-row input[type="date"]');
     if (mini.length && seg.check_in) {
       mini[0].value = seg.check_in;
       mini[1].value = new Date(at(seg.check_in) + seg.nights * DAY).toISOString().slice(0, 10);
     }
   });
+  /* Setting .value in script fires no `change`, so the drawn faces would still
+     read the empty placeholder while the inputs held the stored dates —
+     reopening a split-stay trip would look like it had lost them.
+     `clearArmed` first: everything on this form came out of storage, so it is
+     all a real choice, and a stale hint mark would make the gate treat a saved
+     trip's own end date as unpicked. */
+  clearArmed();
+  paintDates();
 }
 
 async function openForm(tripId) {

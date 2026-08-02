@@ -266,12 +266,32 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
 .contract .fields { width: 153.25px; display: flex; flex-direction: column; gap: 8px; }
 /* Board rows are 14 / 14 / 12 tall with 8 gaps → the fields column is exactly
    56. A bare input takes its own line-height (~18px) and inflated each row. */
-.fieldline { height: 14px; display: flex; align-items: flex-start; gap: 8px; }
+.fieldline { height: 14px; display: flex; align-items: flex-start; gap: 8px;
+  position: relative; }   /* containing block for the two pickers' hit areas */
 .fieldline.dues-row { height: 12px; }
 .fieldline .k { color: var(--ink); flex: none; }
 .fieldline .line { width: 90px; height: 14px; box-shadow: inset 0 -1px 0 var(--border); display: flex; align-items: flex-end; }
 .fieldline .line input { width: 100%; height: 13px; border: 0; background: transparent; outline: none;
   font-weight: 400; font-size: 15px; line-height: 13px; color: var(--ink); padding: 0; }
+/* Use Year and Expiring-in are PICKERS (the design director, 2026-08-02). The drawn field is
+   unchanged — same 90x14 box, same rule, same 15/13 ink — so `.val` reproduces
+   what the <input> painted and the <select> sits invisibly over it. That is
+   the pattern this file already uses three times (`.pill`, `.rec-row .who`,
+   `.rec-row .yr`).
+   A hit area may grow where painted ink may not, so the select is sized to the
+   whole FIELDLINE — label included, which makes "Use Year: [ Feb ]" one target
+   instead of an 81x14 sliver. MEASURED, not assumed: the two rows sit on a
+   22px pitch (14 tall, 8 apart), so 22 is the tallest either area can be
+   before they overlap each other and start stealing each other's taps. That
+   is the Trips check-line trade-off again — wide-but-short, under the 44 bar,
+   and the pitch is the only thing that could give more.
+   ⚠ A first attempt used inset -15px for a true 44, and the two areas DID
+   overlap. Do not reintroduce it without changing the drawn pitch. */
+.fieldline .line .val { width: 100%; height: 13px; font-weight: 400; font-size: 15px;
+  line-height: 13px; color: var(--ink); overflow: hidden; white-space: nowrap; }
+.fieldline .line select { position: absolute; inset: -4px 0; opacity: 0;
+  width: auto; height: auto; border: 0; cursor: pointer; }
+.fieldline .line:focus-within { box-shadow: inset 0 -1.5px 0 var(--dvc-primary); }
 .dues { color: var(--ink); display: flex; align-items: baseline; gap: 0;
   white-space: nowrap; }  /* board: hug-width label overflowing its column, never wrapped */
 .dues .opt { cursor: pointer; }
@@ -600,6 +620,16 @@ import { openIdb } from './js/storage/adapter-idb.js';
 import { createRepo } from './js/storage/repo.js';
 
 const UY_NAME = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* Expiry-year picker range (the design director, 2026-08-02: "expiration year is a year
+   picker"). DERIVED, not a hard-coded DVC era: this year through +60. A deed
+   is ~50 years, so every real contract — the 2042 originals through the newest
+   announced resort — falls inside it, and it can never go stale the way a
+   literal "2042-2080" would. `repo.saveContract` accepts 1990-2200, so every
+   offered value is one the store will take; the picker cannot produce a
+   rejection. `data/dvc-canonical.json` carries no per-resort expiry, so there
+   is nothing to derive this from instead. */
+const EXPIRY_YEARS = Array.from({ length: 61 }, (_, k) => new Date().getFullYear() + k);
 const TODAY = new Date();
 
 /* Storage failure degrades to "cannot save", never to a dead screen. */
@@ -856,9 +886,17 @@ function renderSetup() {
       <div class="r3">
         <div class="fields">
           <div class="fieldline"><span class="k t-15 txt">Use Year:</span>
-            <span class="line"><input type="text" inputmode="numeric" maxlength="3" data-i="${i}" data-f="use_year_month" value="${c.use_year_month?UY_NAME[c.use_year_month]:''}" aria-label="Use year month"></span></div>
+            <span class="line"><span class="val t-15 txt">${c.use_year_month?UY_NAME[c.use_year_month]:''}</span>
+              <select data-i="${i}" data-f="use_year_month" aria-label="Use year month">
+                <option value="" ${!c.use_year_month?'selected':''} disabled></option>
+                ${UY_NAME.slice(1).map((n,k) => `<option value="${k+1}" ${k+1===c.use_year_month?'selected':''}>${n}</option>`).join('')}
+              </select></span></div>
           <div class="fieldline"><span class="k t-15 txt">Expiring in:</span>
-            <span class="line"><input type="text" inputmode="numeric" maxlength="4" data-i="${i}" data-f="expiry_year" value="${c.expiry_year||''}" aria-label="Expiry year"></span></div>
+            <span class="line"><span class="val t-15 txt">${c.expiry_year||''}</span>
+              <select data-i="${i}" data-f="expiry_year" aria-label="Expiry year">
+                <option value="" ${!c.expiry_year?'selected':''}></option>
+                ${EXPIRY_YEARS.map(y => `<option value="${y}" ${y===c.expiry_year?'selected':''}>${y}</option>`).join('')}
+              </select></span></div>
           <div class="fieldline dues-row"><span class="dues t-15 txt">Track Annual Dues:&nbsp;<button type="button" class="opt ${c.track_dues?'sel':''}" data-i="${i}" data-dues="1" aria-pressed="${c.track_dues?'true':'false'}">Yes</button>&nbsp;/&nbsp;<button type="button" class="opt ${c.track_dues?'':'sel'}" data-i="${i}" data-dues="0" aria-pressed="${c.track_dues?'false':'true'}">No</button></span></div>
         </div>
         <div class="points-box">
@@ -871,14 +909,19 @@ function renderSetup() {
   $('#setup-rows').querySelectorAll('select[data-f], input[data-f]').forEach(el =>
     el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', e => {
       const i = +e.target.dataset.i, f = e.target.dataset.f;
-      if (f === 'points_per_year' || f === 'expiry_year') {
+      if (f === 'points_per_year') {
         const v = e.target.value.replace(/[^0-9]/g,''); e.target.value = v;
-        // expiry_year is nullable — an empty field must stay absent, not
-        // become 0, which repo.saveContract rejects as an invalid year.
+        draft[i][f] = v === '' ? 0 : +v;
+      } else if (f === 'use_year_month' || f === 'expiry_year') {
+        /* Both are PICKERS (the design director, 2026-08-02), so the value can only ever
+           be one this field offered — the parse that used to sit here is gone.
+           expiry_year stays nullable: the blank option means "not recorded",
+           and it must reach the store as null, never 0, which
+           repo.saveContract rejects as an invalid year. */
+        const v = e.target.value;
         draft[i][f] = v === '' ? (f === 'expiry_year' ? null : 0) : +v;
-      } else if (f === 'use_year_month') {
-        const m = UY_NAME.findIndex(n => n.toLowerCase() === e.target.value.trim().toLowerCase());
-        draft[i][f] = m > 0 ? m : draft[i][f];
+        e.target.closest('.line').querySelector('.val').textContent =
+          f === 'use_year_month' ? (v === '' ? '' : UY_NAME[+v]) : v;
       } else { draft[i][f] = e.target.value; if (f==='resort_hotel_id') renderSetup(); }
     }));
   $('#setup-rows').querySelectorAll('[data-dues]').forEach(el => el.addEventListener('click', e => {
