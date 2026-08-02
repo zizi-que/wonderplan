@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<!--
+  Home — real screen. Visual truth: Figma Home section 6:387, read via
+  figwright 2026-07-26.
+
+  Frames (all four exist and are variable-bound — the "Home & Trips Figma
+  match-back" backlog item was stale for Home):
+    Home / Spec               58:6941
+    01. Zero                  61:2706   ← built
+    02. Active                61:2759   ← built
+    02a. Active-more trips    61:2811   ← built
+    03. Theme-update          83:3232   ← built (4x4 grid of 78px theme chips)
+
+  TRANSLATION NOTE — Home is a MIXED frame, unlike Spend / DVC / Insights.
+  Those frames are auto-layout all the way down, so the build reproduces
+  padding/gap/hug-fill. Home's top level is **absolutely positioned**: the
+  castle, the settings glyph, the wordmark, the card stack and the theme
+  `screen` carry literal x/y on the 375x812 page. Inside those boxes the
+  design IS auto-layout (Frame 29 stack, every `cards` instance, the theme
+  screen and its 4x4 grid), so the inside is built the usual flex way.
+  Every left/top below is the frame's own drawn coordinate.
+
+  Vectors are exact Figma SVG exports with their bound fills swapped for
+  tokens, kept once as <symbol> and referenced per state:
+    #castle-lg    61:2992 — 01/02/02a castle. figwright clips it to the page,
+                  so it exports 375x360 and sits at y=1. Verified identical to
+                  02's own copy (61:3046) — same art, float-rounding only.
+    #castle-sm    83:3234 — the 03 castle: the same art scaled to 78%, in a
+                  369x283 frame at x=3. Not a CSS scale of the large one; the
+                  clip window differs, so it is its own export.
+    #wordmark     80:3153 — "YOUR MAGICAL VACATION" as outlined type.
+    #glyph-settings 83:3225 (`icon-edit` / `setting-primary`) — a four-point
+                  sparkle over three rules, the same sparkle family as the DVC
+                  settings icon, never a gear.
+    #pencil       61:2434 / 61:2427 — the 24px card-header edit button. One
+                  symbol, two variants via --pen-bg / --pen-ink. Drawn with
+                  viewBox="3 2 24 24" so the export's shadow padding is
+                  cropped and the CSS drop-shadow carries the effect, the
+                  convention dvc.html already uses.
+    #palette      83:3334 — the five-sparkle theme swatch. One symbol, 16
+                  chips, colours per chip via --s1..--s5.
+
+  Text boxes use `text-box: trim-both cap alphabetic` so element heights equal
+  Figma's cap-height boxes, the translation law established by Spend/DVC.
+  Two boxes are pinned SHORTER than their natural cap box because the board
+  pins them: the 19px card titles (12, natural 14) and the 12px chip labels
+  (12, natural 9). Figma top-aligns a fixed text box, and so does trim, so the
+  cap top lands on the drawn y either way.
+
+  Frozen Home laws honoured: spending is NEVER shown (the board's own
+  "Forecast $5,120 / budget $5,500" line is drawn hidden in both trip-card
+  variants and stays unrendered), there is no FAB, and `--attention` is never
+  used on this screen.
+
+  DELIBERATE DEVIATIONS FROM THE BOARD — both reported, neither silent:
+  1. The theme chips paint LITERAL hexes, not tokens. Two chip swatches carry
+     stray bindings on the board (Apple's second sparkle -> color/primary,
+     Highland's first -> color/ink), harmless in Figma because the file has one
+     mode, but in the app they would repaint another theme's chip whenever the
+     active theme changed. A picker must show each theme's own palette.
+  2. The next-trip card title uses --header-ink; the board binds color/surface.
+     Identical (#FFFFFF) in all 16 themes, so zero pixel difference — but the
+     band is color/header-bg, and header-ink is the token that is contracted
+     to stay legible on it.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — Home</title>
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<!-- iOS is the platform this matters on. Safari evicts IndexedDB after 7 days
+     without a visit, and a Home Screen app is exempt — so these tags are not
+     polish, they are what stops a tester losing their ledger by not opening
+     the app for a week. `apple-mobile-web-app-capable` is still required:
+     iOS only began honouring the manifest's display mode in 16.4. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=42dot+Sans:wght@800&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
+<script src="js/theme.js"></script>
+<style>
+/* ══ Theme tokens live in css/theme.css — ONE copy for all five screens ══ */
+
+/* ══ Structural tokens — Figma variables, values verified in the frame reads ══ */
+:root {
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-count: "42dot Sans", var(--font);   /* next-trip countdown only */
+  --radius-card: 14px;                 /* radius/card */
+  --radius-compact-card: 12px;         /* radius/compact-card — days card */
+  --radius-chip: 20px;                 /* pchip — unbound 20 on the board */
+  --space-2: 12px; --space-3: 16px; --space-page: 20px;
+  --footer-h: 85.802238px;
+  --shadow-card: 0 1px 3px rgba(30,30,30,0.10);
+  --col: 335px;                        /* content column, 375 − 20 − 20 */
+}
+
+/* ══ Base ══ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+/* ══ The app frame (the design director, 2026-07-27) ══════════════════════════════════
+   The five screens used to disagree above 375px: Home and Trips pinned their
+   content left (states positioned at literal board coordinates), while Spend,
+   DVC and Insights centred theirs. the design director chose centred for all.
+
+   The whole frame is capped and centred — content AND footer together — so a
+   wide window shows one phone-width column, not a narrow column sitting on a
+   full-width bar. html carries the page colour so the margins match.
+
+   At 375 and below this is completely inert, which is why it changes no
+   audited pixel: 375 is the drawn width and the QA viewport.
+
+   Home and Trips keep literal board coordinates INSIDE the frame — those are
+   the drawn Figma values, and re-expressing them as flex gaps would mean
+   inventing spacing nobody drew. Centring the frame achieves the chosen
+   behaviour without touching them. */
+html { background: var(--bg); }
+body { font-family: var(--font); background: var(--bg); color: var(--ink);
+  width: 100%;
+  display: flex; flex-direction: column; overflow: hidden; }
+button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; display: block; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.txt { text-box: trim-both cap alphabetic; }
+
+/* ══ Text styles — Figma text styles, verbatim (height = pinned cap box) ══ */
+.t-h1  { font-weight: 700; font-size: 23px; line-height: 145%; min-height: 17px; }
+.t-17b { font-weight: 600; font-size: 17px; line-height: 120%; min-height: 12px; }
+.t-17  { font-weight: 400; font-size: 17px; line-height: 120%; min-height: 12px; }
+.t-13  { font-weight: 600; font-size: 13px; line-height: 120%; }  /* footer */
+
+/* ══ Active Frame ══
+   01. Zero carries no auto-layout: children sit at literal page coordinates,
+   so the frame is a positioning context and every child is placed absolutely
+   at its drawn x/y. */
+/* The app column is 375 and the FOOTER BAND is not (the design director 2026-08-01,
+   option 1). The constraint used to sit on `body`, so the white band ended
+   with the app: at any window wider than 375 the column centred and theme
+   background showed on BOTH sides of the band, which read as the footer
+   stopping short. The column now lives on `main`, and `body` is free to be as
+   wide as the window — so the band spans it while the five 75px tabs stay
+   centred on 375 by the footer's own `justify-content: center`.
+   Nothing drawn moves: `main` is the positioned ancestor on Home and Trips,
+   so every absolute coordinate inside it is unchanged. */
+/* SCROLLS when the board does not fit (the design director, 2026-08-02). The boards are drawn
+   726 tall; on an installed iPhone the screen gives `main` 673 — 852 less the
+   59pt status bar and a 120 footer (86 plus the 34pt home-indicator band). The
+   zero state's card runs 611–708, so 35px of it was cut with no way to reach
+   it. It used to fit only because Safari kept the layout OUT of the safe areas,
+   which left `main` about 708 — luck, not design, and `viewport-fit=cover`
+   spent it. Chosen over re-anchoring the card to the bottom, which squeezes its
+   gap to the link from 64px to 11px, and over redrawing the board. Nothing
+   drawn moves; a short screen simply scrolls. `overflow-x` stays hidden, so
+   only the vertical axis opens. */
+main { flex: 1; min-height: 0; position: relative;
+  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+  width: 100%; max-width: 375px; margin-inline: auto; }
+.state { display: none; position: absolute; inset: 0; }
+.state.on { display: block; }
+.state > * { position: absolute; }
+
+/* ══ brand-svg — the castle (61:2992) ══
+   The node is 454x360 at x=−46 and clips; figwright's export is already
+   clipped to the 375 page, so it lands at x=0. */
+.castle { left: 0; top: 1px; width: 375px; height: 360px; overflow: hidden; }
+
+/* ══ icon-edit · setting-primary (83:3225) ══
+   Instance box 55x55.84 at (320,0) with 20px top/right padding, so the glyph
+   itself occupies (320,20)–(355,55.84). The export carries ~1px of stroke
+   bleed on each side, hence the −1 / −0.58 origin nudge. */
+/* The export's path coords already carry the glyph's position inside the
+   instance — rules run x 1.5→34.5 at y 20 / 32 / 44 — so the origin is the
+   instance box shifted left by the 1.5 stroke half-width, and NOT nudged
+   vertically at all. Measured: rules land at exactly x 320..353 / 320..331,
+   y 20 / 32 / 44, matching the board to 0.00px. */
+.settings { left: 318.5px; top: 0; width: 57px; height: 57px; padding: 0; }
+.settings svg { display: block; }
+
+/* ══ "YOUR MAGICAL VACATION" wordmark (80:3153), outlined type ══ */
+.wordmark { left: 28.307617px; top: 390.394531px; width: 320px; height: 85px; }
+
+/* ══ start-planning link (61:3065) ══ */
+/* --primary-text, not --primary: 17px on --bg fails AA in 11 of 16 themes,
+   and option A keeps --primary at its drawn value wherever it is a FILL
+   (the design director, 2026-07-28). In the 5 passing themes the token aliases --primary,
+   so nothing moves there. */
+/* 244x12 with 190px clear below — 44 tall, drawn text unmoved (2026-08-01). */
+.start-link { position: relative; }
+.start-link::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 100%; height: 44px; }
+.start-link { left: 70px; top: 525px; width: 244px; text-align: center;
+  color: var(--primary-text); text-decoration: underline; }
+
+/* ══ cards · category=insights · type=days-with-disney (61:3071 / 61:3030) ══
+   Outer box is placed in 01 and a stack item in 02/02a; the inside is genuine
+   auto-layout (VERTICAL, padding 16/20, gap 12, primary MAX). */
+.days-card { width: 335px; height: 97px;
+  border-radius: var(--radius-compact-card); background: var(--surface);
+  box-shadow: var(--shadow-card); overflow: hidden;
+  padding: 16px 20px; display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: flex-start; gap: 12px; }
+[data-state="zero"] .days-card { left: 20px; top: 611px; }
+.days-card .title { color: var(--ink); }
+.days-card .line  { color: var(--ink); }
+
+/* ══════ 02. Active (61:2759) · 02a. Active-more trips (61:2811) ══════
+   Frame 29 is one bottom-anchored auto-layout column (VERTICAL, padding
+   32/0/20/0, gap 16, primary MAX, counter CENTER). Both states end it at
+   y=730; only its height and card count differ, which is why 02 starts at
+   321 and 02a at −5. */
+.stack { width: 335px; display: flex; flex-direction: column;
+  align-items: center; padding: 32px 0 20px; gap: 16px; }
+/* Bottom-anchoring is an auto margin, not `justify-content: flex-end`: the
+   two are identical while the cards fit, but a flex-end column that overflows
+   pushes its FIRST card above the scroll origin, where nothing can reach it.
+   The auto margin collapses to 0 the moment the content stops fitting. */
+.stack > :first-child { margin-top: auto; }
+/* And the cards must NOT shrink to fit: a flex item defaults to shrinking, so
+   a third card silently squeezed all three instead of overflowing — every
+   card clipped its own header (they carry `overflow: hidden`) and nothing
+   scrolled, because there was nothing to scroll. */
+.stack > * { flex: none; }
+[data-state="02"]  .stack { left: 20px; top: 321px; height: 409px; }
+/* Three or more upcoming trips is the case the board does not draw — `02a`
+   draws exactly two cards and fills the page. The list SCROLLS (the design director,
+   2026-07-28): a plain scroll, no card limit, and deliberately no "+2 more"
+   affordance, because no such control is drawn anywhere. */
+[data-state="02a"] .stack { left: 20px; top: -5px;  height: 735px;
+  overflow-y: auto; overscroll-behavior: contain;
+  /* A classic scrollbar would eat 15px of a 335px column that is drawn 335
+     wide: the cards then centre-overflow their own container and the header's
+     nowrap trip type runs under the edit pencil. The phone this ships to has
+     overlay scrollbars and the board draws no scrollbar at all, so the gutter
+     is removed rather than designed around. Keyboard access is unaffected —
+     every card carries a focusable edit button, so tabbing scrolls the
+     region. The cue that more exists is the cut-off card at the fold. */
+  scrollbar-width: none; }
+[data-state="02a"] .stack::-webkit-scrollbar { width: 0; height: 0; }
+/* Cards MAY flow over the settings glyph — that is the drawn look and the design director
+   keeps it — provided the user can PULL THEM LOWER to reach the control
+   (the design director, 2026-07-28). The room is made inside the drawn box: 32 drawn gap +
+   30 of pull, and the list opens scrolled PAST the pull (see markScrollable),
+   so at rest card one sits at its drawn y=27 and the castle is covered exactly
+   as the board covers it. Pulling down exposes the glyph; letting go leaves it
+   exposed until the user scrolls back.
+   THE 30 IS MEASURED, NOT CHOSEN. Three fixed edges decide it: card one is
+   drawn at y=27, the settings glyph's box ends at y=57 (its ink at 55.84),
+   and the castle's topmost ink — the flag tip — starts at y=57.93. Pulled
+   fully down, card one lands at 57: the glyph is completely clear and the
+   flag is still completely covered, with 0.9px to spare. A bigger pull
+   exposes a SLICE of flag cut off by the card edge, which is exactly what a
+   cropped castle looks like; a smaller one leaves the glyph part-hidden.
+   Two earlier passes are recorded because both LOOKED reasonable and both cut
+   the castle: moving the box to top:57 clipped the cards at that line and left
+   the spire half-covered, and resting the stack 62px low put the card's top
+   edge straight through the spire. A card edge anywhere inside the castle's
+   tip reads as damage; only y=27 (drawn) or a full cover avoids it. */
+[data-state="02a"] .stack.scrolls { padding-top: 62px; }
+/* Revealing the glyph is not the same as being able to press it: the stack's
+   own box spans the whole frame whatever the scroll position, so a tap on the
+   exposed glyph was landing on transparent nothing. The box stops being a
+   target; the cards inside it stay targets and still drive the scroll. Paint
+   order is untouched — a card that is physically over the glyph still covers
+   it, which is the behaviour the design director kept.
+   Not scoped to `.scrolls`: this box swallowed the settings glyph in the
+   DRAWN two-card state too (only its rightmost ~20px answered a tap), which
+   is the defect logged from chunk 8's sweep. Nothing moves on screen — an
+   empty transparent box simply stops intercepting. */
+[data-state="02a"] .stack { pointer-events: none; }
+[data-state="02a"] .stack > * { pointer-events: auto; }
+
+/* cards · category=trips — booked-next-trip (61:2405) and
+   booked-coming-up (61:2507). Home presents confirmed upcoming trips only;
+   Planning remains a Trips-module concern. Both Home variants hide the
+   component's forecast/budget line: Home never shows money (frozen). */
+.card-trip { width: 335px; border-radius: var(--radius-card);
+  background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden;
+  display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: flex-start; padding-bottom: 16px; }
+.card-next     { gap: 12px; }
+.card-coming   { gap: 6px; }
+
+.trip-head { align-self: stretch; display: flex; align-items: center;
+  justify-content: space-between; padding: 12px 20px 6px; }
+.card-next .trip-head { background: var(--header-bg); }
+.trip-head .title { font-weight: 600; font-size: 19px; line-height: 135%;
+  height: 12px;                        /* board pins this box to 12, not 14 */
+  /* The label is derived copy, so it fills the remaining width without letting a
+     long trip type must not shove the edit button — and nowrap keeps the
+     header at its drawn 42. No `overflow: hidden` here: the box is pinned to
+     12 while the glyphs are a 14 cap box, so clipping would shave the type. */
+  flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+.card-next     .trip-head .title { color: var(--header-ink); }
+.card-coming   .trip-head .title { color: var(--primary); }
+
+/* icon-edit 24px — primary-white on the next-trip band and edit-primary on
+   Coming Up. The board's drop shadow rides the CSS filter (dvc.html rule). */
+.edit-btn { width: 24px; height: 24px; flex: none; padding: 0; }
+/* 24x24 with 316px of clear space around it — full 44 costs nothing and
+   moves nothing (the design director 2026-08-01). */
+.edit-btn { position: relative; }
+.edit-btn::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px; }
+.mini-edit { width: 24px; height: 24px; flex: none; display: block;
+  filter: drop-shadow(0 1px 1.5px rgba(30,30,30,0.10)); }
+.card-next     .mini-edit { --pen-bg: var(--surface); --pen-ink: var(--primary); }
+.card-coming   .mini-edit { --pen-bg: var(--primary); --pen-ink: var(--on-primary); }
+
+.trip-body { align-self: stretch; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 16px; padding-left: 20px; }
+.count-row { display: flex; align-items: flex-end; }   /* counter MAX */
+.count, .count-unit, .trip-name { color: var(--primary); }
+.card-next     .count { font-family: var(--font-count); font-weight: 800;
+  font-size: 104.75px; line-height: 199.56883px; height: 74px; }
+.card-coming   .count { font-weight: 700; font-size: 80px; line-height: 120%;
+  height: 58px; }
+.count-unit { font-weight: 600; font-size: 19px; line-height: 135%; height: 14px; }
+.trip-name, .trip-dates { width: 308.380920px; }       /* board's fixed box */
+.trip-dates { color: var(--ink); }
+
+/* ══════ 03. Theme-update (83:3232) ══════
+   `screen` is a transparent bottom-anchored column — radius 14 is authored on
+   it but it carries no fill, so it reads as pure layout. Section is 336 wide
+   inside a 319 content box, i.e. it overhangs 0.5px each side exactly as
+   drawn; flex centring reproduces that without a magic number. */
+/* 03. Settings (83:3232) / 03a. settings-synched (226:4262), read 2026-08-01.
+   The screen moved up (256 -> 144.14) and grew (472 -> 550) to carry the new
+   data-synch block; the synched state is 582, the extra 32 being Frame 55's
+   20px plus one 12px gap. */
+.screen { left: 20px; top: 144.1376953125px; width: 335px; height: 550px;
+  border-radius: var(--radius-card);
+  display: flex; flex-direction: column;
+  /* TOP-anchored with a 12px rhythm, both read off the revised board: Section
+     sits at screen-relative y=16, Frame 31 at 372 (Section ends 360, +12) and
+     data-synch at 432 (Frame 31 ends 420, +12). The previous build was
+     bottom-anchored with 36 of bottom padding and a 16 gap, which put the
+     whole stack ~60px high once the sync block was added. */
+  align-items: center; justify-content: flex-start;
+  padding: 16px 8px; gap: 12px; }
+/* connected: 550 -> 582, the extra 32 being Frame 55's 20 plus one 12 gap */
+.screen.is-synced { height: 582px; }
+.section { width: 336px; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 8px; }
+.sub-title { width: 336px; min-height: 12px; text-align: center;
+  color: var(--primary-text); font-weight: 600; font-size: 17px; line-height: 120%; }
+.grid { width: 336px; display: grid; grid-template-columns: repeat(4, 78px);
+  /* 4 down, 8 across — the board's grid carries gridRowGap 4 / gridColumnGap 8,
+     and the build had 8 both ways, which made the block 12px taller than
+     drawn (three row gaps). */
+  row-gap: 4px; column-gap: 8px; }
+
+/* pchip (83:3481) — 2px color/bg INSIDE stroke; the chosen variant swaps it
+   for a 4px color/deco CENTRE stroke, which is 2px in + 2px out. */
+.pchip { width: 78px; height: 78px; border-radius: var(--radius-chip);
+  background: var(--surface); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; padding: 0 0 7px;
+  box-shadow: inset 0 0 0 2px var(--bg); }
+.pchip.on { box-shadow: inset 0 0 0 2px var(--deco), 0 0 0 2px var(--deco); }
+.palette { width: 61.390625px; height: 46.0390625px; flex: none; display: block; }
+.cname { width: 78px; height: 12px; text-align: center; color: var(--ink);
+  font-weight: 400; font-size: 12px; line-height: 120%; }
+
+/* cta-buttons — CANCEL `primary-outline` (59:1630) + SAVE `primary-filled`
+   (51:358), both 115x48, 16px apart, the pair centred (Frame 31, 175:4527).
+   Radius = half height. The outline's 1.5px stroke is INSIDE, so it rides an
+   inset ring rather than a border (borders grow the box). */
+.cta-row { display: flex; gap: 16px; }
+
+/* ══ data-synch (226:4229 / 226:4231) ══════════════════════════════════════
+   Two variants: not connected (Connect Google Drive) and connected (Synch Now
+   + last-synced + Disconnect). Vertical, 16 above the rule, 12 between rows. */
+.data-synch { width: 335px; display: flex; flex-direction: column;
+  align-items: center; padding-top: 16px; gap: 12px; }
+.rule-primary { width: 335px; height: 0; border-top: 1.5px solid var(--primary); }
+.synch-title { width: 335px; text-align: center; color: var(--primary);
+  font-weight: 600; font-size: 19px; line-height: 135%; }
+/* This CTA HUGs its label — 138 for "Synch Now", 226 for "Connect Google
+   Drive" — where the theme picker's pair are a fixed 115. */
+.data-synch .cta { width: auto; }
+.synch-meta { width: 335px; display: flex; flex-direction: column; gap: 8px; }
+/* a class rule outranks the bare [hidden] default, so say it explicitly */
+.synch-meta[hidden] { display: none; }
+/* Manrope Regular 9/120%, read off I226:4397;226:4238 rather than guessed
+   from the 6px instance height. */
+.synch-line { width: 335px; text-align: center; color: var(--primary);
+  font-weight: 400; font-size: 9px; line-height: 120%; }
+button.synch-line { display: block; }
+.cta { width: 115px; height: 48px; flex: none; border-radius: 24px;
+  background: var(--primary); color: var(--on-primary);
+  display: flex; align-items: center; justify-content: center; padding: 0 24px; }
+.cta--outline { background: var(--surface); color: var(--primary);
+  box-shadow: inset 0 0 0 1.5px var(--primary); }
+
+/* brand-svg 226:4473 — the SAME castle artwork, scaled: 207/369 = 0.561 and
+   159/283 = 0.562, so the revised board re-crops rather than redraws it. No
+   new asset is invented here. */
+.castle-sm { left: 84px; top: 1.1376953125px; width: 207px; height: 159px; }
+
+/* symbol library — never painted itself */
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ══ Footer · variant home ══ */
+footer.footer { flex: none; height: var(--footer-h); background: var(--surface);
+  border-top: 1.900338px solid var(--deco); display: flex; justify-content: center; }
+.tab { position: relative; width: 75px; height: 83.901894px;
+  display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+.tab .label { position: absolute; top: 60px; left: 0; right: 0; text-align: center; color: var(--ink); }
+.tab.on .label { color: var(--primary); }
+.tab svg { position: absolute; }
+/* ══ iOS safe areas (the design director, 2026-08-02) ═══════════════════════════════════
+   Reported on the live beta: a yellow strip under the footer, on every
+   screen. Without `viewport-fit=cover` Safari keeps the layout OUT of the
+   safe areas and paints them with the html background — which is the theme
+   colour, so the home-indicator band read as the footer stopping short.
+   Cover hands the layout those bands; `padding-top` on body puts the
+   content back exactly where it sat before, and the footer's own white now
+   reaches the physical bottom edge. Nothing drawn moves — where there is no
+   inset (every desktop browser, and any phone without an indicator) both
+   values resolve to 0, so this is inert off iOS. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+footer.footer {
+  height: calc(var(--footer-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+</style>
+</head>
+<body>
+
+<svg class="defs" aria-hidden="true">
+<symbol id="castle-lg" viewBox="0 0 375 360"><g clip-path="url(#clip0_61_2992)">
+<path d="M45.8938 118.738C27.7489 118.738 19.3556 127.107 19.3556 145.201C19.3556 127.107 10.9623 118.738 -7.18261 118.738C10.9623 118.738 19.3556 110.368 19.3556 92.2743C19.3556 110.368 27.7489 118.738 45.8938 118.738ZM351.787 194.935C337.038 194.935 330.246 201.708 330.246 216.464C330.246 201.756 323.454 194.935 308.705 194.935C323.454 194.935 330.246 188.162 330.246 173.406C330.197 188.162 337.038 194.935 351.787 194.935ZM380.605 116.077C368.864 116.077 363.479 121.447 363.479 133.155C363.479 121.495 358.094 116.077 346.353 116.077C358.094 116.077 363.479 110.707 363.479 98.999C363.479 110.658 368.913 116.077 380.605 116.077ZM489.281 191.79C479.723 191.79 475.308 196.193 475.308 205.724C475.308 196.193 470.894 191.79 461.336 191.79C470.894 191.79 475.308 187.388 475.308 177.857C475.357 187.388 479.772 191.79 489.281 191.79ZM-80.1506 156.715C-91.6004 156.715 -96.9371 161.989 -96.9371 173.455C-96.9371 162.037 -102.225 156.715 -113.724 156.715C-102.274 156.715 -96.9371 151.442 -96.9371 139.976C-96.8886 151.442 -91.6004 156.715 -80.1506 156.715ZM123.228 93.0484C114.981 93.0484 111.196 96.822 111.196 105.046C111.196 96.822 107.412 93.0484 99.1643 93.0484C107.412 93.0484 111.196 89.2748 111.196 81.0504C111.196 89.2264 114.981 93.0484 123.228 93.0484ZM76.3133 185.404C68.0656 185.404 64.2814 189.178 64.2814 197.402C64.2814 189.178 60.4971 185.404 52.2494 185.404C60.4971 185.404 64.2814 181.631 64.2814 173.406C64.2814 181.631 68.0656 185.404 76.3133 185.404ZM291.676 145.201C283.428 145.201 279.644 148.975 279.644 157.199C279.644 148.975 275.859 145.201 267.612 145.201C275.859 145.201 279.644 141.428 279.644 133.203C279.644 141.428 283.428 145.201 291.676 145.201Z" fill="var(--deco)"/>
+<path opacity="0.8" d="M302.058 272.809L291.563 288.173L291.741 290.913L293.471 291.865V314.138C291.98 309.255 290.131 304.55 287.925 299.905L285.063 294.307C279.696 284.6 272.898 275.608 265.265 267.509V241.187L267.948 239.995V234.219C267.948 234.219 267.113 233.743 264.251 231.658C261.508 226.12 255.962 208.79 255.962 208.79V196.403H254.65V208.79C254.65 208.79 249.104 226.12 246.361 231.658C243.499 233.683 242.664 234.219 242.664 234.219V239.995L245.348 241.187V249.524C240.339 245.653 235.151 242.139 230.082 239.043V189.733L233.958 188.185V182.408C233.958 182.408 233.123 181.932 230.261 179.848C227.518 174.309 221.137 151.144 221.137 151.144V138.757H219.825V151.144C219.825 151.144 213.385 174.309 210.701 179.848C207.839 181.873 207.004 182.408 207.004 182.408V188.185L210.88 189.733V204.026L199.192 193.902V156.98L203.486 153.526V142.211H196.151V136.017L197.761 135.362V132.682C197.761 132.682 197.761 132.682 196.926 132.206C195.018 128.395 185.477 80.1573 185.477 80.1573V69.3784C186.789 68.6042 190.605 66.4007 193.348 66.4007C196.688 66.4007 196.986 67.83 201.101 67.83C205.215 67.83 210.94 64.5546 212.252 63.6613C214.518 62.113 216.307 63.304 215.83 62.7681C214.518 61.2793 209.986 62.2916 207.183 62.2916C201.518 62.2916 196.569 56.9319 189.651 56.9319C187.445 56.9319 186.133 57.2297 185.477 57.4084V56.9319H184.583V80.1573C184.583 80.1573 175.042 128.395 173.133 132.206C172.298 132.682 172.298 132.682 172.298 132.682V135.362L173.908 136.017V142.211H166.574V153.526L170.867 156.98V193.902L159.179 204.026V189.733L163.055 188.185V182.408C163.055 182.408 162.221 181.932 159.358 179.848C156.615 174.309 150.235 151.144 150.235 151.144V138.757H148.923V151.144C148.923 151.144 142.482 174.309 139.799 179.848C136.937 181.873 136.102 182.408 136.102 182.408V188.185L139.978 189.733V239.043C134.849 242.139 129.721 245.653 124.712 249.524V241.187L127.395 239.995V234.219C127.395 234.219 126.561 233.743 123.698 231.658C120.955 226.12 115.409 208.79 115.409 208.79V196.403H114.098V208.79C114.098 208.79 108.552 226.12 105.809 231.658C102.946 233.683 102.111 234.219 102.111 234.219V239.995L104.795 241.187V267.568C97.162 275.727 90.364 284.719 84.9971 294.367L82.1347 299.965C79.9284 304.61 78.0201 309.314 76.589 314.198V291.985L78.3183 291.032L78.4972 288.292L68.0019 272.928L57.5067 288.233L57.6856 290.972L59.4149 291.925V338.376H72.9514H76.6486H293.769H297.466H311.003V291.925L312.732 290.972L312.911 288.233L302.058 272.809ZM184.344 218.676H185.417C185.417 218.676 188.757 224.333 194.303 229.812L193.647 230.586V243.211H175.996V230.586L175.34 229.812C181.064 224.393 184.344 218.676 184.344 218.676ZM196.688 278.049H173.133V266.198C173.133 260.779 178.381 256.372 184.94 256.372C191.5 256.372 196.748 260.72 196.748 266.198V278.049H196.688Z" fill="var(--primary)"/>
+<path d="M8.8927 392.9H477.926V364.145C477.926 347.198 464.192 333.451 447.26 333.451C447.26 319.147 435.657 307.534 421.365 307.534C417.344 307.534 413.517 308.455 410.126 310.104C403.295 297.036 389.633 288.09 373.864 288.09C360.517 288.09 348.647 294.49 341.186 304.406C336.705 300.648 330.916 298.394 324.618 298.394C312.216 298.394 301.848 307.122 299.329 318.783C297.391 318.323 295.405 318.08 293.321 318.08C286.927 318.08 281.065 320.408 276.559 324.238C273.701 313.037 263.551 304.721 251.464 304.721C240.297 304.721 230.801 311.777 227.144 321.693C223.268 319.39 218.738 318.056 213.918 318.056C209.606 318.056 205.537 319.123 201.952 320.99C198.56 310.613 188.823 303.097 177.292 303.097C173.344 303.097 169.614 303.97 166.271 305.546C160.118 290.732 145.536 280.331 128.507 280.331C110.461 280.331 95.1273 292.042 89.7255 308.31C86.1162 306.419 82.0225 305.328 77.6623 305.328C63.3707 305.328 51.7678 316.941 51.7678 331.245C51.7678 332.942 51.9373 334.591 52.2522 336.191C48.3765 334.421 44.089 333.451 39.5593 333.451C22.6272 333.451 8.8927 347.198 8.8927 364.145V392.9Z" fill="var(--bg)"/>
+</g>
+<defs>
+<clipPath id="clip0_61_2992">
+<rect width="454" height="360" fill="white" transform="translate(-46)"/>
+</clipPath>
+</defs></symbol>
+<symbol id="castle-sm" viewBox="0 0 369 283">
+<g clip-path="url(#clip0_83_3234)">
+<path d="M78.5895 93.341C64.4316 93.341 57.8827 99.9205 57.8827 114.144C57.8827 99.9205 51.3337 93.341 37.1758 93.341C51.3337 93.341 57.8827 86.7616 57.8827 72.5378C57.8827 86.7616 64.4316 93.341 78.5895 93.341ZM317.267 153.241C305.759 153.241 300.459 158.565 300.459 170.165C300.459 158.603 295.159 153.241 283.651 153.241C295.159 153.241 300.459 147.916 300.459 136.317C300.421 147.916 305.759 153.241 317.267 153.241ZM339.753 91.2493C330.592 91.2493 326.39 95.4708 326.39 104.674C326.39 95.5088 322.188 91.2493 313.027 91.2493C322.188 91.2493 326.39 87.0278 326.39 77.8242C326.39 86.9898 330.63 91.2493 339.753 91.2493ZM424.549 150.768C417.091 150.768 413.646 154.229 413.646 161.722C413.646 154.229 410.202 150.768 402.744 150.768C410.202 150.768 413.646 147.308 413.646 139.815C413.684 147.308 417.129 150.768 424.549 150.768ZM-19.7585 123.196C-28.6923 123.196 -32.8564 127.341 -32.8564 136.355C-32.8564 127.379 -36.9826 123.196 -45.9543 123.196C-37.0205 123.196 -32.8564 119.05 -32.8564 110.037C-32.8185 119.05 -28.6923 123.196 -19.7585 123.196ZM138.931 73.1463C132.495 73.1463 129.543 76.1128 129.543 82.5781C129.543 76.1128 126.59 73.1463 120.155 73.1463C126.59 73.1463 129.543 70.1799 129.543 63.7145C129.543 70.1418 132.495 73.1463 138.931 73.1463ZM102.325 145.748C95.8893 145.748 92.9366 148.715 92.9366 155.18C92.9366 148.715 89.9839 145.748 83.5485 145.748C89.9839 145.748 92.9366 142.782 92.9366 136.317C92.9366 142.782 95.8893 145.748 102.325 145.748ZM270.364 114.144C263.929 114.144 260.976 117.111 260.976 123.576C260.976 117.111 258.023 114.144 251.588 114.144C258.023 114.144 260.976 111.178 260.976 104.712C260.976 111.178 263.929 114.144 270.364 114.144Z" fill="var(--deco)"/>
+<path opacity="0.8" d="M278.465 214.458L270.276 226.536L270.415 228.69L271.765 229.439V246.947C270.602 243.109 269.159 239.41 267.438 235.759L265.204 231.358C261.017 223.727 255.712 216.658 249.757 210.292V189.599L251.851 188.663V184.122C251.851 184.122 251.199 183.748 248.966 182.109C246.825 177.755 242.498 164.132 242.498 164.132V154.395H241.475V164.132C241.475 164.132 237.147 177.755 235.007 182.109C232.774 183.701 232.122 184.122 232.122 184.122V188.663L234.216 189.599V196.154C230.308 193.111 226.26 190.349 222.305 187.914V149.152L225.329 147.934V143.393C225.329 143.393 224.678 143.019 222.444 141.38C220.304 137.027 215.325 118.816 215.325 118.816V109.078H214.302V118.816C214.302 118.816 209.277 137.027 207.183 141.38C204.95 142.972 204.298 143.393 204.298 143.393V147.934L207.322 149.152V160.387L198.203 152.429V123.404L201.553 120.688V111.793H195.83V106.925L197.086 106.41V104.303C197.086 104.303 197.086 104.303 196.435 103.929C194.946 100.932 187.501 63.0126 187.501 63.0126V54.5391C188.525 53.9306 191.503 52.1984 193.643 52.1984C196.249 52.1984 196.481 53.322 199.692 53.322C202.902 53.322 207.369 50.7472 208.393 50.0449C210.161 48.8278 211.557 49.764 211.184 49.3427C210.161 48.1723 206.625 48.9682 204.438 48.9682C200.017 48.9682 196.156 44.7549 190.758 44.7549C189.037 44.7549 188.013 44.989 187.501 45.1294V44.7549H186.803V63.0126C186.803 63.0126 179.359 100.932 177.87 103.929C177.218 104.303 177.218 104.303 177.218 104.303V106.41L178.475 106.925V111.793H172.752V120.688L176.102 123.404V152.429L166.982 160.387V149.152L170.006 147.934V143.393C170.006 143.393 169.355 143.019 167.122 141.38C164.981 137.027 160.003 118.816 160.003 118.816V109.078H158.979V118.816C158.979 118.816 153.954 137.027 151.86 141.38C149.627 142.972 148.975 143.393 148.975 143.393V147.934L152 149.152V187.914C147.998 190.349 143.997 193.111 140.088 196.154V189.599L142.182 188.663V184.122C142.182 184.122 141.531 183.748 139.297 182.109C137.157 177.755 132.83 164.132 132.83 164.132V154.395H131.806V164.132C131.806 164.132 127.479 177.755 125.339 182.109C123.105 183.701 122.454 184.122 122.454 184.122V188.663L124.548 189.599V210.338C118.592 216.752 113.288 223.821 109.1 231.405L106.867 235.806C105.145 239.457 103.656 243.155 102.54 246.994V229.532L103.889 228.783L104.029 226.63L95.8395 214.552L87.6505 226.583L87.7901 228.737L89.1394 229.486V266.001H99.7014H102.586H271.997H274.882H285.444V229.486L286.794 228.737L286.933 226.583L278.465 214.458ZM186.617 171.904H187.455C187.455 171.904 190.06 176.351 194.387 180.658L193.876 181.266V191.191H180.103V181.266L179.591 180.658C184.058 176.398 186.617 171.904 186.617 171.904ZM196.249 218.578H177.87V209.262C177.87 205.001 181.964 201.537 187.082 201.537C192.201 201.537 196.295 204.955 196.295 209.262V218.578H196.249Z" fill="var(--primary)"/>
+<path d="M49.7189 308.863H415.689V286.259C415.689 272.936 404.973 262.13 391.761 262.13C391.761 250.885 382.708 241.756 371.557 241.756C368.419 241.756 365.433 242.48 362.787 243.776C357.457 233.503 346.797 226.47 334.493 226.47C324.078 226.47 314.817 231.502 308.996 239.297C305.499 236.343 300.982 234.571 296.068 234.571C286.391 234.571 278.301 241.432 276.336 250.599C274.824 250.237 273.274 250.046 271.648 250.046C266.659 250.046 262.085 251.876 258.569 254.887C256.339 246.082 248.42 239.545 238.988 239.545C230.275 239.545 222.866 245.091 220.012 252.886C216.988 251.076 213.454 250.027 209.693 250.027C206.328 250.027 203.153 250.866 200.356 252.334C197.71 244.176 190.112 238.268 181.115 238.268C178.034 238.268 175.124 238.954 172.515 240.193C167.715 228.548 156.337 220.372 143.05 220.372C128.969 220.372 117.005 229.577 112.79 242.366C109.974 240.879 106.779 240.021 103.377 240.021C92.2261 240.021 83.1728 249.151 83.1728 260.396C83.1728 261.73 83.3051 263.026 83.5508 264.284C80.5267 262.892 77.1813 262.13 73.6469 262.13C60.4355 262.13 49.7189 272.936 49.7189 286.259V308.863Z" fill="var(--bg)"/>
+</g>
+<defs>
+<clipPath id="clip0_83_3234">
+<rect width="369" height="283" fill="white"/>
+</clipPath>
+</defs>
+</symbol>
+<symbol id="wordmark" viewBox="0 0 320 85"><path d="M121.823 52C125.378 52 128.36 52.8816 130.768 54.6445C133.19 56.4075 134.896 58.7947 135.885 61.8047L129.993 63.4385C129.42 61.5609 128.452 60.1062 127.091 59.0742C125.729 58.0279 123.973 57.5049 121.823 57.5049C119.86 57.5049 118.218 57.9421 116.899 58.8164C115.595 59.6907 114.613 60.923 113.954 62.5137C113.295 64.1046 112.966 65.9752 112.966 68.125C112.966 70.275 113.295 72.1463 113.954 73.7373C114.613 75.328 115.595 76.5603 116.899 77.4346C118.218 78.3089 119.86 78.7461 121.823 78.7461C123.973 78.7461 125.729 78.2231 127.091 77.1768C128.452 76.1304 129.42 74.6758 129.993 72.8125L135.885 74.4463C134.896 77.4563 133.19 79.8434 130.768 81.6064C128.36 83.3694 125.378 84.25 121.823 84.25C118.727 84.25 116.054 83.5768 113.804 82.2295C111.568 80.8822 109.84 78.9975 108.622 76.5752C107.418 74.1529 106.816 71.3357 106.816 68.125C106.816 64.9145 107.418 62.098 108.622 59.6758C109.84 57.2535 111.568 55.3688 113.804 54.0215C116.054 52.6742 118.727 52 121.823 52Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M218.825 52C221.921 52 224.587 52.6742 226.823 54.0215C229.074 55.3688 230.801 57.2535 232.005 59.6758C233.223 62.098 233.832 64.9145 233.832 68.125C233.832 71.3357 233.223 74.1529 232.005 76.5752C230.801 78.9975 229.074 80.8822 226.823 82.2295C224.587 83.5768 221.921 84.25 218.825 84.25C215.729 84.25 213.056 83.5768 210.806 82.2295C208.57 80.8822 206.842 78.9975 205.624 76.5752C204.42 74.1529 203.818 71.3357 203.818 68.125C203.818 64.9145 204.42 62.098 205.624 59.6758C206.842 57.2535 208.57 55.3688 210.806 54.0215C213.056 52.6742 215.729 52 218.825 52ZM218.825 57.5049C216.862 57.4762 215.227 57.8991 213.923 58.7734C212.619 59.6477 211.637 60.8871 210.978 62.4922C210.333 64.0974 210.011 65.9752 210.011 68.125C210.011 70.275 210.333 72.1392 210.978 73.7158C211.637 75.2922 212.619 76.5173 213.923 77.3916C215.227 78.2659 216.862 78.7174 218.825 78.7461C220.789 78.7748 222.423 78.3519 223.728 77.4775C225.032 76.6033 226.006 75.3639 226.651 73.7588C227.311 72.1535 227.641 70.275 227.641 68.125C227.641 65.9752 227.311 64.1117 226.651 62.5352C226.006 60.9587 225.032 59.7336 223.728 58.8594C222.423 57.985 220.789 57.5336 218.825 57.5049Z" fill="var(--primary)"/>
+<path d="M65.9189 78.1016L73.7881 52.6455H79.8086L70.3486 83.6055H61.6191L52.1592 52.6455H58.1797L65.9189 78.1016Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M105.522 83.6055H99.5029L97.5117 77.1553H85.8535L83.8936 83.6055H77.874L87.334 52.6455H96.0625L105.522 83.6055ZM87.5137 71.6943H95.8262L91.6367 58.126L87.5137 71.6943Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M165.277 83.6055H159.258L157.267 77.1553H145.608L143.648 83.6055H137.629L147.089 52.6455H155.817L165.277 83.6055ZM147.269 71.6943H155.581L151.392 58.126L147.269 71.6943Z" fill="var(--primary)"/>
+<path d="M189.359 58.1064H179.599V83.6055H173.751V58.1064H163.989V52.6455H189.359V58.1064Z" fill="var(--primary)"/>
+<path d="M199.093 83.6055H193.245V52.6455H199.093V83.6055Z" fill="var(--primary)"/>
+<path d="M257.518 73.2852V52.6455H263.451V83.6055H257.518L244.059 62.9658V83.6055H238.124V52.6455H244.059L257.518 73.2852Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M41.6602 0C44.7561 0 47.4222 0.674171 49.6582 2.02148C51.9085 3.36879 53.6358 5.25351 54.8398 7.67578C56.0581 10.098 56.6669 12.9145 56.667 16.125C56.667 19.3357 56.0582 22.1529 54.8398 24.5752C53.6358 26.9975 51.9085 28.8822 49.6582 30.2295C47.4222 31.5768 44.7561 32.25 41.6602 32.25C38.5642 32.25 35.8909 31.5768 33.6406 30.2295C31.4047 28.8822 29.6773 26.9975 28.459 24.5752C27.255 22.1529 26.6533 19.3357 26.6533 16.125C26.6534 12.9145 27.255 10.098 28.459 7.67578C29.6773 5.25351 31.4047 3.36881 33.6406 2.02148C35.8909 0.67417 38.5642 1.8183e-05 41.6602 0ZM41.6602 5.50488C39.6965 5.47624 38.0621 5.89912 36.7578 6.77344C35.4538 7.64773 34.4717 8.88714 33.8125 10.4922C33.1675 12.0974 32.8457 13.9752 32.8457 16.125C32.8457 18.275 33.1675 20.1392 33.8125 21.7158C34.4717 23.2922 35.4538 24.5173 36.7578 25.3916C38.0621 26.2659 39.6965 26.7174 41.6602 26.7461C43.6238 26.7748 45.2582 26.3519 46.5625 25.4775C47.8666 24.6033 48.8414 23.3639 49.4863 21.7588C50.1457 20.1535 50.4756 18.275 50.4756 16.125C50.4755 13.9752 50.1456 12.1117 49.4863 10.5352C48.8414 8.95875 47.8666 7.73365 46.5625 6.85938C45.2582 5.98504 43.6238 5.53355 41.6602 5.50488Z" fill="var(--primary)"/>
+<path d="M86.1572 19.9951C86.1572 22.4747 85.627 24.6322 84.5664 26.4668C83.5058 28.3013 82.0294 29.7275 80.1377 30.7451C78.2458 31.7484 76.0524 32.25 73.5586 32.25C71.0646 32.25 68.8715 31.7484 66.9795 30.7451C65.0875 29.7275 63.6105 28.3015 62.5498 26.4668C61.4893 24.6322 60.959 22.4746 60.959 19.9951V0.688477L66.8936 0.645508V19.9521C66.8936 20.9697 67.0653 21.8943 67.4092 22.7256C67.7532 23.5569 68.2261 24.274 68.8281 24.876C69.4445 25.478 70.1544 25.9438 70.957 26.2734C71.774 26.5887 72.6414 26.7461 73.5586 26.7461C74.5044 26.746 75.3791 26.5816 76.1816 26.252C76.9984 25.9223 77.7077 25.4564 78.3096 24.8545C78.9116 24.2525 79.3774 23.5354 79.707 22.7041C80.051 21.8728 80.2236 20.9554 80.2236 19.9521V0.645508H86.1572V19.9951Z" fill="var(--primary)"/>
+<path d="M207.982 0C211.967 2.41358e-05 215.099 0.925439 217.378 2.77441C219.657 4.62333 221.183 7.23878 221.957 10.6211L215.98 11.4814C215.422 9.67556 214.504 8.23514 213.229 7.16016C211.967 6.07082 210.347 5.51922 208.369 5.50488C206.406 5.47624 204.771 5.89912 203.467 6.77344C202.163 7.64773 201.181 8.88714 200.521 10.4922C199.877 12.0974 199.555 13.9752 199.555 16.125C199.555 18.275 199.876 20.1392 200.521 21.7158C201.181 23.2922 202.163 24.5173 203.467 25.3916C204.771 26.2659 206.406 26.7174 208.369 26.7461C209.702 26.7748 210.906 26.5459 211.981 26.0586C213.071 25.5713 213.988 24.8041 214.733 23.7578C215.479 22.7115 216.009 21.3712 216.324 19.7373H211.422V15.2227H222.56C222.588 15.409 222.61 15.7391 222.624 16.2119C222.638 16.6843 222.645 16.9565 222.646 17.0283C222.646 19.9953 222.043 22.6256 220.839 24.9189C219.635 27.2121 217.937 29.0111 215.744 30.3154C213.551 31.6054 210.964 32.25 207.982 32.25C206.033 32.25 204.177 31.9067 202.414 31.2188C200.651 30.5164 199.088 29.4837 197.727 28.1221C196.379 26.7605 195.312 25.0767 194.523 23.0703C193.749 21.0636 193.362 18.748 193.362 16.125C193.362 12.6996 194.014 9.79001 195.318 7.39648C196.637 4.9886 198.4 3.15391 200.607 1.89258C202.829 0.631246 205.288 0 207.982 0Z" fill="var(--primary)"/>
+<path d="M252.965 0C256.519 0 259.501 0.881567 261.909 2.64453C264.332 4.40753 266.037 6.79469 267.026 9.80469L261.135 11.4385C260.561 9.56088 259.594 8.10621 258.232 7.07422C256.871 6.02788 255.115 5.50488 252.965 5.50488C251.001 5.5049 249.36 5.94209 248.041 6.81641C246.737 7.69069 245.755 8.92296 245.096 10.5137C244.436 12.1046 244.107 13.9752 244.107 16.125C244.107 18.275 244.436 20.1463 245.096 21.7373C245.755 23.328 246.737 24.5603 248.041 25.4346C249.36 26.3089 251.001 26.7461 252.965 26.7461C255.115 26.7461 256.871 26.2231 258.232 25.1768C259.594 24.1304 260.561 22.6758 261.135 20.8125L267.026 22.4463C266.037 25.4563 264.332 27.8434 261.909 29.6064C259.501 31.3694 256.519 32.25 252.965 32.25C249.869 32.25 247.196 31.5768 244.945 30.2295C242.709 28.8822 240.982 26.9975 239.764 24.5752C238.56 22.1529 237.958 19.3357 237.958 16.125C237.958 12.9145 238.56 10.098 239.764 7.67578C240.982 5.25351 242.709 3.36881 244.945 2.02148C247.196 0.67417 249.869 1.8183e-05 252.965 0Z" fill="var(--primary)"/>
+<path d="M13.5449 12.2988L20.2529 0.645508H27.0898L16.5117 19.0068V31.6055H10.5781V19.0068L0 0.645508H6.83691L13.5449 12.2988Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M105.231 0.645508C105.532 0.645509 105.934 0.659811 106.436 0.688477C106.951 0.702814 107.41 0.745722 107.812 0.817383C109.66 1.10403 111.172 1.71305 112.348 2.64453C113.537 3.57617 114.412 4.75196 114.971 6.1709C115.53 7.57557 115.81 9.14555 115.81 10.8799C115.81 13.474 115.164 15.696 113.874 17.5449C113.078 18.6774 112.002 19.5405 110.648 20.1377L116.239 31.6055H109.617L104.532 21.1133H98.0078V31.6055H92.1592V0.645508H105.231ZM98.0078 15.6523H104.974C105.275 15.6523 105.605 15.638 105.963 15.6094C106.321 15.5807 106.65 15.5234 106.951 15.4375C107.74 15.2225 108.349 14.864 108.779 14.3623C109.209 13.8464 109.503 13.2802 109.66 12.6641C109.832 12.0336 109.918 11.4388 109.918 10.8799C109.918 10.3209 109.832 9.73254 109.66 9.11621C109.502 8.48574 109.209 7.91951 108.779 7.41797C108.349 6.90197 107.74 6.53629 106.951 6.32129C106.65 6.23537 106.321 6.17808 105.963 6.14941C105.605 6.12075 105.275 6.10645 104.974 6.10645H98.0078V15.6523Z" fill="var(--primary)"/>
+<path d="M145.055 21.1992L155.288 0.645508H160.534V31.6055H155.073V13.1152L146.087 31.6055H144.022L135.035 13.1152V31.6055H129.574V0.645508H134.82L145.055 21.1992Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M192.068 31.6055H186.049L184.058 25.1553H172.399L170.439 31.6055H164.42L173.88 0.645508H182.608L192.068 31.6055ZM174.06 19.6943H182.372L178.183 6.12598L174.06 19.6943Z" fill="var(--primary)"/>
+<path d="M233.232 31.6055H227.385V0.645508H233.232V31.6055Z" fill="var(--primary)"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M296.419 31.6055H290.399L288.408 25.1553H276.75L274.79 31.6055H268.771L278.23 0.645508H286.959L296.419 31.6055ZM278.41 19.6943H286.723L282.533 6.12598L278.41 19.6943Z" fill="var(--primary)"/>
+<path d="M306.551 26.1445H319.881V31.6055H300.703V0.645508H306.551V26.1445Z" fill="var(--primary)"/></symbol>
+<symbol id="glyph-settings" viewBox="0 0 57 57"><path d="M36.5 46.5C30.1453 46.5 27.2188 49.4388 27.2188 55.8411C27.2188 49.4598 24.2923 46.5 17.9376 46.5C24.2698 46.5 27.198 43.582 27.2187 37.2268C27.2188 43.582 30.1678 46.5 36.5 46.5Z" fill="var(--primary)" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1.5 20H34.5" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/>
+<path d="M1.5 32H34.5" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/>
+<path d="M1.5 44H12.5" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/></symbol>
+<symbol id="pencil" viewBox="0 0 24 24"><g transform="translate(-3,-2)"><rect x="3" y="2" width="24" height="24" rx="12" fill="var(--pen-bg)"/><path d="M8.00049 20.5002C8.00049 20.2241 8.39223 20.0002 8.87546 20.0002H21.125C21.6083 20.0002 22 20.2241 22 20.5002C22 20.7764 21.6083 21.0002 21.125 21.0002H8.87546C8.39223 21.0002 8.00049 20.7764 8.00049 20.5002Z" fill="var(--pen-ink)"/><path d="M20.206 5.71468C19.1809 4.76276 17.5188 4.76275 16.4936 5.71466L9.64847 12.0709C9.4885 12.2194 9.37258 12.4038 9.31199 12.6062L8.03676 16.8661C7.83617 17.5362 8.5003 18.1529 9.22189 17.9666L13.8094 16.7824C14.0274 16.7262 14.226 16.6186 14.386 16.47L21.2311 10.1138C22.2563 9.16191 22.2563 7.61853 21.2311 6.6666L20.206 5.71468Z" fill="var(--pen-ink)"/></g></symbol>
+<symbol id="palette" viewBox="0 0 61.390625 46.0390625"><path d="M21.103 12.4689C21.103 20.7815 25.2597 24.9378 33.573 24.9378C25.2597 24.9378 21.103 29.0942 21.103 37.4068C21.103 29.0942 16.9464 24.9378 8.63306 24.9378C16.9464 24.9378 21.103 20.7815 21.103 12.4689Z" fill="var(--s1)"/><path d="M42.2061 4.31616C42.2061 11.0302 45.5634 14.3872 52.278 14.3872C45.5634 14.3872 42.2061 17.7442 42.2061 24.4583C42.2061 17.7442 38.8488 14.3872 32.1342 14.3872C38.8488 14.3872 42.2061 11.0302 42.2061 4.31616Z" fill="var(--s2)"/><path d="M47.9614 23.4991C47.9614 28.9343 50.6792 31.6518 56.1149 31.6518C50.6792 31.6518 47.9614 34.3694 47.9614 39.8046C47.9614 34.3694 45.2436 31.6518 39.808 31.6518C45.2436 31.6518 47.9614 28.9343 47.9614 23.4991Z" fill="var(--s3)"/><path d="M31.6545 31.6519C31.6545 36.1279 33.8927 38.3659 38.3691 38.3659C33.8927 38.3659 31.6545 40.6039 31.6545 45.0799C31.6545 40.6039 29.4163 38.3659 24.9399 38.3659C29.4163 38.3659 31.6545 36.1279 31.6545 31.6519Z" fill="var(--s4)"/><path d="M10.5515 4.31616C10.5515 7.83303 12.3101 9.59147 15.8273 9.59147C12.3101 9.59147 10.5515 11.3499 10.5515 14.8668C10.5515 11.3499 8.79293 9.59147 5.27576 9.59147C8.79293 9.59147 10.5515 7.83303 10.5515 4.31616Z" fill="var(--s5)"/></symbol>
+</svg>
+
+<main>
+  <!-- ══════ 01. Zero (61:2706) ══════ -->
+  <section class="state on" data-state="zero">
+    <svg class="castle" viewBox="0 0 375 360" aria-hidden="true"><use href="#castle-lg"/></svg>
+
+    <button class="settings" type="button" aria-label="Settings" data-open-theme>
+      <svg width="57" height="57" viewBox="0 0 57 57" aria-hidden="true"><use href="#glyph-settings"/></svg>
+    </button>
+
+    <svg class="wordmark" viewBox="0 0 320 85" role="img" aria-label="Your magical vacation"><use href="#wordmark"/></svg>
+
+    <a class="start-link t-17b txt" href="trips.html">Start planning your next trip</a>
+
+    <div class="days-card">
+      <div class="title t-h1 txt">All your magical days</div>
+      <div class="line l1 t-17 txt">Planned this year: 0 Day / 0 Trip</div>
+      <div class="line l2 t-17 txt">Tracked all time: 0 Day / 0 Trip</div>
+    </div>
+  </section>
+
+  <!-- ══════ 02. Active (61:2759) ══════
+       Same castle and settings glyph as Zero, then one bottom-anchored stack:
+       booked-next-trip card + days card. -->
+  <section class="state" data-state="02">
+    <svg class="castle" viewBox="0 0 375 360" aria-hidden="true"><use href="#castle-lg"/></svg>
+    <button class="settings" type="button" aria-label="Settings" data-open-theme>
+      <svg width="57" height="57" viewBox="0 0 57 57" aria-hidden="true"><use href="#glyph-settings"/></svg>
+    </button>
+    <div class="stack" data-stack="02"></div>
+  </section>
+
+  <!-- ══════ 02a. Active-more trips (61:2811) ══════
+       The same stack with a booked-coming-up card between the two. The board
+       names this variant `booked-coming-up`, not "planning in progress": the
+       second card is the NEXT BOOKED trip after the soonest one, and planning
+       scenarios never reach Home. HOME-SPEC's older wording is corrected. -->
+  <section class="state" data-state="02a">
+    <svg class="castle" viewBox="0 0 375 360" aria-hidden="true"><use href="#castle-lg"/></svg>
+    <button class="settings" type="button" aria-label="Settings" data-open-theme>
+      <svg width="57" height="57" viewBox="0 0 57 57" aria-hidden="true"><use href="#glyph-settings"/></svg>
+    </button>
+    <div class="stack" data-stack="02a"></div>
+  </section>
+
+  <!-- ══════ 03. Theme-update (83:3232) ══════
+       A Home state, not a Settings screen (frozen 2026-07-26). The castle
+       shrinks to its 369x283 variant and the settings glyph is absent — the
+       picker replaces it. -->
+  <section class="state" data-state="03">
+    <svg class="castle-sm" viewBox="0 0 369 283" aria-hidden="true"><use href="#castle-sm"/></svg>
+    <div class="screen">
+      <div class="section">
+        <div class="sub-title txt">Update your screen</div>
+        <div class="grid" role="radiogroup" aria-label="Theme"></div>
+      </div>
+      <div class="cta-row">
+        <button class="cta cta--outline" type="button" data-cancel-theme><span class="t-17b txt">CANCEL</span></button>
+        <button class="cta" type="button" data-save-theme><span class="t-17b txt">SAVE</span></button>
+      </div>
+      <!-- data-synch. Rendered exactly as drawn, and deliberately UNWIRED:
+           "Connect Google Drive" binds a cloud account, and operating rule 1 is
+           local-first with no backend and no login — the 2026-07-19 pivot
+           removed Supabase and sign-in on purpose. Building an OAuth flow here
+           would contradict a frozen rule on my own initiative, so the hook is
+           left and the decision is logged (TODO.md). Nothing is invented. -->
+      <div class="data-synch" data-synch>
+        <div class="rule-primary"></div>
+        <div class="synch-title txt">Synch your data</div>
+        <button class="cta" type="button" data-drive-toggle>
+          <span class="t-17b txt" data-drive-label>Connect Google Drive</span>
+        </button>
+        <div class="synch-meta" data-synch-meta hidden>
+          <div class="synch-line txt" data-last-synced>Last synced: —</div>
+          <button class="synch-line txt" type="button" data-drive-disconnect>Disconnect Google Drive</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <a class="tab on" href="home.html" aria-current="page">
+    <svg aria-hidden="true" style="left:17.74px; top:8.85px" width="41" height="36" viewBox="0 0 41 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M40.5405 15.8387C37.1394 15.8387 35.5731 17.4049 35.5731 20.8172C35.5731 17.4161 34.0068 15.8387 30.6056 15.8387C34.0068 15.8387 35.5731 14.2724 35.5731 10.8602C35.5619 14.2724 37.1394 15.8387 40.5405 15.8387ZM5.54925 7.3877C3.64729 7.3877 2.77462 8.26033 2.77462 10.1622C2.77462 8.26033 1.90196 7.3877 0 7.3877C1.90196 7.3877 2.77462 6.51506 2.77462 4.61316C2.77462 6.50388 3.64729 7.3877 5.54925 7.3877ZM26.6786 4.33777C24.7766 4.33777 23.904 5.2104 23.904 7.1123C23.904 5.2104 23.0313 4.33777 21.1293 4.33777C23.0313 4.33777 23.904 3.46513 23.904 1.56323C23.904 3.46513 24.7766 4.33777 26.6786 4.33777Z" fill="var(--deco)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.0948 0V0.0763244C19.2306 0.0477366 19.5022 1.64076e-05 19.9588 0C21.3912 0 22.4163 0.857887 23.5893 0.857887C24.1697 0.857884 25.1082 0.695958 25.3799 0.934211C25.4779 1.01951 25.1078 0.829259 24.639 1.07668C24.3674 1.21963 23.1819 1.74421 22.33 1.74427C21.478 1.74427 21.4161 1.51529 20.7246 1.51529C20.1567 1.5153 19.3666 1.86759 19.0948 1.99156V3.717C19.1073 3.76571 21.0714 11.4372 21.4655 12.046C21.6383 12.1223 21.6385 12.1224 21.6385 12.1224V12.5513L21.3052 12.6561V13.6473H22.8235V15.4582L21.9346 16.0108V21.9194L24.3551 23.5395V21.2523L23.5522 21.0045V20.0799C23.5522 20.0799 23.7287 19.9925 24.318 19.6703C24.8736 18.7839 26.2072 15.0766 26.2072 15.0766V13.0947H26.4784V15.0766C26.4784 15.0766 27.7997 18.7839 28.3677 19.6703C28.9569 20.0019 29.1335 20.0799 29.1335 20.0799V21.0045L28.3311 21.2523V29.1432C29.3806 29.6388 30.4548 30.2014 31.4919 30.8208V29.4867L30.9363 29.2959V28.3713C30.9413 28.3689 31.1176 28.281 31.7016 27.9617C32.268 27.0779 33.412 24.3176 33.4184 24.3022V22.3198H33.6896V24.3022C33.697 24.3201 34.8397 27.0782 35.4059 27.9617C35.9919 28.2915 36.1678 28.3696 36.1716 28.3713V29.2959L35.616 29.4867V33.6988C36.4813 34.4084 36.9939 34.9098 36.9939 35.9519H1.04205C1.04205 34.9098 1.52921 34.4182 2.38842 33.7084V29.4867L1.83277 29.2959V28.3713C1.84024 28.3676 2.01828 28.2787 2.59805 27.9617C3.16339 27.0796 4.30365 24.328 4.31434 24.3022V22.3198H4.58605V24.3022C4.59562 24.3253 5.73672 27.0791 6.30233 27.9617C6.89503 28.2953 7.06812 28.3713 7.06812 28.3713V29.2959L6.51248 29.4867V30.8208C7.54967 30.2014 8.61144 29.6388 9.67333 29.1432V21.2523L8.8709 21.0045V20.0799C8.87773 20.0765 9.05534 19.9879 9.63618 19.6703C10.1918 18.784 11.5255 15.0766 11.5255 15.0766V13.0947H11.7972V15.0766C11.7972 15.0766 13.1185 18.784 13.6865 19.6703C14.2664 19.9967 14.4444 20.0767 14.4517 20.0799V21.0045L13.6493 21.2523V23.5395L16.0693 21.9194V16.0108L15.1804 15.4582V13.6473H16.6992V12.6561L16.366 12.5513V12.1224C16.366 12.1224 16.3815 12.1155 16.539 12.046C16.9333 11.4362 18.8987 3.75949 18.9096 3.717V0H19.0948ZM18.9834 29.8327C17.6252 29.8327 16.539 30.5378 16.539 31.405V33.3014H21.4283V31.405C21.4283 30.5282 20.3416 29.8327 18.9834 29.8327ZM18.8602 23.8C18.8602 23.8 18.1808 24.7147 16.9954 25.5819L17.1312 25.7061V27.7261H20.7862V25.7061L20.922 25.5819C19.7834 24.7125 19.0941 23.815 19.0826 23.8H18.8602Z" fill="var(--primary)"/></svg>
+    <span class="label t-13 txt">Home</span>
+  </a>
+  <a class="tab" href="trips.html">
+    <svg aria-hidden="true" style="left:26.36px; top:8.71px" width="23" height="38" viewBox="0 0 23 38" fill="none" xmlns="http://www.w3.org/2000/svg"><rect y="7.60132" width="22.8041" height="27.5549" rx="5.06757" fill="var(--dvc-primary)"/><rect x="7.60156" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="15.2031" width="0.950169" height="9.50169" rx="0.475084" fill="var(--dvc-primary)"/><rect x="6.65137" width="10.4519" height="1.90034" rx="0.950169" fill="var(--dvc-primary)"/><circle cx="5.70112" cy="36.1065" r="1.90034" fill="var(--dvc-primary)"/><circle cx="17.103" cy="36.1066" r="1.90034" fill="var(--dvc-primary)"/><rect x="1.90039" y="28.5051" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><rect x="1.90039" y="26.6049" width="19.0034" height="0.950169" fill="var(--dvc-bg)"/><path d="M16.6675 17.6271C16.6675 14.8855 17.9287 13.6271 20.6675 13.6271C17.9287 13.6271 16.6585 12.3686 16.6675 9.62708C16.6675 12.3686 15.4062 13.6271 12.6675 13.6271C15.4062 13.6271 16.6675 14.8945 16.6675 17.6271Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Trips</span>
+  </a>
+  <a class="tab" href="spend.html">
+    <svg aria-hidden="true" style="left:23.57px; top:19.48px" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.1351" cy="10.1351" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M10.8973 5.01299C11.3927 5.06572 11.8287 5.18177 12.205 5.36312C12.7452 5.6095 13.158 5.95575 13.4422 6.40113C13.7265 6.84652 13.8691 7.35844 13.8691 7.93649H11.9502C11.9123 7.51006 11.7602 7.18283 11.4949 6.95539C11.3503 6.82686 11.1509 6.73539 10.8973 6.6795V9.36917L10.9542 9.38649C11.229 9.47178 11.5426 9.58044 11.8933 9.71311C12.2532 9.83628 12.5985 10.0075 12.93 10.2253C13.2617 10.4338 13.5319 10.7082 13.7404 11.0493C13.9583 11.3809 14.067 11.7979 14.067 12.3001C14.067 12.9161 13.9204 13.4565 13.6266 13.9208C13.3328 14.3756 12.8968 14.7315 12.3189 14.9873C11.9164 15.1616 11.4423 15.2717 10.8973 15.3226V16.5363H9.51908V15.3238C8.5952 15.2404 7.8741 14.979 7.3577 14.532C6.72298 13.9729 6.38191 13.2191 6.33453 12.2716H8.31034C8.32929 12.6033 8.41069 12.8789 8.55283 13.0969C8.69497 13.305 8.90308 13.4616 9.17762 13.5657C9.28225 13.6054 9.3966 13.634 9.51908 13.6585V10.7227L9.41887 10.6942C8.56634 10.4479 7.88415 10.1068 7.37254 9.67105C6.86084 9.23515 6.6055 8.65666 6.60548 7.93649C6.60548 7.2921 6.76166 6.75167 7.07438 6.31576C7.39655 5.88001 7.8326 5.54843 8.3821 5.32105C8.73064 5.17686 9.10957 5.07811 9.51908 5.02536V3.80054H10.8973V5.01299ZM10.8973 13.6511C11.1881 13.5888 11.4301 13.4863 11.6223 13.3381C11.954 13.0728 12.1197 12.717 12.1197 12.2716C12.1196 12.0254 12.049 11.831 11.9069 11.6889C11.7742 11.5373 11.5841 11.4096 11.3378 11.3054C11.2019 11.2456 11.055 11.1894 10.8973 11.1359V13.6511ZM9.51908 6.6894C9.28001 6.74817 9.08579 6.84143 8.93636 6.97024C8.66172 7.19756 8.52451 7.50496 8.52438 7.89319C8.52438 8.08272 8.57602 8.24964 8.68026 8.39178C8.78437 8.52421 8.91245 8.63737 9.0638 8.73201C9.20761 8.81661 9.36017 8.88782 9.51908 8.94976V6.6894Z" fill="var(--dvc-bg)"/><circle cx="17.7366" cy="17.7365" r="10.1351" fill="var(--dvc-primary)"/><path fill-rule="evenodd" clip-rule="evenodd" d="M18.4985 12.6143C18.9939 12.667 19.4299 12.7831 19.8062 12.9644C20.3464 13.2108 20.7591 13.5571 21.0434 14.0024C21.3277 14.4478 21.4703 14.9598 21.4703 15.5378H19.5514C19.5135 15.1114 19.3614 14.7841 19.0961 14.5567C18.9515 14.4282 18.7521 14.3367 18.4985 14.2808V16.9705L18.5554 16.9878C18.8302 17.0731 19.1438 17.1818 19.4945 17.3144C19.8544 17.4376 20.1997 17.6088 20.5312 17.8266C20.8629 18.0351 21.1331 18.3095 21.3416 18.6506C21.5595 18.9822 21.6682 19.3993 21.6682 19.9014C21.6682 20.5174 21.5215 21.0578 21.2278 21.5221C20.934 21.9769 20.498 22.3328 19.9201 22.5886C19.5175 22.763 19.0435 22.873 18.4985 22.9239V24.1376H17.1203V22.9251C16.1964 22.8417 15.4753 22.5804 14.9589 22.1333C14.3242 21.5742 13.9831 20.8204 13.9357 19.873H15.9115C15.9305 20.2046 16.0119 20.4802 16.154 20.6982C16.2962 20.9063 16.5043 21.0629 16.7788 21.1671C16.8834 21.2068 16.9978 21.2353 17.1203 21.2599V18.324L17.0201 18.2955C16.1675 18.0492 15.4853 17.7081 14.9737 17.2724C14.462 16.8365 14.2067 16.258 14.2067 15.5378C14.2067 14.8934 14.3629 14.353 14.6756 13.9171C14.9977 13.4813 15.4338 13.1498 15.9833 12.9224C16.3318 12.7782 16.7108 12.6794 17.1203 12.6267V11.4019H18.4985V12.6143ZM18.4985 21.2524C18.7893 21.1901 19.0313 21.0876 19.2235 20.9394C19.5552 20.6741 19.7209 20.3183 19.7209 19.873C19.7208 19.6267 19.6502 19.4323 19.5081 19.2902C19.3754 19.1387 19.1853 19.0109 18.939 18.9067C18.8031 18.8469 18.6562 18.7907 18.4985 18.7372V21.2524ZM17.1203 14.2907C16.8812 14.3495 16.687 14.4427 16.5376 14.5716C16.2629 14.7989 16.1257 15.1063 16.1256 15.4945C16.1256 15.684 16.1772 15.851 16.2815 15.9931C16.3856 16.1255 16.5136 16.2387 16.665 16.3333C16.8088 16.4179 16.9614 16.4891 17.1203 16.5511V14.2907Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Spend</span>
+  </a>
+  <a class="tab" href="dvc.html">
+        <!-- 19,13 is the board's own coordinate for this mark (Figma 41:1008, the
+         `svg` frame inside the DVC span). Ruled 2026-08-02: unlike the other
+         four footer icons this one is NOT optically compensated — it is
+         placed exactly as drawn. -->
+        <svg aria-hidden="true" style="left:19px; top:13px" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.9999 33.3C24.9587 33.3 30.5999 31.5539 30.5999 29.4C30.5999 27.2461 24.9587 25.5 17.9999 25.5C11.0411 25.5 5.3999 27.2461 5.3999 29.4C5.3999 31.5539 11.0411 33.3 17.9999 33.3Z" fill="var(--dvc-bg)"/><path d="M16.7998 30.3C17.0998 23.4 18.7498 17.4 21.5998 13.2L24.1498 15.3C21.1498 19.5 20.5498 24.3 20.8498 30.3H16.7998Z" fill="var(--dvc-primary)"/><path d="M22.6663 9.94336C23.678 8.7376 26.5565 9.48718 29.095 11.6172C31.6333 13.7472 32.8714 16.4515 31.8596 17.6572C30.8479 18.863 27.9694 18.1134 25.4309 15.9834C22.8926 13.8535 21.6548 11.1492 22.6663 9.94336ZM29.6634 2.40039C31.8171 2.40054 33.5627 4.14608 33.5628 6.2998C33.5628 8.45362 31.8171 10.2 29.6634 10.2002C28.2273 10.2002 26.973 9.42332 26.2962 8.26758C25.0103 8.95006 22.8631 9.31033 20.4641 9.14258C20.0036 9.11037 19.5551 9.05923 19.1223 8.99316C18.3776 9.94436 17.3196 10.9242 16.0403 11.7871C12.8812 13.9179 9.56942 14.5316 8.64284 13.1582C7.71634 11.7846 9.52655 8.94345 12.6858 6.8125C13.0558 6.56292 13.428 6.33415 13.7981 6.12695C13.7791 6.02467 13.7723 5.92167 13.7796 5.81836C13.8894 4.24826 17.0603 3.19128 20.8616 3.45703C22.97 3.60446 24.8296 4.12807 26.0491 4.83301C26.6288 3.40625 28.0284 2.40039 29.6634 2.40039Z" fill="var(--dvc-bg)"/><path d="M19.5 14.55C20.7426 14.55 21.75 13.5427 21.75 12.3C21.75 11.0574 20.7426 10.05 19.5 10.05C18.2574 10.05 17.25 11.0574 17.25 12.3C17.25 13.5427 18.2574 14.55 19.5 14.55Z" fill="var(--dvc-primary)"/><path d="M23.8501 15.75C25.0927 15.75 26.1001 14.7426 26.1001 13.5C26.1001 12.2574 25.0927 11.25 23.8501 11.25C22.6075 11.25 21.6001 12.2574 21.6001 13.5C21.6001 14.7426 22.6075 15.75 23.8501 15.75Z" fill="var(--dvc-primary)"/></svg>
+    <span class="label t-13 txt">DVC</span>
+  </a>
+  <a class="tab" href="insights.html">
+    <svg aria-hidden="true" style="left:22.62px; top:13.49px" width="33" height="30" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0.895828 8.81396C0.401075 8.3192 0.400989 7.51357 0.91226 7.03591C7.24023 1.12389 13.8274 -0.727922 20.6736 1.48046C21.3338 1.69342 21.658 2.4228 21.4144 3.07233L21.3583 3.22188C21.1089 3.88711 20.3623 4.21159 19.6841 3.99981C14.0601 2.24352 8.43617 3.89921 2.81221 8.96689C2.29864 9.42966 1.5084 9.42653 1.01956 8.93769L0.895828 8.81396Z" fill="var(--dvc-bg)"/><path d="M8.55154 18.6867C8.55154 17.1124 7.27532 15.8362 5.70103 15.8362C4.12674 15.8362 2.85052 17.1124 2.85052 18.6867V26.6048C2.85052 28.1791 4.12674 29.4553 5.70103 29.4553C7.27532 29.4553 8.55154 28.1791 8.55154 26.6048V18.6867Z" fill="var(--dvc-primary)"/><path d="M17.7365 12.0356C17.7365 10.4613 16.4603 9.18506 14.886 9.18506C13.3117 9.18506 12.0355 10.4613 12.0355 12.0356V26.6048C12.0355 28.1791 13.3117 29.4553 14.886 29.4553C16.4603 29.4553 17.7365 28.1791 17.7365 26.6048V12.0356Z" fill="var(--dvc-primary)"/><path d="M26.9215 15.5195C26.9215 13.9452 25.6453 12.6689 24.071 12.6689C22.4967 12.6689 21.2205 13.9452 21.2205 15.5195V26.6048C21.2205 28.179 22.4967 29.4553 24.071 29.4553C25.6453 29.4553 26.9215 28.179 26.9215 26.6048V15.5195Z" fill="var(--dvc-primary)"/><path d="M25.9713 0L27.8717 4.59248L32.4642 6.49282L27.8717 8.39316L25.9713 12.9856L24.071 8.39316L19.4785 6.49282L24.071 4.59248L25.9713 0Z" fill="var(--dvc-bg)"/></svg>
+    <span class="label t-13 txt">Insights</span>
+  </a>
+</footer>
+
+<script type="module">
+/* ══════════════ Home — state selection, derivation, theme picker ══════════
+   Home holds no inputs, writes nothing and never shows money. Everything on
+   screen is derived from the stored trip list, read once at boot (chunk 8).
+   Home is a READER: it creates no trip and edits none. Both outbound paths
+   hand off — the Zero link to Trips, a card's pencil to `trips.html?edit=`,
+   because Trips owns the form (frozen 2026-07-27).
+   ─────────────────────────────────────────────────────────────────────── */
+
+import { openIdb }   from './js/storage/adapter-idb.js';
+import { createRepo } from './js/storage/repo.js';
+import { deriveInsights } from './js/insights-derive.js';
+import { tripTypeOf } from './js/trip-type.js';
+
+const DAY = 86400000;
+const iso = ms => new Date(ms).toISOString().slice(0, 10);
+const at  = d  => Date.parse(d + 'T00:00:00Z');
+const now = new Date();
+const T0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());   // today, UTC-normalised
+const TODAY = iso(T0);
+
+/* ── real reads (chunk 8) ───────────────────────────────────────────────
+   The only storage call on this screen, and it is a read. No storage means
+   an empty list, which renders Zero — the honest reading, never a crash. */
+let stored = [];
+try {
+  stored = await createRepo(await openIdb()).listTrips();
+} catch (e) {
+  console.error('Home: storage unavailable —', e);
+}
+/* Both dates, or the row cannot be put on a countdown or in a calendar year.
+   Trips filters its own card stack the same way. */
+const trips = stored.filter(t => t.start_date && t.end_date);
+
+/* dev harness — ?state=zero|02|02a|03 · ?trips=<n> · ?theme=<id>
+   `trips` only ever SHORTENS the real upcoming list; it cannot invent a row. */
+const q = new URLSearchParams(location.search);
+
+/* ── derivation ─────────────────────────────────────────────────────────
+   Trip Type is derived from the component flags (DATA-MODEL §1: there is no
+   trip_type column, "label logic lives in the app") and the vocabulary lives
+   in js/trip-type.js, shared with Trips. Home used to keep its own copy that
+   concatenated with " & "; it disagreed with Trips on four of the eight
+   combinations, so the copy is gone rather than corrected. */
+const typeLabel = tripTypeOf;
+const nights   = t => Math.round((at(t.end_date) - at(t.start_date)) / DAY);
+const tripDays = t => nights(t) + 1;                    /* HOME-BUILD: nights + trip count */
+const countdown = t => Math.ceil((at(t.start_date) - T0) / DAY);
+const usDate = d => { const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y}`; };
+
+/* Home is a confirmed-trip dashboard: earliest confirmed upcoming trip is
+   Next Trip; every later confirmed trip is Coming Up. Planning belongs in
+   Trips until confirmation. With no confirmed upcoming trip, Home is Zero.
+   The list is NOT truncated — three or more scroll (the design director, 2026-07-28).
+   ⚠ Undrawn: the board draws one Coming Up card, so cards 3+ repeat that
+   heading. No other wording exists to use, and inventing one is not Claude's
+   call — logged in TODO.md for the design director. */
+const booked   = trips.filter(t => t.status === 'booked');
+const byStart  = (a, b) => at(a.start_date) - at(b.start_date);
+let upcoming = booked
+  .filter(t => at(t.start_date) >= T0)
+  .sort(byStart)
+  .map((t, i) => ({ trip: t, kind: i === 0 ? 'next' : 'coming' }));
+if (q.get('trips') !== null) upcoming = upcoming.slice(0, +q.get('trips'));
+
+/* Magical days — one card, two lines, both derived.
+
+   "Planned this year" is BOOKED TRIPS STARTING IN THE CURRENT CALENDAR YEAR
+   and was deliberately NOT redefined (the design director, 2026-07-28), so it stands as
+   built and is not "fixed" to match the line below it.
+
+   "Tracked all time" is EVERYTHING TRACKED WITH THE APP — the same population
+   as the Insights all-time figure, which is a change: this line used to read
+   `trips already finished`, so a booked-but-unfinished trip was missing from
+   it. The two surfaces have to agree by construction, so Home asks
+   deriveInsights rather than re-filtering: `tripCount` is Insights' own
+   number, and the days are summed over the very trips Insights counted.
+   Nothing but trips is passed, and nothing but the population is taken from
+   it — Home shows no money, ever.
+   The `+ 1` is Home's UNIT, not a second opinion about the population: a
+   Home "day" is `nights + 1` (HOME-BUILD), while insights-derive counts
+   nights. Applying it here keeps both lines of this card in one unit. */
+const ins = deriveInsights({ trips, today: TODAY });
+const trackedCards = ins.years.flatMap(y => y.trips);
+const trackedAll = { d: trackedCards.reduce((s, c) => s + c.days + 1, 0),
+                     n: ins.allTime.tripCount };
+
+const yr = new Date(T0).getUTCFullYear();
+const tally = list => ({ d: list.reduce((s, t) => s + tripDays(t), 0), n: list.length });
+const plannedYear = tally(booked.filter(t =>
+  at(t.start_date) >= Date.UTC(yr, 0, 1) && at(t.start_date) < Date.UTC(yr + 1, 0, 1)));
+
+/* ── render ─────────────────────────────────────────────────────────────
+   Unit words stay singular ("0 Day / 0 Trip") because that is what the board
+   draws; pluralisation is copy, and copy is the design director's. */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+const daysCardHTML = () => `
+  <div class="days-card">
+    <div class="title t-h1 txt">All your magical days</div>
+    <div class="line l1 t-17 txt"></div>
+    <div class="line l2 t-17 txt"></div>
+  </div>`;
+
+const HEAD = { next: 'Next Trip', coming: 'Coming Up' };
+
+/* `title` is the field Trips writes, so it is the one Home reads; a row saved
+   without one is named rather than left blank, exactly as the Trips stack
+   names it. */
+const nameOf = t => t.title || 'Untitled trip';
+
+const tripCardHTML = ({ trip: t, kind }) => `
+  <article class="card-trip card-${kind}">
+    <div class="trip-head">
+      <div class="title txt">${HEAD[kind]} : ${esc(typeLabel(t))}</div>
+      <button class="edit-btn" type="button" data-edit-trip="${esc(t.id)}" aria-label="Edit ${esc(nameOf(t))}">
+        <svg class="mini-edit" viewBox="0 0 24 24" aria-hidden="true"><use href="#pencil"/></svg>
+      </button>
+    </div>
+    <div class="trip-body">
+      <div class="count-row">
+        <span class="count txt">${countdown(t)}</span>
+        <span class="count-unit txt">days until</span>
+      </div>
+      <div class="trip-name t-17b txt">${esc(nameOf(t))}</div>
+      <div class="trip-dates t-17 txt">from ${usDate(t.start_date)} to ${usDate(t.end_date)}</div>
+    </div>
+  </article>`;
+
+document.querySelector('[data-stack="02"]').innerHTML =
+  (upcoming[0] ? tripCardHTML(upcoming[0]) : '') + daysCardHTML();
+/* No `.slice(0, 2)`: the whole upcoming list renders and the stack scrolls. */
+document.querySelector('[data-stack="02a"]').innerHTML =
+  upcoming.map(tripCardHTML).join('') + daysCardHTML();
+
+document.querySelectorAll('.days-card').forEach(card => {
+  card.querySelector('.l1').textContent = `Planned this year: ${plannedYear.d} Day / ${plannedYear.n} Trip`;
+  card.querySelector('.l2').textContent = `Tracked all time: ${trackedAll.d} Day / ${trackedAll.n} Trip`;
+});
+
+/* ── theme picker (state 03) ────────────────────────────────────────────
+   The five swatches are the ORIGINAL palette colours, before calibration,
+   used as-is (the design director, 2026-07-26) — so they are literal hexes read off the
+   board and never move with the active theme. The screen around them does:
+   tapping a chip repaints the app in that theme's calibrated tokens straight
+   away, SAVE keeps it, CANCEL puts the entry theme back. */
+const THEMES = [
+  ['apple',  'Apple', '#0A64A5','#DE2C47','#8AC0E5','#FFCA35','#FFEB94'],
+  ['sky', 'Sky', '#286287','#3B8BBD','#8CC5E8','#B1DEF5','#D7EAF6'],
+  ['meadow', 'Meadow', '#45767B','#758B42','#C5D163','#DFE46E','#CBEAFE'],
+  ['rose',     'Rose',     '#D2487A','#E387B8','#E5AFCF','#F8CB49','#DCE5E8'],
+  ['lagoon',      'Lagoon',      '#594597','#378D68','#A497C4','#53B288','#C6E8BE'],
+  ['gold',      'Gold',      '#F0BE4D','#F8D562','#F7E4A6','#FFE67F','#FEEFB5'],
+  ['oasis',    'Oasis',    '#16A39E','#65C5C8','#96D8E1','#FCD53B','#BCEBE4'],
+  ['canyon', 'Canyon', '#C74E28','#488D91','#DA9740','#F7CB6C','#F9E0AB'],
+  ['crimson',      'Crimson',      '#314E88','#7C404A','#69A997','#BFD38E','#FAEF95'],
+  ['olive',      'Olive',      '#769A8C','#8AAC66','#BDD395','#DAE4C7','#F8F3CD'],
+  ['lavender',   'Lavender',   '#8550A0','#A06BAF','#9C8CBD','#DAAFD2','#FADEE4'],
+  ['highland',     'Highland',     '#305B75','#071720','#173442','#6C3B27','#E6CCAD'],
+  ['glacier',       'Glacier',       '#0C77A8','#3ABAE3','#86B3CB','#82D4ED','#D5D9EA'],
+  ['heather',       'Heather',       '#050A0A','#1E1A62','#1D318B','#A42384','#7DBBB0'],
+  ['coral',      'Coral',      '#3F201B','#D7473A','#6EC9DA','#E0B896','#FFECD4'],
+  ['jade',       'Jade',       '#234F59','#2D6F73','#5A8F79','#8CB9B0','#D9ECE8'],
+];
+
+const grid = document.querySelector('.grid');
+grid.innerHTML = THEMES.map(([id, name, ...s]) => `
+  <button class="pchip" type="button" role="radio" aria-checked="false" data-theme-id="${id}"
+          style="--s1:${s[0]};--s2:${s[1]};--s3:${s[2]};--s4:${s[3]};--s5:${s[4]}">
+    <svg class="palette" viewBox="0 0 61.390625 46.0390625" aria-hidden="true"><use href="#palette"/></svg>
+    <span class="cname txt">${name}</span>
+  </button>`).join('');
+
+let committed = Theme.current();   /* the theme to fall back to on CANCEL */
+let pick = committed;
+function apply(id) { pick = id; Theme.apply(id); markPick(); }   /* preview only — no write */
+function markPick() {
+  grid.querySelectorAll('.pchip').forEach(c => {
+    const on = c.dataset.themeId === pick;
+    c.classList.toggle('on', on);
+    c.setAttribute('aria-checked', String(on));
+  });
+}
+grid.addEventListener('click', e => {
+  const chip = e.target.closest('.pchip');
+  if (chip) apply(chip.dataset.themeId);       /* live preview, not a commit */
+});
+
+/* ── state switching ────────────────────────────────────────────────────
+   Transitions are a plain re-render; motion is Interaction-Pass work. */
+const states = [...document.querySelectorAll('.state')];
+function show(id) { states.forEach(s => s.classList.toggle('on', s.dataset.state === id)); }
+
+const dataState = upcoming.length === 0 ? 'zero' : upcoming.length === 1 ? '02' : '02a';
+let back = dataState;
+
+document.querySelectorAll('[data-open-theme]').forEach(b => b.addEventListener('click', () => {
+  back = document.querySelector('.state.on').dataset.state;
+  committed = Theme.current();
+  apply(committed);
+  show('03');
+}));
+document.querySelector('[data-save-theme]').addEventListener('click', () => {
+  committed = pick;
+  Theme.save(pick);        /* the one write: persists to localStorage, survives reload */
+  show(back);
+});
+document.querySelector('[data-cancel-theme]').addEventListener('click', () => {
+  apply(committed);        /* undo the live preview */
+  show(back);
+});
+
+/* dev harness override — previews a theme without committing it to storage */
+if (q.get('theme')) { committed = q.get('theme'); Theme.apply(committed); pick = committed; }
+else { committed = Theme.current(); pick = committed; }
+/* Home never edits a trip itself — it hands the id to Trips, which owns the
+   form. Trips reads the id behind ?edit= and opens that row. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-edit-trip]');
+  if (b) location.href = 'trips.html?edit=' + encodeURIComponent(b.dataset.editTrip);
+});
+
+/* The overflow hides the DAYS CARD, and nothing below the last edit button is
+   focusable — so tabbing through the cards never scrolls it into view and a
+   keyboard-only user cannot read "Tracked all time". Making the region itself
+   focusable is the standard remedy (axe `scrollable-region-focusable`): arrow
+   keys then drive the scroller directly.
+   Only WHEN it actually overflows, so the drawn one- and two-card cases gain
+   no tab stop they were never drawn with. Must run after show(): a
+   `display: none` state measures 0 and would never qualify.
+   ⚠ Verified by measurement: wheel/touch scrolling, the overflow itself, and
+   the conditional attributes. NOT verified here: the arrow-key scroll — this
+   session's browser tool cannot dispatch a key event that triggers a default
+   scroll action (a plain focused `overflow:auto` control div ignored it too),
+   so that half rests on standard behaviour, not on a measurement. */
+const PULL = 30;   /* must match the .scrolls padding-top above, less the drawn 32 */
+function markScrollable() {
+  const el = document.querySelector('[data-stack="02a"]');
+  const scrolls = el.scrollHeight > el.clientHeight + 1;
+  el.classList.toggle('scrolls', scrolls);   /* opens the pull-down room above card one */
+  /* Open PAST that room, so the list rests where the board draws it and the
+     62px is somewhere to pull rather than a gap the user has to look at. */
+  if (scrolls) el.scrollTop = PULL;
+  el.toggleAttribute('tabindex', scrolls);
+  if (scrolls) {
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', 'Upcoming trips');
+  } else {
+    el.removeAttribute('role');
+    el.removeAttribute('aria-label');
+  }
+}
+
+markPick();
+show(q.get('state') || dataState);
+markScrollable();
+</script>
+
+</body>
+</html>
