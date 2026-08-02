@@ -493,7 +493,11 @@ footer.footer {
       <button class="add-more t-12u txt" id="add-contract">+ add more contract</button>
       <div class="cta-row">
         <button class="cta cta-outline" style="width:115px" data-close-setup><span class="txt">CANCEL</span></button>
-        <button class="cta cta-fill" style="width:112px" id="save-contracts"><span class="txt">SAVE</span></button>
+        <!-- starts DISABLED in the markup so only gateSetup() can turn it on:
+             renderSetup() runs before the card is ever shown, but a button that
+             defaults to enabled is one render-order change away from being
+             pressable on an empty form again. -->
+        <button class="cta cta-fill" style="width:112px" id="save-contracts" disabled><span class="txt">SAVE</span></button>
       </div>
     </div>
     <div class="rule thin"></div>
@@ -618,6 +622,7 @@ import { currentUY, uyFor, balance, outlook, eligibleSegments, prefillPoints,
   contractLabel } from './js/dvc.js';
 import { openIdb } from './js/storage/adapter-idb.js';
 import { createRepo } from './js/storage/repo.js';
+import { draftSaveable } from './js/dvc-gate.js';
 
 const UY_NAME = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -923,6 +928,7 @@ function renderSetup() {
         e.target.closest('.line').querySelector('.val').textContent =
           f === 'use_year_month' ? (v === '' ? '' : UY_NAME[+v]) : v;
       } else { draft[i][f] = e.target.value; if (f==='resort_hotel_id') renderSetup(); }
+      gateSetup();
     }));
   $('#setup-rows').querySelectorAll('[data-dues]').forEach(el => el.addEventListener('click', e => {
     const b = e.target.closest('[data-dues]');
@@ -931,6 +937,19 @@ function renderSetup() {
   $('#setup-rows').querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', e => {
     draft.splice(+e.currentTarget.dataset.del, 1); if (!draft.length) draft.push(blankContract()); renderSetup();
   }));
+  gateSetup();
+}
+
+/* The CTA gate (the design director, 2026-08-02) — the Trips ruling applied here: SAVE is
+   dark until every contract in the draft is complete, so the silent drop that
+   made an incomplete row VANISH (and the screen fall to zero state) can no
+   longer be reached. The predicate is shared with repo.saveContract via
+   js/dvc-gate.js rather than copied — the same mistake that once had three
+   screens forecasting one trip differently.
+   `.cta[disabled]` already carries the drawn disabled treatment
+   (`opacity: var(--disabled)`), so nothing new is painted. */
+function gateSetup() {
+  $('#save-contracts').disabled = !draftSaveable(draft);
 }
 const blankContract = () => ({ id:'c'+Date.now()+Math.random(), nickname:'', resort_hotel_id:'', use_year_month:0, points_per_year:0, expiry_year:null, track_dues:false });
 $('#add-contract').addEventListener('click', () => { draft.push(blankContract()); renderSetup(); });
