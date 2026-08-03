@@ -150,8 +150,18 @@ In the [Google Cloud console](https://console.cloud.google.com/):
    Enable**.
 2. **APIs & Services → OAuth consent screen.** Choose **External**, fill in the
    app name, support email and developer email, and give a **privacy policy
-   URL** — Google requires one for any app requesting a scope. The `#privacy`
-   section of this README works: `https://<user>.github.io/<repo>/#privacy`.
+   URL** — Google requires one for any app requesting a scope.
+
+   Use the **rendered README on GitHub**, which is where the app's own privacy
+   link already points:
+
+   ```
+   https://github.com/zizi-que/wonderplan#privacy
+   ```
+
+   > ⚠ **Not** the Pages URL. `https://zizi-que.github.io/wonderplan/#privacy`
+   > serves the app's Start screen — the fragment matches no element there, so a
+   > reviewer following it lands on a screen with no privacy text at all.
 3. Add the scope **`.../auth/drive.appdata`** ("View and manage its own
    configuration data in your Google Drive"). It is a **non-sensitive** scope,
    so it needs only basic verification — not the sensitive-scope review that
