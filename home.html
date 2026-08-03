@@ -391,8 +391,17 @@ main { flex: 1; min-height: 0; position: relative;
 /* Manrope Regular 9/120%, read off I226:4397;226:4238 rather than guessed
    from the 6px instance height. */
 .synch-line { width: 335px; text-align: center; color: var(--primary);
-  font-weight: 400; font-size: 9px; line-height: 120%; }
+  font-weight: 400; font-size: 9px; line-height: 120%;
+  /* .screen is a FIXED 550/582 read off the board, so a line that wraps does
+     not grow the card — it breaks it. The confirm state puts the longest
+     string this block ever holds here ("From iPhone · Safari · <date time>"),
+     and a verbose locale could push it past 335. One line, always. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 button.synch-line { display: block; }
+/* Same trap as .synch-meta above, and it bit: a class rule carrying `display`
+   outranks the UA's bare [hidden], so the Disconnect link stayed on screen in
+   the disconnected state. Say it explicitly. */
+button.synch-line[hidden] { display: none; }
 .cta { width: 115px; height: 48px; flex: none; border-radius: 24px;
   background: var(--primary); color: var(--on-primary);
   display: flex; align-items: center; justify-content: center; padding: 0 24px; }
@@ -544,15 +553,17 @@ footer.footer {
         <button class="cta cta--outline" type="button" data-cancel-theme><span class="t-17b txt">CANCEL</span></button>
         <button class="cta" type="button" data-save-theme><span class="t-17b txt">SAVE</span></button>
       </div>
-      <!-- data-synch. Rendered exactly as drawn, and deliberately UNWIRED:
-           "Connect Google Drive" binds a cloud account, and operating rule 1 is
-           local-first with no backend and no login — the 2026-07-19 pivot
-           removed Supabase and sign-in on purpose. Building an OAuth flow here
-           would contradict a frozen rule on my own initiative, so the hook is
-           left and the decision is logged (TODO.md). Nothing is invented. -->
+      <!-- data-synch — WIRED 2026-08-03 (Drive bridge). Operating rule 1 was
+           amended 2026-08-01: local-first with OPTIONAL sync. The block keeps
+           its drawn geometry in all three states; the CONFIRM state reuses the
+           same three rows rather than introducing a dialog the board does not
+           draw (the design director, 2026-08-03 — the app has no modal component
+           and trips.html:105 already logs two confirms as needing frames).
+             title → the question · CTA → the one verb · meta → what is about
+           to be replaced, then Cancel. -->
       <div class="data-synch" data-synch>
         <div class="rule-primary"></div>
-        <div class="synch-title txt">Synch your data</div>
+        <div class="synch-title txt" data-synch-title>Synch your data</div>
         <button class="cta" type="button" data-drive-toggle>
           <span class="t-17b txt" data-drive-label>Connect Google Drive</span>
         </button>
@@ -617,8 +628,10 @@ const TODAY = iso(T0);
    The only storage call on this screen, and it is a read. No storage means
    an empty list, which renders Zero — the honest reading, never a crash. */
 let stored = [];
+let db = null;                     /* kept: the Drive bridge snapshots it whole */
 try {
-  stored = await createRepo(await openIdb()).listTrips();
+  db = await openIdb();
+  stored = await createRepo(db).listTrips();
 } catch (e) {
   console.error('Home: storage unavailable —', e);
 }
@@ -849,6 +862,158 @@ function markScrollable() {
 markPick();
 show(q.get('state') || dataState);
 markScrollable();
+
+/* ═══════════ Data synch — the Google Drive bridge (2026-08-03) ═══════════
+   Drive is a BRIDGE BETWEEN THE USER'S OWN DEVICES, not a synchroniser. The
+   user decides when to hand the data over; both directions replace
+   everything, because that is what handing a folder over means.
+
+   ⚠ Nothing here touches the network on boot — no token, no Google script,
+   not even a DNS lookup — until the user taps Connect. That is what keeps
+   operating rule 1 ("no normal path may read or write a remote") literally
+   true for everyone who never turns sync on.
+   ─────────────────────────────────────────────────────────────────────── */
+import { createPrefs, KEYS }  from './js/sync/prefs.js';
+import { isConfigured }       from './js/sync/drive-config.js';
+import { createDriveAppData } from './js/sync/drive-appdata.js';
+import { createSync }         from './js/sync/sync.js';
+import * as drive             from './js/sync/google-auth.js';
+
+const prefs    = createPrefs();
+const elScreen = document.querySelector('.screen');
+const elTitle  = document.querySelector('[data-synch-title]');
+const elCta    = document.querySelector('[data-drive-toggle]');
+const elLabel  = document.querySelector('[data-drive-label]');
+const elMeta   = document.querySelector('[data-synch-meta]');
+const elLine   = document.querySelector('[data-last-synced]');
+const elOff    = document.querySelector('[data-drive-disconnect]');
+
+/* The status line is the only channel this block has — announce it. */
+elLine.setAttribute('role', 'status');
+
+const sync = createSync({
+  db, prefs,
+  /* A fresh token per operation. The GIS token is short-lived and one can
+     expire between the comparison and the upload the user then confirms. */
+  getDrive: async () => createDriveAppData({
+    accessToken: await drive.ensureToken(prefs, { interactive: true }),
+  }),
+});
+
+const stamp = iso => {
+  const t = Date.parse(iso ?? '');
+  return Number.isNaN(t) ? '—' : new Date(t).toLocaleString();
+};
+
+let pending = null;   /* the confirm in flight — { verdict, remote } */
+let note    = null;   /* one-shot line, replaces the timestamp when set */
+let busy    = false;
+
+/* Three states in the SAME three drawn rows — no dialog, no new component. */
+function render() {
+  const connected = drive.isConnected(prefs);
+  elScreen.classList.toggle('is-synced', connected || Boolean(pending));
+
+  if (pending) {
+    const down = pending.verdict === 'cloud-newer';
+    elTitle.textContent = down ? 'A newer backup is available.' : 'Upload local data?';
+    elLabel.textContent = down ? 'DOWNLOAD' : 'UPLOAD';
+    /* Names the other device and the other time. Because both directions are
+       destructive by design, the app's job is to show what is about to be
+       replaced, not to prevent it (frozen 2026-08-01) — so this line carries
+       the fact the question actually turns on. */
+    elLine.textContent = note ?? (down
+      ? `From ${pending.remote.deviceName || 'another device'} · ${stamp(pending.remote.backupTime)}`
+      : `Replaces the backup from ${stamp(pending.remote?.backupTime)}`);
+    elMeta.hidden = false;
+    elOff.hidden = false;
+    elOff.textContent = 'Cancel';
+    return;
+  }
+
+  elTitle.textContent = 'Synch your data';
+  elLabel.textContent = connected ? 'Sync Now' : 'Connect Google Drive';
+  elLine.textContent  = note ?? `Last synced: ${stamp(prefs.get(KEYS.lastSynced))}`;
+  elOff.textContent   = 'Disconnect Google Drive';
+  elOff.hidden = !connected;
+  elMeta.hidden = !connected && !note;
+}
+
+async function run(label, fn) {
+  if (busy) return;
+  busy = true; note = null;
+  elCta.disabled = true;
+  elCta.setAttribute('aria-busy', 'true');
+  elLabel.textContent = label;
+  try {
+    await fn();
+  } catch (e) {
+    console.error('Drive sync —', e);
+    /* Google's own wording where it is useful, trimmed so it cannot break the
+       9px line. A failed sync leaves BOTH copies untouched. */
+    note = (e?.message || 'Something went wrong.').slice(0, 90);
+  }
+  busy = false;
+  elCta.disabled = false;
+  elCta.removeAttribute('aria-busy');
+  render();
+}
+
+/* Compare, then either act or ask. Nothing is written before the answer. */
+async function syncNow() {
+  const { remote, verdict } = await sync.inspect();
+  if (verdict === 'upload-first') {          /* nothing there yet — just put it down */
+    await sync.push(null);
+    note = 'Backed up to Google Drive.';
+    return;
+  }
+  pending = { verdict, remote };
+}
+
+elCta.addEventListener('click', () => {
+  if (pending) {
+    const { verdict, remote } = pending;
+    const down = verdict === 'cloud-newer';
+    return run(down ? 'Downloading…' : 'Uploading…', async () => {
+      if (down) {
+        await sync.pull(remote);
+        /* Every screen reads storage once at boot and holds what it derived in
+           module scope; there is no store-wide invalidation path, and building
+           one to serve a rare, deliberate, user-initiated replacement would be
+           the larger change. A reload is honest and total. */
+        location.reload();
+        return;
+      }
+      await sync.push(remote);
+      pending = null;
+      note = 'Uploaded to Google Drive.';
+    });
+  }
+
+  if (!drive.isConnected(prefs))
+    return run('Connecting…', async () => { await drive.connect(prefs); await syncNow(); });
+
+  return run('Checking…', syncNow);
+});
+
+/* One button, two meanings — Cancel while a confirm is open, Disconnect
+   otherwise. Cancel writes nothing, locally or remotely. Disconnect drops the
+   credentials and NEVER the Drive file. */
+elOff.addEventListener('click', () => {
+  if (busy) return;
+  if (pending) { pending = null; note = null; render(); return; }
+  drive.disconnect(prefs);
+  note = null;
+  render();
+});
+
+/* No client id means the feature is not set up yet — say so, rather than
+   offering a button that looks live and throws. */
+if (!isConfigured()) {
+  elCta.disabled = true;
+  note = 'Google Drive is not configured yet.';
+}
+render();
 </script>
 
 </body>
