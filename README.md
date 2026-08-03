@@ -46,16 +46,11 @@ in your browser's own storage (IndexedDB). Nothing you enter is uploaded,
 synced, shared, or sent anywhere. There is no account, no analytics, no
 tracking, and no third-party scripts.
 
-Everything the app loads at runtime — hotel lists, price benchmarks,
-categorization rules — comes from files served alongside the app itself.
-
-**One thing to know, because "nothing leaves your device" should be exact:**
-the pages load their typeface (Manrope) from **Google Fonts**. Serving a font
-means Google's servers receive the ordinary information any web request carries
-— your IP address and browser. That happens on page load and has nothing to do
-with what you type into the app; none of your trips, expenses or contract
-details are involved. If that matters to you, the font can be self-hosted and
-the app will then make no third-party requests at all.
+**WonderPlan makes no third-party requests at all.** Everything it loads —
+hotel lists, price benchmarks, categorization rules, and its two typefaces —
+is served from the same place as the app itself. No CDN, no font service, no
+external host of any kind. You can confirm it in your browser's Network tab:
+every request is same-origin.
 
 **There is no backup yet.** Because everything is local, clearing your browser
 data or switching devices loses what you have entered. Private/Incognito
@@ -83,3 +78,7 @@ identify what a trip actually includes.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+The bundled typefaces are not covered by that licence and keep their own:
+**Manrope** and **42dot Sans** are both under the SIL Open Font License 1.1
+(`fonts/OFL-manrope.txt`, `fonts/OFL-42dotsans.txt`).

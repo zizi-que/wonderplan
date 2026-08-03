@@ -17,6 +17,65 @@
    before first paint. :root carries apple as the default.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* ══ Manrope, SELF-HOSTED (the design director, 2026-08-02) ═══════════════════════════
+   The six screens used to pull this from fonts.googleapis.com, which made the
+   privacy statement inexact: serving a font hands Google the request, so the
+   app contacted a third party on every load even though nothing a user typed
+   was ever involved. Self-hosting removes the last outbound request the app
+   makes — everything else it fetches is its own ./data/*.json.
+
+   TWO files, not six. Google serves Manrope as a VARIABLE font: the css2
+   response pointed all three weights (400/600/700) at one URL per subset, so
+   the whole range is one file. Only the latin subsets are shipped — the app is
+   English-only (text frozen 2026-08-02) — which is why cyrillic, greek and
+   vietnamese are absent rather than forgotten. 39KB total.
+
+   `font-weight: 400 700` is a RANGE, not a typo: that is how a variable font
+   is declared, and it is what lets 600 render as real SemiBold instead of
+   being synthesised. `swap` matches what the Google CSS asked for, so first
+   paint behaves as it did.
+
+   Licence: SIL Open Font License 1.1 — fonts/OFL-manrope.txt ships alongside,
+   as the licence requires. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/manrope-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* 42dot Sans 800 — Home's and Trips' next-trip COUNTDOWN only (--font-count).
+   Easy to miss when removing the Google links: those two screens asked for a
+   second family, so dropping their <link> without this would have left the
+   countdown falling back to Manrope, silently.
+   42dot Sans is a Korean family and Google splits it into 93 subsets. Only the
+   LATIN one is shipped — the countdown renders digits — which is 10KB instead
+   of the whole family. Licence: SIL OFL 1.1, fonts/OFL-42dotsans.txt. */
+@font-face {
+  font-family: '42dot Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../fonts/42dotsans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root, [data-theme="apple"] {
   --bg: #FFF6CF; --surface: #FFFFFF; --surface-raised: #FFFBE9; --border: #FFE573;
   --ink: #305B75; --muted: #427CA1; --primary: #DE2C47; --on-primary: #FFFFFF;

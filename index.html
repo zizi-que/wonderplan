@@ -95,9 +95,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="WonderPlan" />
 <meta name="theme-color" content="#DE2C47" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- No webfont <link>: Manrope and 42dot Sans are self-hosted in css/theme.css
+     (the design director, 2026-08-02), so the app makes no third-party request at all. -->
 <link rel="stylesheet" href="css/theme.css">
 <!-- classic + blocking on purpose: sets <html data-theme> before first paint -->
 <script src="js/theme.js"></script>
@@ -193,6 +192,24 @@ main { position: relative; width: 100%; max-width: 375px; margin-inline: auto;
   text-align: center; color: var(--ink);
   font-weight: 400; font-size: 12px; line-height: 120%; }
 
+/* The privacy link (the design director, 2026-08-02). The board drew this sentence as
+   PLAIN TEXT — "Read [file name] for full privacy statement" — with a
+   placeholder that never resolved, so the build shipped without it. There is a
+   document to point at now (the repo README), and her ruling is that a privacy
+   notice you cannot reach is not a notice: on a phone, plain text naming a file
+   is unusable. So it is a real link, and that is the one thing here the board
+   does not draw — a board amendment is owed for the underline.
+   ⚠ It leaves the app. `rel="noopener noreferrer"` because `target="_blank"`
+   without it hands the opened page a handle back to this one.
+   The 44px hit area comes from an ::after overlay rather than padding, so the
+   drawn 12px line and the sentence's wrap are untouched — the same trick DVC's
+   stay-picker and Insights' dots already use. It is wider than tall for the
+   same reason the Trips check-lines are: the line box is what there is. */
+.fineline { color: var(--ink); text-decoration: underline;
+  text-underline-offset: 2px; position: relative; }
+.fineline::after { content: ""; position: absolute; left: -8px; right: -8px;
+  top: 50%; height: 44px; transform: translateY(-50%); }
+
 /* symbol library — never painted itself */
 .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -261,7 +278,10 @@ main { position: relative; width: 100%; max-width: 375px; margin-inline: auto;
     <button class="cta txt" type="button" data-enter>ENTER</button>
 
     <p class="finehint txt">For personal use only. This app does not collect any
-      information from you.</p>
+      information from you.
+      <a class="fineline" href="https://github.com/zizi-que/wonderplan#privacy"
+         target="_blank" rel="noopener noreferrer">Read the privacy statement</a>
+      for details.</p>
   </section>
 </main>
 
