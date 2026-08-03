@@ -27,12 +27,65 @@ export function balance(contract, uy, entries) {
       .reduce((s, e) => s + e.points, 0);
 }
 
-// 3-year outlook: one row per contract, columns = current UY / +1 / +2.
+// The 3-year outlook window: the CALENDAR triple [Y-1, Y, Y+1] — the same
+// three columns for every contract (the design director, 2026-08-02).
+//
+// This line has been wrong twice, in opposite directions, which is why the
+// reasoning is kept in full:
+//
+// 1. It shipped as [uy0, uy0+1, uy0+2] — the window specs/DVC-SPEC.md STRUCK
+//    OUT on 2026-07-25. The struck line is kept in the spec precisely so the
+//    rejected window cannot come back, and it had come back here anyway. It
+//    survived because `outlook()` had NO CALLERS (dvc.html carried its own
+//    copy) and because tests/dvc.test.mjs asserted the rejected window BY
+//    NAME. Dead code plus a test that agrees with it is worse than dead code
+//    alone: the next screen wanting an outlook would have imported this and
+//    been told it was right.
+//
+// 2. The correction to last/this/next was still PER CONTRACT, and that broke
+//    on real data. Reported from the design director's own ledger: *"I am already
+//    spending 2027 points."* Borrowing reaches the next use year, and a
+//    September–December use year is still living in UY 2025 in August 2026 —
+//    so her window was [2024, 2025, 2026] and **the 2027 she was actually
+//    spending had no column at all.** The year she most needed was the one
+//    the screen could not show.
+//
+// The calendar triple also fixes a defect per-contract windows made
+// unavoidable: renderOverview draws ONE header, taken from contracts[0], while
+// each row used its own contract's years — so two contracts with different
+// use-year months put their numbers under the wrong headings. One shared
+// triple makes the single header correct by construction.
+//
+// The columns are still USE YEARS. `balance()` keys on use_year and nothing
+// about the ledger changed; what changed is WHICH three use-year numbers are
+// shown.
+//
+// ⚠ CONSEQUENCE: the current column is no longer always the middle one. For a
+// Sep–Dec use year the live column is Y-1, i.e. the LEFT one. The board draws
+// the middle pill active, so a renderer must derive the highlight from
+// currentUY() and never from the index — see `current` below, and
+// renderOverview. Highlighting the middle regardless would tell that member
+// they are spending a year they have not entered yet, which is a worse lie
+// than the board deviation.
+//
+// UTC to match currentUY(), so the two cannot disagree across a New Year.
+export function outlookYears(today = new Date()) {
+  const y = today.getUTCFullYear();
+  return [y - 1, y, y + 1];
+}
+
+// One row per contract, three columns, balances derived per column. Every row
+// spans the SAME three years now, so a caller can draw one header for all of
+// them. `current` marks which column is that contract's live use year — it is
+// not always the middle one, so a renderer must read this rather than assume.
 export function outlook(contracts, entries, today = new Date()) {
+  const years = outlookYears(today);
   return contracts.map(c => {
     const uy0 = currentUY(c, today);
-    return { contract: c, years: [uy0, uy0 + 1, uy0 + 2]
-      .map(uy => ({ uy, balance: balance(c, uy, entries) })) };
+    return {
+      contract: c,
+      years: years.map(uy => ({ uy, balance: balance(c, uy, entries), current: uy === uy0 })),
+    };
   });
 }
 

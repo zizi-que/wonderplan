@@ -616,7 +616,7 @@ footer.footer {
 </footer>
 
 <script type="module">
-import { currentUY, uyFor, balance, outlook, eligibleSegments, prefillPoints,
+import { currentUY, uyFor, balance, outlookYears, eligibleSegments, prefillPoints,
   canSaveReservation, reservationsForTrip, setDuesTracking, isDuesTracked,
   contractLabel } from './js/dvc.js';
 import { openIdb } from './js/storage/adapter-idb.js';
@@ -702,23 +702,40 @@ const fmtDate = iso => { const [y,m,d] = iso.split('-'); return `${m}/${d}/${y.s
 const checkOut = seg => { const d = new Date(seg.check_in+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+seg.nights); return d.toISOString().slice(0,10); };
 
 /* ══ cards · points overview ══
-   Board draws three year pills with the MIDDLE one active (2025 / **2026** /
-   2027 against a 2026 "today"), i.e. previous · current · next — which is one
-   column earlier than DVC-SPEC §3's "current / next / next+1" wording. Board
-   wins (frozen rule); the spec line needs syncing. Columns are per contract,
-   since each contract's use year starts in its own month. */
-function outlookYears(c) { const uy = currentUY(c, TODAY); return [uy-1, uy, uy+1]; }
+   Three year pills with the MIDDLE one active (2025 / **2026** / 2027 against
+   a 2026 "today"): previous · current · next. Columns are per contract, since
+   each contract's use year starts in its own month — so two contracts on one
+   screen can legitimately show different year triples.
+
+   CORRECTED 2026-08-02: this comment used to say the window was "one column
+   earlier than DVC-SPEC §3" and that "the spec line needs syncing". It does
+   not. The spec was AMENDED to last/this/next on 2026-07-25, and the old
+   wording sits struck through directly above that amendment — whoever wrote
+   this read the struck line as the live one. The code here was right; the note
+   about it was wrong, and it made a correct build look like a deviation.
+
+   The window comes from js/dvc.js now, so there is ONE definition. There were
+   two, and the OTHER one still had the rejected window — see js/dvc.js. */
 function renderOverview(el) {
-  const first = contracts[0];
-  const head = first ? outlookYears(first) : [];
+  const head = outlookYears(TODAY);
+  /* The header is the CALENDAR triple and no longer depends on contracts[0],
+     so the middle pill is the current calendar year for every row — which is
+     what made the single header honest. It used to take the first contract's
+     use-year window while each row took its own, so two contracts with
+     different use-year months put their numbers under the wrong headings. */
   let html = `<div class="colhead"></div>` + head.map((y,i) =>
     `<div class="yr ${i===1?'now':''}"><span class="t-15b txt">${y}</span></div>`).join('');
   contracts.forEach(c => {
     /* derived "abbr + ordinal" (the design director 2026-07-27) — never the free-text
        nickname, which nothing guarantees is short or even present */
     html += `<div class="rowlabel t-17 txt">${esc(contractLabel(c, contracts))}</div>`;
-    html += outlookYears(c).map((uy,i) =>
-      `<div class="cell t-17 txt ${i===1?'now':''}" title="UY ${uy}">${balance(c, uy, entries)}</div>`).join('');
+    /* `now` follows the contract's CURRENT USE YEAR, never the column index.
+       A Sep–Dec use year is still living in Y-1 in August, so its live column
+       is the LEFT one; marking the middle would tell that member they are
+       spending a year they have not entered yet. */
+    const uy0 = currentUY(c, TODAY);
+    html += head.map(uy =>
+      `<div class="cell t-17 txt ${uy===uy0?'now':''}" title="UY ${uy}">${balance(c, uy, entries)}</div>`).join('');
   });
   el.innerHTML = html;
 }
@@ -732,10 +749,13 @@ function renderPointsUsed(el) {
     const nights = segments.filter(s => s.trip_id === t.id && resvs.some(r => r.segment_id === s.id))
       .reduce((n,s) => n + s.nights, 0);
     const rows = contracts.map(c => {
-      const cells = outlookYears(c).map((uy,i) => {
+      /* same calendar triple as the overview, and the same rule for which
+         column reads as current: the contract's own use year, not the index */
+      const uy0 = currentUY(c, TODAY);
+      const cells = outlookYears(TODAY).map(uy => {
         const n = -entries.filter(e => e.contract_id===c.id && e.use_year===uy && segIds.has(e.reservation_id))
           .reduce((s,e) => s+e.points, 0);
-        return `<span class="${i===1?'t-15b':'t-15'} txt">${n}</span>`;
+        return `<span class="${uy===uy0?'t-15b':'t-15'} txt">${n}</span>`;
       }).join('');
       return `<span class="rowlabel t-15 txt">${esc(contractLabel(c, contracts))}</span>${cells}`;
     }).join('');
@@ -995,7 +1015,10 @@ function renderRec() {
   if (!recDraft.length && contracts.length) recDraft = [blankRec()];
   $('#rec-rows').innerHTML = recDraft.map((r,i) => {
     const c = contracts.find(cc => cc.id === r.contract_id);
-    const yrs = c ? outlookYears(c) : [];
+    /* the reconcile picker offers the same three years the cards show, so a
+       member can reconcile the year they are actually spending — which for a
+       borrowed Y+1 is the right-hand column */
+    const yrs = c ? outlookYears(TODAY) : [];
     return `<div class="rec-row">
       <span class="who t-17 txt">${c ? esc(c.nickname) : '—'}
         <select data-i="${i}" data-f="contract_id" aria-label="Contract">${contracts.map(cc =>
