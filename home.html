@@ -395,9 +395,23 @@ main { flex: 1; min-height: 0; position: relative;
   /* .screen is a FIXED 550/582 read off the board, so a line that wraps does
      not grow the card — it breaks it. The confirm state puts the longest
      string this block ever holds here ("From iPhone · Safari · <date time>"),
-     and a verbose locale could push it past 335. One line, always. */
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-button.synch-line { display: block; }
+     and a verbose locale could push it past 335. One line, always.
+     ⚠ `nowrap` ONLY — no overflow clip. `.txt` trims the box to the alphabetic
+     baseline (text-box: trim-both), so descenders sit OUTSIDE it, and an
+     `overflow: hidden` here shears the bottom off every y, g and p. That
+     shipped for one commit and cut "Disconnect your Google Drive" in half.
+     nowrap alone is what protects the fixed height; the clip protected
+     nothing and cost the letterforms. */
+  white-space: nowrap; }
+/* This row is a BUTTON wearing body-text styling, so nothing on screen said it
+   was pressable (the design director, 2026-08-04: a user cannot tell it is a
+   link). Underline is how the board already marks a link — the Start screen's
+   privacy sentence carries `textDecoration: underline` — so this borrows that
+   convention rather than inventing one. */
+button.synch-line { display: block; text-decoration: underline;
+  text-underline-offset: 2px; }
+button.synch-line:focus-visible { outline: 2px solid var(--primary);
+  outline-offset: 2px; border-radius: 4px; }
 /* Same trap as .synch-meta above, and it bit: a class rule carrying `display`
    outranks the UA's bare [hidden], so the Disconnect link stayed on screen in
    the disconnected state. Say it explicitly. */
