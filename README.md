@@ -201,11 +201,23 @@ export const CLIENT_ID = "1234567890-abcdef.apps.googleusercontent.com";
 That is the only change. The id is meant to be public — it identifies the app,
 it authorises nothing on its own.
 
-### 4. While the app is unverified
+### 4. Test users, and the unverified warning
 
-Until basic verification is granted, Google shows testers a *"Google hasn't
-verified this app"* interstitial. Add them under **OAuth consent screen → Test
-users** so they can proceed, or complete verification.
+The app stays in **Testing** status. That is a deliberate choice, not a missing
+step: sync works fully for up to **100 test users**, each of whom sees Google's
+*"Google hasn't verified this app"* screen once and continues via **Advanced →
+Go to WonderPlan**.
+
+**Add every tester under Audience → Test users first.** Someone who is not on
+that list is *blocked outright*, not warned — an invite sent before their
+address is added looks like a broken app.
+
+Publishing to production would remove the warning but requires domain
+verification, and on GitHub Pages that is awkward: a project site 404s at the
+host root, so Search Console's file method has nowhere to serve from, and
+`github.io` is a public-suffix domain whose DNS you do not control. It would
+take either a repo named `<user>.github.io` or a real domain. Neither is needed
+for a beta.
 
 ## How it is built
 
