@@ -569,7 +569,7 @@ footer.footer {
         </button>
         <div class="synch-meta" data-synch-meta hidden>
           <div class="synch-line txt" data-last-synced>Last synced: —</div>
-          <button class="synch-line txt" type="button" data-drive-disconnect>Disconnect Google Drive</button>
+          <button class="synch-line txt" type="button" data-drive-disconnect>Disconnect your Google Drive</button>
         </div>
       </div>
     </div>
@@ -934,7 +934,7 @@ function render() {
   elTitle.textContent = 'Synch your data';
   elLabel.textContent = connected ? 'Sync Now' : 'Connect Google Drive';
   elLine.textContent  = note ?? `Last synced: ${stamp(prefs.get(KEYS.lastSynced))}`;
-  elOff.textContent   = 'Disconnect Google Drive';
+  elOff.textContent   = 'Disconnect your Google Drive';
   elOff.hidden = !connected;
   elMeta.hidden = !connected && !note;
 }
@@ -964,7 +964,7 @@ async function syncNow() {
   const { remote, verdict } = await sync.inspect();
   if (verdict === 'upload-first') {          /* nothing there yet — just put it down */
     await sync.push(null);
-    note = 'Backed up to Google Drive.';
+    note = 'Backed up to your Google Drive.';
     return;
   }
   pending = { verdict, remote };
@@ -986,7 +986,7 @@ elCta.addEventListener('click', () => {
       }
       await sync.push(remote);
       pending = null;
-      note = 'Uploaded to Google Drive.';
+      note = 'Uploaded to your Google Drive.';
     });
   }
 
