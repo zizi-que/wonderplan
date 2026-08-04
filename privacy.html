@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!--
+  Privacy — the canonical statement.
+
+  WHY THIS FILE EXISTS, and why it is a page rather than a README section.
+  Google's OAuth verification requires the privacy policy to be "hosted within
+  the domain that hosts your homepage", and every authorized domain must be
+  verified in Search Console. The app's homepage is
+  zizi-que.github.io/wonderplan/, so a statement living on github.com cannot be
+  used — that domain belongs to GitHub, not to this project, and cannot be
+  verified. The README section is a copy for readers; THIS is the address the
+  consent screen points at, and index.html's privacy link points here too
+  because Google requires the two to match.
+
+  A DOCUMENT, NOT A SCREEN. It has no board frame and invents no component
+  (operating rule 7): no footer, no castle, no card. It borrows only the
+  palette and the two typefaces via theme.css, so a tester who taps through
+  from Start does not land somewhere that looks broken. Approved as "plain
+  document, app typography" (the design director, 2026-08-03).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WonderPlan — Privacy</title>
+
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="WonderPlan" />
+<meta name="theme-color" content="#DE2C47" />
+
+<meta name="description" content="How WonderPlan handles your data: it stays on your device unless you connect your own Google Drive." />
+
+<!-- No webfont <link>: Manrope and 42dot Sans are self-hosted in css/theme.css -->
+<link rel="stylesheet" href="css/theme.css">
+<!-- Blocking, in <head>, so the stored palette is set before first paint -->
+<script src="js/theme.js"></script>
+
+<style>
+:root {
+  --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font); background: var(--bg); color: var(--ink);
+  /* Phone-first like everything else, but a document should not be a 375px
+     column on a desktop — it is text, and text needs a measure. */
+  padding: 32px 20px calc(48px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(32px + env(safe-area-inset-top, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 60ch; margin: 0 auto; }
+
+h1 { color: var(--primary); font-weight: 800; font-size: 32px; line-height: 120%; }
+.sub { color: var(--primary); font-weight: 600; font-size: 19px; line-height: 135%;
+  margin-top: 4px; }
+.updated { color: var(--ink); font-weight: 400; font-size: 13px; line-height: 135%;
+  margin-top: 12px; opacity: .8; }
+
+h2 { color: var(--primary); font-weight: 700; font-size: 19px; line-height: 135%;
+  margin-top: 32px; }
+p  { font-size: 15px; line-height: 160%; margin-top: 12px; }
+ul { margin-top: 12px; padding-left: 20px; }
+li { font-size: 15px; line-height: 160%; margin-top: 6px; }
+strong { font-weight: 700; }
+
+hr { border: 0; border-top: 1.5px solid var(--deco); margin: 32px 0; }
+
+a { color: var(--primary); }
+a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.back { display: inline-block; margin-top: 32px; font-size: 15px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>WonderPlan</h1>
+  <div class="sub">Privacy</div>
+  <p class="updated">Last updated 3 August 2026</p>
+
+  <hr />
+
+  <p><strong>Your data stays on your device unless you connect Google Drive.</strong>
+  Trips, expenses and DVC contracts are saved in your browser's own storage
+  (IndexedDB). There is no WonderPlan account, no analytics, no tracking, and no
+  server of ours anywhere — there is nothing for us to hold, because we operate
+  nothing.</p>
+
+  <h2>What WonderPlan collects</h2>
+  <p>Nothing. There is no sign-up, no profile, no telemetry, no crash reporting
+  and no advertising identifier. We do not know who you are, that you use the
+  app, or that it exists on your device.</p>
+  <p>What you type — trip dates, hotels, amounts, DVC contracts — is written to
+  your browser's storage and read back by the app. It never leaves your device
+  unless you choose to connect Google Drive.</p>
+
+  <h2>Google Drive sync, if you turn it on</h2>
+  <p>WonderPlan can copy your data between your own devices through your own
+  Google Drive. It is off until you turn it on, and the app is fully usable
+  forever without it.</p>
+  <ul>
+    <li><strong>Your data goes to your Google account and nowhere else.</strong>
+    The connection is between your browser and Google. We cannot read it, and we
+    receive no copy.</li>
+    <li><strong>It is stored in Drive's application data folder</strong> — a
+    private area only WonderPlan can read. It does not appear in your Drive, and
+    no other app can open it.</li>
+    <li><strong>WonderPlan can only see the one file it created.</strong> The
+    permission requested (<code>drive.appdata</code>) does not allow it to read
+    anything else in your Drive.</li>
+    <li><strong>Sign-in is not stored.</strong> We keep no long-lived Google
+    credential — only a short-lived token that lives in the page and is gone when
+    you close it, plus a note that you chose to connect. Nothing that could let
+    anyone else reach your Drive is written to your device.</li>
+    <li><strong>Disconnecting removes the connection, not the data.</strong> Your
+    backup stays in your Drive until you delete it.</li>
+  </ul>
+
+  <h2>Third-party requests</h2>
+  <p><strong>Until you tap Connect Google Drive, WonderPlan makes no
+  third-party requests at all.</strong> Everything it loads — hotel lists, price
+  benchmarks, categorization rules, and its two typefaces — is served from the
+  same place as the app itself. No CDN, no font service, no external host of any
+  kind. You can confirm it in your browser's Network tab: every request is
+  same-origin.</p>
+  <p>Google's sign-in script is fetched <strong>only</strong> when you tap
+  Connect Google Drive, never on startup. If you never connect, it is never
+  requested.</p>
+  <p>The app is served by GitHub Pages, which — like any web host — receives the
+  ordinary request information needed to serve a page. That is GitHub's
+  processing, not ours, and is covered by
+  <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub's
+  privacy statement</a>.</p>
+
+  <h2>If you do not connect Drive, there is no backup</h2>
+  <p>Because everything is local, clearing your browser data or switching devices
+  loses what you have entered. Private and Incognito windows do not keep anything
+  either. Adding WonderPlan to your Home Screen protects it from Safari's
+  automatic clearing of unused sites.</p>
+
+  <h2>Deleting your data</h2>
+  <p>Clearing site data for WonderPlan in your browser removes everything stored
+  on that device. If you have synced, deleting the backup from your Google
+  account's connected-apps settings removes the copy held there. Nothing survives
+  either step, because there is nowhere else for it to be.</p>
+
+  <h2>Children</h2>
+  <p>WonderPlan is not directed at children and collects nothing from anyone.</p>
+
+  <h2>Changes</h2>
+  <p>If this statement changes, the date at the top changes with it. The app is
+  open source, so every revision is visible in its history.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this statement can be raised as an issue on the
+  <a href="https://github.com/zizi-que/wonderplan/issues">project's GitHub
+  repository</a>.</p>
+
+  <hr />
+
+  <p><strong>Not affiliated with Disney.</strong> WonderPlan is an unofficial,
+  independent fan project, not affiliated with, endorsed by, sponsored by, or
+  connected to The Walt Disney Company or any of its subsidiaries.</p>
+
+  <a class="back" href="./index.html">← Back to WonderPlan</a>
+</main>
+
+</body>
+</html>

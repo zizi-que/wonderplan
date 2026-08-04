@@ -279,8 +279,13 @@ main { position: relative; width: 100%; max-width: 375px; margin-inline: auto;
 
     <p class="finehint txt">For personal use only. This app does not collect any
       information from you.
-      <a class="fineline" href="https://github.com/zizi-que/wonderplan#privacy"
-         target="_blank" rel="noopener noreferrer">Read the privacy statement</a>
+      <!-- Repointed 2026-08-03 from the README anchor to privacy.html. Google's
+           OAuth verification requires the privacy policy to sit on the domain
+           hosting the homepage, and requires this link to match the one given on
+           the consent screen. github.com satisfies neither — that domain belongs
+           to GitHub and cannot be verified by this project. Same-origin now, so
+           it opens in place rather than a new tab. -->
+      <a class="fineline" href="./privacy.html">Read the privacy statement</a>
       for details.</p>
   </section>
 </main>

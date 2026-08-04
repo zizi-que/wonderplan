@@ -152,16 +152,23 @@ In the [Google Cloud console](https://console.cloud.google.com/):
    app name, support email and developer email, and give a **privacy policy
    URL** — Google requires one for any app requesting a scope.
 
-   Use the **rendered README on GitHub**, which is where the app's own privacy
-   link already points:
-
    ```
-   https://github.com/zizi-que/wonderplan#privacy
+   https://zizi-que.github.io/wonderplan/privacy.html
    ```
 
-   > ⚠ **Not** the Pages URL. `https://zizi-que.github.io/wonderplan/#privacy`
-   > serves the app's Start screen — the fragment matches no element there, so a
-   > reviewer following it lands on a screen with no privacy text at all.
+   > ⚠ **It must be this page, not this README.** Google requires the privacy
+   > policy to be "hosted within the domain that hosts your homepage", and every
+   > authorized domain must be verified in Search Console. `github.com` fails
+   > both — it is GitHub's domain, not yours. The link on your homepage must also
+   > match the one on the consent screen, which is why `index.html` points here
+   > too. The Privacy section below is a copy for readers; `privacy.html` is the
+   > address of record.
+
+   You will also need to **verify `zizi-que.github.io` in
+   [Search Console](https://search.google.com/search-console)** and list it under
+   *Authorized domains*. This works because `github.io` is a public-suffix
+   domain, so your subdomain counts as yours — serve Google's verification HTML
+   file from the repo root like any other file.
 3. Add the scope **`.../auth/drive.appdata`** ("View and manage its own
    configuration data in your Google Drive"). It is a **non-sensitive** scope,
    so it needs only basic verification — not the sensitive-scope review that
