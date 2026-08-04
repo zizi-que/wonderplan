@@ -8,7 +8,11 @@
 // Paste the OAuth client id here to switch the feature on. Empty means the
 // Sync block renders, explains itself, and does nothing — never a button that
 // looks live and throws.
-export const CLIENT_ID = "";
+//
+// ⚠ The client id is the ONLY thing from the Google console that belongs in
+// this repo. Creating a "Web application" client also mints a client SECRET —
+// it is not used, not needed by the token model, and must never be committed.
+export const CLIENT_ID = "543105552126-npsdqrmr4qes0t604385859j4t3d4hk0.apps.googleusercontent.com";
 
 // Frozen 2026-08-03 (amends the 2026-08-01 `drive.file` ruling). AppData is
 // app-private BY CONSTRUCTION rather than by convention: the folder is hidden
