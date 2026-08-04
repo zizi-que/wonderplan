@@ -71,13 +71,17 @@ function request(tc, prompt) {
       expiresAt = Date.now() + (Number(res.expires_in) || 3600) * 1000;
       resolve(token);
     };
+    // A blocked popup and a dismissed one are not the same event, and telling
+    // the user they cancelled something the browser refused to show is both
+    // wrong and unactionable — the fix for one is "try again", for the other
+    // it is "allow popups".
     tc.error_callback = err => {
       const type = err?.type || "";
-      reject(Object.assign(
-        new Error(type === "popup_closed" || type === "popup_failed_to_open"
-          ? "Sign-in was cancelled."
-          : (err?.message || "Sign-in failed.")),
-        { needsInteraction: true }));
+      const message =
+        type === "popup_closed"          ? "Sign-in was cancelled." :
+        type === "popup_failed_to_open"  ? "Your browser blocked the sign-in window." :
+        (err?.message || "Sign-in failed.");
+      reject(Object.assign(new Error(message), { needsInteraction: true }));
     };
     try { tc.requestAccessToken({ prompt }); }
     catch (e) { reject(e); }
