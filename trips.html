@@ -762,12 +762,12 @@ footer.footer {
             <div class="div">
               <label class="label t-15 txt" for="f-pnb">Nights before cruise</label>
               <input class="input t-17 input--center" id="f-pnb" type="text" inputmode="numeric"
-                     placeholder="2" autocomplete="off">
+                     value="0" autocomplete="off">
             </div>
             <div class="div">
               <label class="label t-15 txt" for="f-pna">Nights after cruise</label>
               <input class="input t-17 input--center" id="f-pna" type="text" inputmode="numeric"
-                     placeholder="2" autocomplete="off">
+                     value="0" autocomplete="off">
             </div>
           </div>
 
@@ -1799,7 +1799,7 @@ const pressChips = (g, vals) => {
 function resetForm() {
   for (const [sel, v] of [['#f-name',''], ['#f-from',''], ['#f-to',''],
     ['#f-adults','0'], ['#f-kids','0'], ['#f-budget',''], ['#f-parkdays',''],
-    ['#f-cnights',''], ['#f-abddays',''], ['#f-abdest',''], ['#f-pnb',''], ['#f-pna','']])
+    ['#f-cnights',''], ['#f-abddays',''], ['#f-abdest',''], ['#f-pnb','0'], ['#f-pna','0']])
     setVal(sel, v);
   for (const i of form.querySelectorAll('[data-comp]')) i.checked = false;
   for (const i of form.querySelectorAll('[data-park]')) i.checked = false;
