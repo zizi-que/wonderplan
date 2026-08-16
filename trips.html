@@ -1016,7 +1016,7 @@ import { openIdb } from './js/storage/adapter-idb.js';
 import { createRepo } from './js/storage/repo.js';
 import { loadForecastBundle, forecastFromStore } from './js/forecast-bundle.js';
 import { tripType } from './js/trip-type.js';
-import { isSaveable } from './js/trip-gate.js';
+import { isSaveable, whyNotSaveable } from './js/trip-gate.js';
 import { OFFPROP_TIERS } from './js/forecast.js';
 
 /* The forecast is CALCULATED, never stored and never typed (operating rule 5).
@@ -1512,6 +1512,8 @@ form.querySelector('[data-add-stay]').addEventListener('click', () => {
    trip differently. `meetsMinimum` is kept as a thin alias because it is an
    export others may hold. */
 const ctaRow = form.querySelector('.cta-row');
+const ctaHelp = form.querySelector('.cta-help');
+const CTA_HELP_HTML = ctaHelp.innerHTML;   /* the drawn copy, handed back when the gate opens */
 export function meetsMinimum({ from, to, adults }) {
   return Boolean(from) && Boolean(to) && Number(adults) > 0;
 }
@@ -1547,7 +1549,21 @@ function gate() {
   /* liveSegments reads the stays UI without touching storage, which is what
      the gate needs: the form may describe a trip that has never been saved,
      and a stay with no hotel picked is correctly not a segment. */
-  const ok = isSaveable(row, c.lodging ? liveSegments(row) : []);
+  const segs = c.lodging ? liveSegments(row) : [];
+  const why = whyNotSaveable(row, segs);
+  const ok = why.length === 0;
+  /* SAY WHY. The gate has always known its reasons — whyNotSaveable returns
+     them as a ready-made list — and has always thrown them away, because no
+     error state was drawn (operating rule 7). Two dead-button reports landed on
+     2026-08-16 from exactly that silence, one of them a trip that could not be
+     confirmed because it had no cruise nights, with nothing on screen saying so.
+     Nothing new is drawn here: `.cta-help` is a drawn element sitting directly
+     under the CTA row whose whole job is explaining those two buttons. While
+     they cannot be pressed it explains that instead, and hands the copy back
+     the moment they can.
+     ⚠ Wording is the design director's to set; this is the mechanism. */
+  ctaHelp.innerHTML = ok ? CTA_HELP_HTML
+    : `Still needed: <b>${why.join('</b> · <b>')}</b>`;
   ctaRow.classList.toggle('is-disabled', !ok);
   for (const b of ctaRow.querySelectorAll('.cta')) {
     b.disabled = !ok;
