@@ -151,6 +151,12 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
 .frame-setup { padding: 32px 20px 16px;   gap: 16px; align-items: center; justify-content: center; }
 .frame-active{ padding: 32px 20px 16px;   gap: 16px; align-items: center; }
 .state > * { width: var(--col); flex: none; }
+/* The zero CTA HUGS its label, like every other CTA on this screen (SAVE 112,
+   CANCEL 115, RECONCILE 142, LOG POINTS 146). The rule above stretches every
+   direct child to the full column, which made this the one button whose side
+   padding grew with the empty space beside its words instead of staying 24
+   (the design director, 2026-08-04). Board amendment owed. */
+.frame-zero .cta { width: auto; }
 
 /* ══ 01 Zero ══ */
 .hero { width: 277.456px; height: 105.655px; }
