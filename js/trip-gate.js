@@ -43,10 +43,12 @@ export function whyNotSaveable(trip = {}, segments = []) {
   if (trip.include_lodging && segments.length === 0) why.push("a hotel for the stay");
   if (!trip.include_lodging && segments.length) why.push("lodging turned on for the stays entered");
 
-  // A stay is named either by a seeded id or, off property, by typed text —
-  // `readSegments` turns that text into a real id via ensureOffPropertyHotel
-  // before the repository ever sees it, which is why the repository can insist
-  // on `hotel_id` while the LIVE form legitimately has none yet.
+  // A stay is identified either by a seeded id or, off property, by a chosen
+  // PRICING TIER — the hotel-name field was retired 2026-08-04, so "named" now
+  // means "the user answered which kind of hotel". `readSegments` turns that
+  // choice into a real id via ensureOffPropertyHotel before the repository
+  // ever sees it, which is why the repository can insist on `hotel_id` while
+  // the LIVE form legitimately has none yet.
   for (const seg of segments) {
     if (!seg.hotel_id && !seg.hotel_named) { why.push("a hotel on every stay"); break; }
   }

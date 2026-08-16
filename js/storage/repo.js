@@ -9,6 +9,12 @@ const COMPONENTS = ["include_lodging", "include_parks", "include_cruise", "inclu
 // id below is the PK pair. Not component-gated: a discount is trip-level and
 // has no include_* flag to hang off.
 const DISCOUNTS = ["dvc", "annual_pass", "florida_resident", "military", "cast_member"];
+
+// The stored name of an unnamed off-property stay. These are DATA, not chrome:
+// they are written into the hotel row and are what any list printing a hotel
+// name will show. Must stay in step with the picker's labels in trips.html and
+// with dims.tier in data/benchmarks.json (offprop.lodging.*).
+const OFFPROP_LABELS = { 1: "Budget", 2: "Midrange", 3: "Upscale", 4: "Luxury" };
 const discountId = (trip_id, discount) => `${trip_id}:${discount}`;
 const uuid = () => (globalThis.crypto?.randomUUID?.() ??
   "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
@@ -92,18 +98,39 @@ export function createRepo(db) {
     // household that stays at the same Hampton Inn twice answers the question
     // once. A later stay may correct it (a re-used name with a new star wins),
     // but re-using the name with NO star must not erase what is already known.
+    // Naming the hotel is OPTIONAL when a star is given (the design director,
+    // 2026-08-04). This is a PLANNER: "four nights somewhere mid-range" is a
+    // real plan, and requiring the exact hotel meant the vaguer plan — the one
+    // most in need of a forecast — was the one that could not be saved.
+    //
+    // An unnamed stay resolves to a shared per-star row, so at most four ever
+    // exist however many trips use them, and they still read as something in
+    // any list that prints a hotel name. `generic` marks them so the form can
+    // show an EMPTY name field on reload rather than echoing a label the user
+    // never typed. Typing a name later mints a normal row beside them.
     async ensureOffPropertyHotel(name, stars = null) {
       const valid = Number.isInteger(stars) && stars >= 1 && stars <= 4 ? stars : null;
-      const existing = (await db.byIndex("hotels", "name", name))
+      const typed = String(name ?? "").trim();
+      if (!typed && valid == null) throw new Error("an off-property stay needs a name or a star");
+      const generic = !typed;
+      const key = typed || `Off property — ${OFFPROP_LABELS[valid]}`;
+
+      const existing = (await db.byIndex("hotels", "name", key))
         .find(h => h.category === "off_property");
       if (existing) {
-        if (valid != null && existing.stars !== valid)
+        // A named row learns its star; a generic row already IS its star, so
+        // it can never be re-pointed at a different band by a later stay.
+        // ⚠ The test is the STORED row's nature, not this call's: a user who
+        // types the label verbatim ("Off property — Midrange") lands on the
+        // shared row, and must not be able to re-price every past trip using
+        // it. Sharing the row is harmless; rewriting its band is not.
+        if (!existing.generic && valid != null && existing.stars !== valid)
           await db.put("hotels", { ...existing, stars: valid });
         return existing.id;
       }
       const id = uuid();
-      await db.put("hotels", { id, name, category: "off_property",
-        is_dvc: false, active: true, stars: valid });
+      await db.put("hotels", { id, name: key, category: "off_property",
+        is_dvc: false, active: true, stars: valid, generic });
       return id;
     },
 

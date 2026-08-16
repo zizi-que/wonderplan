@@ -1317,11 +1317,11 @@ function esc(s) {
 function pickedHotel(hotel) {
   const v = hotel.querySelector('[data-hotel]')?.value ?? '';
   if (v === OFF) {
-    const name = hotel.querySelector('[data-hotel-custom]')?.value.trim() ?? '';
     /* Unchosen is null, never 0 — a missing tier must read as "nobody has said
-       yet" (partial forecast), which is not the same as a stay worth nothing. */
+       yet" (partial forecast), which is not the same as a stay worth nothing.
+       The tier is now the WHOLE answer for off property: no tier, no stay. */
     const stars = Number(hotel.querySelector('[data-hotel-stars]')?.value) || null;
-    return { kind: name ? 'off' : 'none', name, stars };
+    return { kind: stars ? 'off' : 'none', stars };
   }
   if (v === ONPROP || v === DVC) {
     const id = hotel.querySelector('[data-hotel-2]')?.value ?? '';
@@ -1340,15 +1340,17 @@ function syncHotelCard(hotel, { keepSecond = false } = {}) {
   const pts = hotel.querySelector('.points-row');
   const listHTML = v === ONPROP ? onPropHTML() : v === DVC ? dvcHTML() : null;
   if (v === OFF) {
-    /* Name AND pricing tier. The tier reuses the on-property second picker
-       verbatim — same `.pull`, same `.input`, same chevron — so nothing new is
-       drawn (the design director, 2026-08-04: "use the same approach used for
-       Disney hotel listing"). `keepSecond` guards it on reload for the same
-       reason it guards the hotel list: fillForm sets the value straight after. */
-    if (!slot.querySelector('[data-hotel-custom]'))
-      slot.innerHTML = `<input class="input t-17" data-hotel-custom type="text"
-        placeholder="Hotel name" autocomplete="off" aria-label="Hotel name">
-      <div class="pull">
+    /* Pricing tier ONLY — the hotel-name field is retired (the design director,
+       2026-08-04: "users have many other ways to recall their selects, also as
+       part of planning it is not necessary"). Off property is now the same two
+       gestures as every other category: pick the type, then pick from a list.
+       The tier reuses the on-property second picker verbatim — same `.pull`,
+       same `.input`, same chevron — so nothing new is drawn.
+       ⓘ Rows named before this shipped keep their names in storage; nothing
+       reads them, and nothing prints them (the categorizer never used hotel
+       names, and Trips/Insights show the TRIP name). */
+    if (!slot.querySelector('[data-hotel-stars]'))
+      slot.innerHTML = `<div class="pull">
         <select class="input t-17" data-hotel-stars aria-label="Pricing tier">${starsHTML()}</select>
         <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
       </div>`;
@@ -1769,10 +1771,9 @@ async function readSegments(trip) {
          derivation was wrong for on-property stays. */
       hotel_id: picked.kind === 'id'
         ? picked.id
-        /* The pricing tier rides along: it lives on the HOTEL row, so a
-           household that returns to the same Hampton Inn answers once. Passing
-           null leaves an already-known tier intact rather than clearing it. */
-        : await repo.ensureOffPropertyHotel(picked.name, picked.stars),
+        /* No name to give — off property resolves to the shared row for its
+           star, so at most four ever exist however many trips use them. */
+        : await repo.ensureOffPropertyHotel(null, picked.stars),
       nights: (from && to) ? nightsBetween(from, to) : 0,
       check_in: from,
       on_points: Boolean(hotel.querySelector('[data-on-points]')?.checked),
@@ -1850,10 +1851,10 @@ async function fillForm(t) {
     else sel.value = OFF;
     syncHotelCard(hotel);
     if (sel.value === OFF) {
-      hotel.querySelector('[data-hotel-custom]').value = row?.name ?? '';
       /* A hotel saved before the tier existed has no `stars`, so the picker
          stays on its placeholder and the trip reads partial — correct, because
-         nobody has answered the question for that hotel yet. */
+         nobody has answered the question for that hotel yet. Reopening such a
+         trip and choosing a tier is how it becomes priceable. */
       const st = hotel.querySelector('[data-hotel-stars]');
       if (st) st.value = row?.stars ?? '';
     }
