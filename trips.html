@@ -781,11 +781,13 @@ footer.footer {
           <div class="legend"><span class="t-15b txt">Cruise</span></div>
           <div class="div" style="display:flex;flex-direction:column;gap:6px">
             <label class="label t-15 txt" for="f-cnights">Cruise nights</label>
-            <div class="pull">
-              <input class="input t-17 input--center" id="f-cnights" type="text" inputmode="numeric"
-                     placeholder="7" autocomplete="off">
-              <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
-            </div>
+            <!-- No chevron: this is a free-text number, not a pulldown (the
+                 design director, 2026-08-04). The board draws the chevron, but
+                 it was promising a list that never opened — and free text is
+                 the right control here because a sailing can be any length.
+                 `.pull` existed only to position the chevron, so it goes too. -->
+            <input class="input t-17 input--center" id="f-cnights" type="text" inputmode="numeric"
+                   placeholder="7" autocomplete="off">
           </div>
           <div class="div" style="display:flex;flex-direction:column;gap:6px">
             <!-- BOARD COPY BUG: this label reads "Cruise nights" a second time
@@ -807,11 +809,9 @@ footer.footer {
           <div class="legend"><span class="t-15b txt">Parks</span></div>
           <div class="div" style="display:flex;flex-direction:column;gap:6px">
             <label class="label t-15 txt" for="f-parkdays">Days in park</label>
-            <div class="pull">
-              <input class="input t-17 input--center" id="f-parkdays" type="text" inputmode="numeric"
-                     placeholder="7" autocomplete="off" style="color:var(--ink)">
-              <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
-            </div>
+            <!-- No chevron — same ruling as Cruise nights above. -->
+            <input class="input t-17 input--center" id="f-parkdays" type="text" inputmode="numeric"
+                   placeholder="7" autocomplete="off" style="color:var(--ink)">
           </div>
           <label class="check-line">
             <input type="checkbox" data-park="hopper"><span class="box"></span>
