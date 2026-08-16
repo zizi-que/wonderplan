@@ -577,11 +577,6 @@ select.input.is-chosen { color: var(--ink); }
    the whole cta-row — the `opacity/disabled` variable — not as a recoloured
    button, so the row dims as one unit and the two CTAs keep their contrast
    relationship. */
-/* CANCEL hugs at 115 and centres, rather than joining `.cta-row` where
-   `flex: 1 1 0` would have squeezed three buttons into the two-button column
-   and crushed the label past its 24 padding. */
-.cancel-row { display: flex; justify-content: center; padding: 0 8px; }
-.cancel-row > .cta { flex: none; width: 115px; }
 .cta-row.is-disabled { opacity: 0.5; }
 .cta-row.is-disabled > .cta { cursor: not-allowed; }
 /* two lines of 15/120% trim to 28.8; the board's own box is 29, so it is
@@ -913,25 +908,6 @@ footer.footer {
 
         <p class="cta-help txt"><b>Save</b> keeps this in Planning in Progress ·<br>
           <b>Confirm</b> books it as Next Trip / Coming Up</p>
-
-        <!-- CANCEL (the design director, 2026-08-16). Sized to the app's own
-             CANCEL — label + 24 each side = 115, outline — which the DVC
-             points-allocation board confirms exactly (79:3093: CANCEL 115,
-             LOG POINTS 146, both with their label at x=24).
-             ⚠ PLACEMENT IS NOT FROM A FRAME. The trip-card frame reachable here
-             (61:2069) draws only SAVE and CONFIRM, and no variant carrying a
-             cancel was locatable, so its own row under the pair is a CHOICE,
-             not a reading. It is the least invasive one available: the drawn
-             SAVE/CONFIRM row and the help copy that explains those two buttons
-             are both untouched. Move it as soon as there is a frame to move it
-             to.
-             Never gated — leaving a form must always be possible, so it sits
-             outside `.cta-row` and its `is-disabled` opacity. -->
-        <div class="cancel-row">
-          <button class="cta cta--outline" type="button" data-cancel>
-            <span class="t-17b txt">CANCEL</span>
-          </button>
-        </div>
 
         <div class="spacer"></div>
 
@@ -1951,15 +1927,6 @@ for (const b of form.querySelectorAll('[data-save]')) {
     show(await renderCards());
   });
 }
-
-/* CANCEL: leave without writing. Deliberately NOT the delete path — on a saved
-   trip that one calls deleteTrip, and cancelling an edit must never destroy the
-   trip being edited. This is the discard half only: drop the in-flight edit and
-   go back to the list. */
-form.querySelector('[data-cancel]').addEventListener('click', async () => {
-  editingId = null; editingRow = null; editingExpenses = [];
-  show(await renderCards());
-});
 
 form.querySelector('[data-delete]').addEventListener('click', async () => {
   /* On a saved trip this deletes it (cascading segments and discounts); on an
