@@ -964,8 +964,17 @@ async function run(label, fn) {
   } catch (e) {
     console.error('Drive sync —', e);
     /* Google's own wording where it is useful, trimmed so it cannot break the
-       9px line. A failed sync leaves BOTH copies untouched. */
-    note = (e?.message || 'Something went wrong.').slice(0, 90);
+       9px line. A failed sync leaves BOTH copies untouched.
+       The ONE exception is validateBackup's own text. `invalid backup:
+       dvc_reservations.segment_id references a missing segments` is developer
+       copy: it names an internal field, it is ungrammatical at the end, and it
+       gives a member nothing to act on. The detail stays in the console, where
+       it is useful; the line says the two things that matter — it could not be
+       read, and nothing here was touched. */
+    const raw = e?.message || 'Something went wrong.';
+    note = raw.startsWith('invalid backup:')
+      ? "That backup couldn't be read, so nothing here was changed."
+      : raw.slice(0, 90);
   }
   busy = false;
   elCta.disabled = false;
