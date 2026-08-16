@@ -389,6 +389,19 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    so it must never wrap the band taller */
 .band { overflow: hidden; }
 .band .plan-title { color: var(--surface); white-space: nowrap; }
+/* The board's band is SPACE_BETWEEN; `margin-left: auto` is the same thing with
+   one child pinned left. The icon is 24 and takes the band's own white
+   (`--surface`, the token the plan-title beside it already uses), so the two
+   stay the same colour through all 16 palettes.
+   The 44 hit area is grown with a pseudo-element rather than by padding —
+   `.band` is a FIXED 44 box with `overflow: hidden`, so a padded button would
+   have been clipped instead of hittable. Same trick as `.delete-link`. */
+.band-close { margin-left: auto; flex: none; width: 24px; height: 24px;
+  padding: 0; border: 0; background: none; color: var(--surface);
+  position: relative; cursor: pointer; }
+.band-close svg { width: 24px; height: 24px; display: block; fill: currentColor; }
+.band-close::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px; }
 
 .form-body { align-self: stretch; display: flex; flex-direction: column;
   align-items: flex-start; gap: 12px; padding: 16px 8px; }
@@ -638,6 +651,13 @@ footer.footer {
 
 <!-- icon-edit 61:2434 / 61:2427 / 61:2430. viewBox starts at 0 0; the export's
      3,2 origin rides an inner <g> because <use> double-applies a non-zero one. -->
+<!-- ⚠ AWAITING EXPORT — the form band's X, board vector `245:5346` (24x24,
+     white, bound to the same token as the title beside it). `get_node` does not
+     carry vector path data, and the working agreement is explicit that Claude
+     never draws an icon, so the path comes from the design director's export.
+     The button, its 44 hit area and its handler are built and verified around
+     this slot; dropping the path in is the only remaining step. -->
+<symbol id="close" viewBox="0 0 24 24"></symbol>
 <symbol id="pencil" viewBox="0 0 24 24"><g transform="translate(-3,-2)"><rect x="3" y="2" width="24" height="24" rx="12" fill="var(--pen-bg)"/><path d="M8.00049 20.5002C8.00049 20.2241 8.39223 20.0002 8.87546 20.0002H21.125C21.6083 20.0002 22 20.2241 22 20.5002C22 20.7764 21.6083 21.0002 21.125 21.0002H8.87546C8.39223 21.0002 8.00049 20.7764 8.00049 20.5002Z" fill="var(--pen-ink)"/><path d="M20.206 5.71468C19.1809 4.76276 17.5188 4.76275 16.4936 5.71466L9.64847 12.0709C9.4885 12.2194 9.37258 12.4038 9.31199 12.6062L8.03676 16.8661C7.83617 17.5362 8.5003 18.1529 9.22189 17.9666L13.8094 16.7824C14.0274 16.7262 14.226 16.6186 14.386 16.47L21.2311 10.1138C22.2563 9.16191 22.2563 7.61853 21.2311 6.6666L20.206 5.71468Z" fill="var(--pen-ink)"/></g></symbol>
 
 <!-- arrows / menu pull down 57:3731 -->
@@ -691,6 +711,16 @@ footer.footer {
     <form class="form-card" novalidate>
       <div class="band">
         <span class="plan-title t-19b txt">Plan <span data-plan-n>1</span> : <span data-derived>—</span></span>
+        <!-- Close without saving (the design director, 2026-08-16): "there is no
+             room for a cancel button, so I use X button at the top, so it
+             behaves like just closing the window without saving anything."
+             Board `61:1600` — the band is SPACE_BETWEEN, and the X is vector
+             `245:5346`: 24x24 at x=292, which is exactly the band's 19 right
+             padding (335 - 19 = 316 = 292 + 24). -->
+        <button class="band-close" type="button" data-cancel
+                aria-label="Close without saving">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#close"/></svg>
+        </button>
       </div>
 
       <div class="form-body">
@@ -1927,6 +1957,15 @@ for (const b of form.querySelectorAll('[data-save]')) {
     show(await renderCards());
   });
 }
+
+/* The band's X — close without saving. Deliberately NOT the delete path: on a
+   saved trip that one calls deleteTrip, and closing an edit must never destroy
+   the trip being edited. This is the discard half only — drop the in-flight
+   edit and go back to the list, writing nothing. */
+form.querySelector('[data-cancel]').addEventListener('click', async () => {
+  editingId = null; editingRow = null; editingExpenses = [];
+  show(await renderCards());
+});
 
 form.querySelector('[data-delete]').addEventListener('click', async () => {
   /* On a saved trip this deletes it (cascading segments and discounts); on an
