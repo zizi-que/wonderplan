@@ -787,7 +787,7 @@ footer.footer {
                  the right control here because a sailing can be any length.
                  `.pull` existed only to position the chevron, so it goes too. -->
             <input class="input t-17 input--center" id="f-cnights" type="text" inputmode="numeric"
-                   placeholder="7" autocomplete="off">
+                   value="0" autocomplete="off">
           </div>
           <div class="div" style="display:flex;flex-direction:column;gap:6px">
             <!-- BOARD COPY BUG: this label reads "Cruise nights" a second time
@@ -811,7 +811,7 @@ footer.footer {
             <label class="label t-15 txt" for="f-parkdays">Days in park</label>
             <!-- No chevron — same ruling as Cruise nights above. -->
             <input class="input t-17 input--center" id="f-parkdays" type="text" inputmode="numeric"
-                   placeholder="7" autocomplete="off" style="color:var(--ink)">
+                   value="0" autocomplete="off" style="color:var(--ink)">
           </div>
           <label class="check-line">
             <input type="checkbox" data-park="hopper"><span class="box"></span>
@@ -842,12 +842,12 @@ footer.footer {
             <div class="div">
               <label class="label t-15 txt" for="f-abddays">ABD days</label>
               <input class="input t-17 input--center" id="f-abddays" type="text" inputmode="numeric"
-                     placeholder="2" autocomplete="off">
+                     value="0" autocomplete="off">
             </div>
             <div class="div">
               <label class="label t-15 txt" for="f-abdest">ABD estimate</label>
               <input class="input t-17 input--center" id="f-abdest" type="text" inputmode="numeric"
-                     placeholder="2" autocomplete="off">
+                     value="0" autocomplete="off">
             </div>
           </div>
         </fieldset>
@@ -1798,8 +1798,8 @@ const pressChips = (g, vals) => {
 
 function resetForm() {
   for (const [sel, v] of [['#f-name',''], ['#f-from',''], ['#f-to',''],
-    ['#f-adults','0'], ['#f-kids','0'], ['#f-budget',''], ['#f-parkdays',''],
-    ['#f-cnights',''], ['#f-abddays',''], ['#f-abdest',''], ['#f-pnb','0'], ['#f-pna','0']])
+    ['#f-adults','0'], ['#f-kids','0'], ['#f-budget',''], ['#f-parkdays','0'],
+    ['#f-cnights','0'], ['#f-abddays','0'], ['#f-abdest','0'], ['#f-pnb','0'], ['#f-pna','0']])
     setVal(sel, v);
   for (const i of form.querySelectorAll('[data-comp]')) i.checked = false;
   for (const i of form.querySelectorAll('[data-park]')) i.checked = false;

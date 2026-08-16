@@ -56,6 +56,25 @@ export function whyNotSaveable(trip = {}, segments = []) {
     if (!(seg.nights >= 1)) { why.push("at least one night on every stay"); break; }
   }
 
+  // Every checked component must carry its own quantity. Added 2026-08-16 with
+  // the 0 defaults (the design director): the form now OPENS with 0 in these
+  // fields, so without this, "not answered" arrives as an answer of zero — a
+  // 0-night cruise saving, and the forecast pricing it at $0 instead of
+  // rendering the partial dash. That is operating rule 5: never a fake number.
+  //
+  // The empty field was what protected this before. Empty became null, null
+  // made the trip partial, and partial printed "—". A visible 0 is friendlier
+  // to fill in and strictly more dangerous, so the gate now carries the weight
+  // the empty field used to.
+  if (trip.include_parks && !(Number(trip.park_days) > 0)) why.push("days in park");
+  if (trip.include_cruise && !(Number(trip.cruise_nights) > 0)) why.push("cruise nights");
+  if (trip.include_abd && !(Number(trip.abd_days) > 0)) why.push("ABD days");
+  // The one that is a price rather than a count. Gated for the same reason — a
+  // 0 estimate prices the whole component at nothing — but it is the first to
+  // reconsider if it proves annoying, since a member may genuinely not know the
+  // figure yet while being sure of the dates.
+  if (trip.include_abd && !(Number(trip.abd_estimate_amount) > 0)) why.push("an ABD estimate");
+
   return why;
 }
 

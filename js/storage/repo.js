@@ -33,6 +33,17 @@ export function createRepo(db) {
     // (the form always submits the full list — no partial segment edits).
     async saveTrip(trip, segments = [], discounts = []) {
       if (!COMPONENTS.some(k => trip[k])) throw new Error("trip needs at least one component");
+      // Matches trip-gate.js — a checked component carries its own quantity.
+      // The last line of defence for the 0 defaults (2026-08-16): the form now
+      // opens with 0 in these fields, and a saved 0 would be priced as $0.
+      if (trip.include_parks && !(Number(trip.park_days) > 0))
+        throw new Error("parks require park_days > 0");
+      if (trip.include_cruise && !(Number(trip.cruise_nights) > 0))
+        throw new Error("cruise requires cruise_nights > 0");
+      if (trip.include_abd && !(Number(trip.abd_days) > 0))
+        throw new Error("abd requires abd_days > 0");
+      if (trip.include_abd && !(Number(trip.abd_estimate_amount) > 0))
+        throw new Error("abd requires abd_estimate_amount > 0");
       if (!trip.include_lodging && segments.length)
         throw new Error("segments require include_lodging");
       if (trip.include_lodging && segments.length === 0)
