@@ -377,6 +377,20 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
    has one. Negative inset grows the hit area to 50x43 without moving the drawn
    arrow, the same trick Insights' view dots already use. */
 .tripbox .stay .spacer select { position: absolute; inset: -16px; opacity: 0; width: auto; height: auto; border: 0; cursor: pointer; }
+/* ⚠ The rule above is RETIRED for the stay picker (2026-08-16). In use the
+   control could not be operated: "both stays were flagged with points, but only
+   one is activated at a time, I was unable to choose" (the design director).
+   The list was never the problem — the second stay appearing only after the
+   first was logged proves two segments were always eligible and the <select>
+   was always in the DOM.
+   An invisible select over a drawn chevron has now failed twice (the reconcile
+   year, 2026-08-04, showed a stale value through the same trick), so it is
+   retired here rather than nudged. Her instruction is literal and right:
+   "system default selection pull down menu is needed there." Only the font is
+   inherited — the appearance is deliberately NOT stripped, because looking
+   unmistakably like a pulldown is the whole fix. */
+.tripbox .stay select.pick { font: inherit; color: var(--ink);
+  flex: 0 1 auto; min-width: 0; max-width: 100%; cursor: pointer; }
 .tripbox .dates { color: var(--ink-deep); }
 /* min-height, not height (the design director 2026-07-28, from a screenshot of the real
    ledger): the board draws one line per row, so 11px IS the drawn cap box —
@@ -807,12 +821,10 @@ function renderActiveCard(el) {
         <span class="muted-copy t-15 txt">${esc(trip.title)}</span>
         <div class="stay">
           <span class="lead t-15 txt">staying at&nbsp;</span>
-          <span class="resort t-15b txt">${esc(HOTELS[seg.hotel_id] ?? seg.hotel_id)}</span>
-          <span class="spacer">
-            ${elig.length > 1 ? `<svg class="arrow" viewBox="0 0 18 11" fill="none"><path d="M18 0L9 11L0 0H18Z" fill="var(--border)"/></svg>
-            <select id="seg-pick" aria-label="Choose stay">${elig.map((s,i) =>
-              `<option value="${i}" ${i===pullIndex%elig.length?'selected':''}>${esc(trips.find(t=>t.id===s.trip_id).title)} — ${esc(HOTELS[s.hotel_id]??s.hotel_id)}</option>`).join('')}</select>` : ''}
-          </span>
+          ${elig.length > 1
+            ? `<select id="seg-pick" class="pick t-15b txt" aria-label="Choose stay">${elig.map((s,i) =>
+              `<option value="${i}" ${i===pullIndex%elig.length?'selected':''}>${esc(trips.find(t=>t.id===s.trip_id).title)} — ${esc(HOTELS[s.hotel_id]??s.hotel_id)}</option>`).join('')}</select>`
+            : `<span class="resort t-15b txt">${esc(HOTELS[seg.hotel_id] ?? seg.hotel_id)}</span>`}
         </div>
         <span class="dates t-15 txt">from ${fmtDate(seg.check_in)} through ${fmtDate(checkOut(seg))}</span>
       </div>
