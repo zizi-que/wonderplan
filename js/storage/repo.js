@@ -85,13 +85,25 @@ export function createRepo(db) {
     },
 
     // find-or-create the household-scoped off-property row (DATA-MODEL §2)
-    async ensureOffPropertyHotel(name) {
+    //
+    // `stars` (1-4) is what lets the forecaster price the stay — off-property
+    // has no seeded tier, so without it the trip is partial and the whole
+    // forecast renders "—". It is stored on the HOTEL, not the segment: a
+    // household that stays at the same Hampton Inn twice answers the question
+    // once. A later stay may correct it (a re-used name with a new star wins),
+    // but re-using the name with NO star must not erase what is already known.
+    async ensureOffPropertyHotel(name, stars = null) {
+      const valid = Number.isInteger(stars) && stars >= 1 && stars <= 4 ? stars : null;
       const existing = (await db.byIndex("hotels", "name", name))
         .find(h => h.category === "off_property");
-      if (existing) return existing.id;
+      if (existing) {
+        if (valid != null && existing.stars !== valid)
+          await db.put("hotels", { ...existing, stars: valid });
+        return existing.id;
+      }
       const id = uuid();
       await db.put("hotels", { id, name, category: "off_property",
-        is_dvc: false, active: true });
+        is_dvc: false, active: true, stars: valid });
       return id;
     },
 

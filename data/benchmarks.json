@@ -1,7 +1,7 @@
 {
- "version": "0.5.0",
+ "version": "0.6.0",
  "effective": "2026-07",
- "note": "Phase R passes 1-3. Ranges are low/typical/high USD; esc() ages values by drift_rate per year past effective_year (FORECASTING.md §1-2). Every entry has 2+ sources recorded in research/SOURCES.md. season dims: value|regular|peak per the 3-level model. Pass 3 (2026-07-19): full ticket day-curve 1-10d (pre-tax), child factor, lodging season multipliers, signature dining per-diem, parking/stroller, merch survey. Still open: DVC dues 10-yr history (a canonical feed).",
+ "note": "Phase R passes 1-3. Ranges are low/typical/high USD; esc() ages values by drift_rate per year past effective_year (FORECASTING.md §1-2). Every entry has 2+ sources recorded in research/SOURCES.md. season dims: value|regular|peak per the 3-level model. Pass 3 (2026-07-19): full ticket day-curve 1-10d (pre-tax), child factor, lodging season multipliers, signature dining per-diem, parking/stroller, merch survey. Still open: DVC dues 10-yr history (a canonical feed). Pass 4 (2026-08-04): OFF-PROPERTY lodging bands by star rating (offprop.lodging.*), 1-4 stars, US-national scope. Two source families recorded in research/SOURCES.md. Season multipliers are SHARED with the park bands (the engine selects a multiplier by season, never by tier) - Orlando peak evidence lands at 1.6-1.9x against the value floor, inside the existing 1.5/1.7/2.05.",
  "entries": [
   {
    "id": "park.ticket.1day.adult",
@@ -586,6 +586,82 @@
    "high": 2.05,
    "effective_year": 2026,
    "drift_rate": 0
+  },
+  {
+   "id": "offprop.lodging.star1",
+   "domain": "lodging",
+   "metric": "lodging_night",
+   "unit": "usd_per_night",
+   "dims": {
+    "stars": 1,
+    "tier": "budget",
+    "tax_included": true,
+    "confidence": "med",
+    "scope": "us_national",
+    "note": "Economy / budget motel. STR economy+midscale ADR ~$87; economy commonly $50-100."
+   },
+   "low": 60,
+   "typical": 85,
+   "high": 110,
+   "effective_year": 2026,
+   "drift_rate": 0.05
+  },
+  {
+   "id": "offprop.lodging.star2",
+   "domain": "lodging",
+   "metric": "lodging_night",
+   "unit": "usd_per_night",
+   "dims": {
+    "stars": 2,
+    "tier": "midrange",
+    "tax_included": true,
+    "confidence": "med",
+    "scope": "us_national",
+    "note": "Midscale. Interpolated between the STR economy anchor and the derived 3-star."
+   },
+   "low": 85,
+   "typical": 120,
+   "high": 155,
+   "effective_year": 2026,
+   "drift_rate": 0.05
+  },
+  {
+   "id": "offprop.lodging.star3",
+   "domain": "lodging",
+   "metric": "lodging_night",
+   "unit": "usd_per_night",
+   "dims": {
+    "stars": 3,
+    "tier": "upscale",
+    "tax_included": true,
+    "confidence": "med",
+    "scope": "us_national",
+    "note": "Upper-midscale to upscale. Hotels.com 4-star $226 back-stepped by its own +38% 3->4 step = $164."
+   },
+   "low": 115,
+   "typical": 165,
+   "high": 210,
+   "effective_year": 2026,
+   "drift_rate": 0.05
+  },
+  {
+   "id": "offprop.lodging.star4",
+   "domain": "lodging",
+   "metric": "lodging_night",
+   "unit": "usd_per_night",
+   "dims": {
+    "stars": 4,
+    "tier": "luxury",
+    "tax_included": true,
+    "confidence": "med",
+    "scope": "us_national",
+    "note": "Upper-upscale and above. Hotels.com 4-star $226. Band deliberately spans 4- AND 5-star (5-star ~$500), so a true luxury stay prices at the low end of its own band."
+   },
+   "low": 160,
+   "typical": 230,
+   "high": 500,
+   "effective_year": 2026,
+   "drift_rate": 0.05
   },
   {
    "id": "park.food_per_diem.adult.signature",

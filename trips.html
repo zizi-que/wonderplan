@@ -414,7 +414,11 @@ select.input { appearance: none; -webkit-appearance: none; display: block;
      ring is the inset box-shadow on .input; the border was never part of it. */
   border: 0; }
 select.input.is-chosen { color: var(--ink); }
-.hotel-extra { width: 100%; }
+/* Off property fills this slot with TWO fields (name, then pricing tier), so
+   it stacks on the card's own 8px rhythm rather than letting them touch. One
+   child is unaffected — a single-item column measures exactly as the block
+   did. */
+.hotel-extra { width: 100%; display: flex; flex-direction: column; gap: 8px; }
 .hotel-extra[hidden] { display: none; }
 .input--center { text-align: center; }
 .input--money { font-weight: 700; font-size: 23px; line-height: 145%; }
@@ -956,6 +960,7 @@ import { createRepo } from './js/storage/repo.js';
 import { loadForecastBundle, forecastFromStore } from './js/forecast-bundle.js';
 import { tripType } from './js/trip-type.js';
 import { isSaveable } from './js/trip-gate.js';
+import { OFFPROP_TIERS } from './js/forecast.js';
 
 /* The forecast is CALCULATED, never stored and never typed (operating rule 5).
    Its datasheets are optional: if they fail to load the field stays "—",
@@ -1203,6 +1208,27 @@ const OFF = '__off', ONPROP = '__onprop', DVC = '__dvc';
 const optionsFor = rows => rows.map(h =>
   `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
 const TIERS = [['deluxe', 'Deluxe'], ['moderate', 'Moderate'], ['value', 'Value']];
+
+/* Off-property pricing tier (2026-08-04). Off property has no seeded row, so
+   without this the stay has no tier, the trip is PARTIAL, and the whole
+   forecast renders "—" — not just the lodging line (js/forecast-bundle.js).
+   That is what was blanking a land+sea trip with an off-property stay.
+
+   Star leads, label follows: the stars make a ladder down the list and the
+   star is what is actually being chosen.
+
+   ⚠ Deliberately NOT "Value / Moderate / Deluxe". Those are Disney's own tier
+   names, sitting in this same picker one category above — a user seeing
+   "Deluxe" under Off property would reasonably think they had picked a Disney
+   category. These four collide with nothing.
+   Bands live in data/benchmarks.json as offprop.lodging.* and are NOT the
+   Disney bands: a Disney Value room is $120-280 tax-inclusive, roughly double
+   a budget motel. */
+const STARS = [[1, '★', 'Budget'], [2, '★★', 'Midrange'],
+               [3, '★★★', 'Upscale'], [4, '★★★★', 'Luxury']];
+const starsHTML = () =>
+  `<option value="" disabled selected>Choose pricing tier</option>` +
+  STARS.map(([n, s, label]) => `<option value="${n}">${s} ${label}</option>`).join('');
 const byName = (a, b) => a.name.localeCompare(b.name);
 
 function hotelSelectHTML() {
@@ -1292,7 +1318,10 @@ function pickedHotel(hotel) {
   const v = hotel.querySelector('[data-hotel]')?.value ?? '';
   if (v === OFF) {
     const name = hotel.querySelector('[data-hotel-custom]')?.value.trim() ?? '';
-    return { kind: name ? 'off' : 'none', name };
+    /* Unchosen is null, never 0 — a missing tier must read as "nobody has said
+       yet" (partial forecast), which is not the same as a stay worth nothing. */
+    const stars = Number(hotel.querySelector('[data-hotel-stars]')?.value) || null;
+    return { kind: name ? 'off' : 'none', name, stars };
   }
   if (v === ONPROP || v === DVC) {
     const id = hotel.querySelector('[data-hotel-2]')?.value ?? '';
@@ -1311,9 +1340,18 @@ function syncHotelCard(hotel, { keepSecond = false } = {}) {
   const pts = hotel.querySelector('.points-row');
   const listHTML = v === ONPROP ? onPropHTML() : v === DVC ? dvcHTML() : null;
   if (v === OFF) {
+    /* Name AND pricing tier. The tier reuses the on-property second picker
+       verbatim — same `.pull`, same `.input`, same chevron — so nothing new is
+       drawn (the design director, 2026-08-04: "use the same approach used for
+       Disney hotel listing"). `keepSecond` guards it on reload for the same
+       reason it guards the hotel list: fillForm sets the value straight after. */
     if (!slot.querySelector('[data-hotel-custom]'))
       slot.innerHTML = `<input class="input t-17" data-hotel-custom type="text"
-        placeholder="Hotel name" autocomplete="off" aria-label="Hotel name">`;
+        placeholder="Hotel name" autocomplete="off" aria-label="Hotel name">
+      <div class="pull">
+        <select class="input t-17" data-hotel-stars aria-label="Pricing tier">${starsHTML()}</select>
+        <svg class="chev" viewBox="0 0 18 11" aria-hidden="true"><use href="#chev"/></svg>
+      </div>`;
   } else if (listHTML) {
     /* Rebuilt on every category change: the same element must not keep an id
        from the list it is no longer showing, or a DVC row could be saved
@@ -1479,9 +1517,13 @@ function liveSegments(row) {
        save would write, so an armed hint is not a stay boundary here either */
     const from = (chosen(mini[0]) || row.start_date) || null;
     const to = (chosen(mini[1]) || row.end_date) || null;
-    /* An off-property stay has no seeded row to forecast a tier from, and this
-       function never writes, so it stays null rather than inventing one. */
+    /* An off-property stay has no seeded row to forecast a tier from, so the
+       tier comes from the pricing-tier picker instead — carried here directly
+       because this function never writes, and the hotel row that would hold
+       `stars` does not exist until save. Unchosen stays null, which keeps the
+       trip partial rather than inventing a band. */
     out.push({ hotel_id: picked.kind === 'id' ? picked.id : null,
+      tier: picked.kind === 'off' ? (OFFPROP_TIERS[picked.stars] ?? null) : undefined,
       /* An off-property stay is NAMED here and only gets an id at save time,
          when readSegments resolves it through ensureOffPropertyHotel. The gate
          has to know the difference: `hotel_id: null` with a name is a complete
@@ -1727,7 +1769,10 @@ async function readSegments(trip) {
          derivation was wrong for on-property stays. */
       hotel_id: picked.kind === 'id'
         ? picked.id
-        : await repo.ensureOffPropertyHotel(picked.name),
+        /* The pricing tier rides along: it lives on the HOTEL row, so a
+           household that returns to the same Hampton Inn answers once. Passing
+           null leaves an already-known tier intact rather than clearing it. */
+        : await repo.ensureOffPropertyHotel(picked.name, picked.stars),
       nights: (from && to) ? nightsBetween(from, to) : 0,
       check_in: from,
       on_points: Boolean(hotel.querySelector('[data-on-points]')?.checked),
@@ -1804,7 +1849,14 @@ async function fillForm(t) {
     else if (row && row.category !== 'off_property') sel.value = ONPROP;
     else sel.value = OFF;
     syncHotelCard(hotel);
-    if (sel.value === OFF) hotel.querySelector('[data-hotel-custom]').value = row?.name ?? '';
+    if (sel.value === OFF) {
+      hotel.querySelector('[data-hotel-custom]').value = row?.name ?? '';
+      /* A hotel saved before the tier existed has no `stars`, so the picker
+         stays on its placeholder and the trip reads partial — correct, because
+         nobody has answered the question for that hotel yet. */
+      const st = hotel.querySelector('[data-hotel-stars]');
+      if (st) st.value = row?.stars ?? '';
+    }
     else {
       hotel.querySelector('[data-hotel-2]').value = row.id;
       syncHotelCard(hotel, { keepSecond: true });   /* the points line follows the row */

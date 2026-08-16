@@ -122,7 +122,12 @@ export function forecastPark(trip, C, year) {
   // from the previous segment (trip start for seq 1). Legacy single-hotel
   // fields (hotel_tier/nights/dvc_points_stay) remain as the fallback path.
   const segRate = (tierId, checkIn, nights) => {
-    const tier = C.byId[`park.lodging.${tierId}`];
+    // A bare tier ("value") is a Disney band and keeps its historic prefix; a
+    // dotted tier ("offprop.lodging.star2") is a full benchmark id. Off-property
+    // is NOT a Disney tier and must not borrow one — a Disney Value room is
+    // $120-280 tax-inclusive, roughly double a budget motel, so remapping would
+    // have produced a confident wrong number rather than the honest blank.
+    const tier = C.byId[tierId.includes(".") ? tierId : `park.lodging.${tierId}`];
     if (!tier) return null;
     const tb = escBand(tier, ageOf(tier, year));
     const end = new Date(checkIn + "T00:00:00Z");
@@ -437,17 +442,36 @@ export function vsTypical(tripActual, C, year) {
 // lookup, so a points stay is still $0 cash and priced through dues.
 //
 // Residual, accepted: a one-bedroom or larger villa is underpriced by this,
-// since the band is a studio-sized room. Off-property still has no tier —
-// which correctly makes the trip partial.
+// since the band is a studio-sized room.
+//
+// OFF-PROPERTY (2026-08-04) no longer has "no tier". It resolves through the
+// hotel row's own `stars` (1-4, set by the user when they name the hotel) to
+// its own `offprop.lodging.*` band — never to a Disney one. A hotel saved
+// before this shipped has no `stars`, so it still returns null and the trip
+// stays partial, which is the correct reading: nobody has said what kind of
+// hotel it is, and guessing from the name would be the fake number rule 5
+// exists to prevent.
 const TIER_BY_CATEGORY = {
   value: "value", moderate: "moderate", deluxe: "deluxe", dvc_villa: "deluxe",
 };
+
+// 1-4 only. A star outside the band list resolves to null (partial) rather
+// than clamping into the nearest band, so a bad stored value cannot silently
+// price a stay at a tier nobody chose.
+export const OFFPROP_TIERS = {
+  1: "offprop.lodging.star1", 2: "offprop.lodging.star2",
+  3: "offprop.lodging.star3", 4: "offprop.lodging.star4",
+};
+export const tierForHotel = hotel =>
+  hotel?.category === "off_property"
+    ? (OFFPROP_TIERS[hotel.stars] ?? null)
+    : (TIER_BY_CATEGORY[hotel?.category] ?? null);
 
 const nightsBetween = (a, b) =>
   a && b ? Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000) : 0;
 
 export function toForecastTrip(row, segments = [], hotels = []) {
-  const categoryOf = id => hotels.find(h => h.id === id)?.category;
+  const hotelOf = id => hotels.find(h => h.id === id);
   // Stored segments win when supplied; otherwise honour any lodging_segments
   // the row already carries (the engine-shaped input its own tests use), so
   // adapting a row can only ADD information, never silently drop a stay.
@@ -456,7 +480,7 @@ export function toForecastTrip(row, segments = [], hotels = []) {
   const segs = (row.include_lodging === false ? [] : source).map(s => ({
     ...s,
     // an explicit tier is authoritative; derive one only when it is absent
-    tier: s.tier ?? TIER_BY_CATEGORY[categoryOf(s.hotel_id)] ?? null,
+    tier: s.tier ?? tierForHotel(hotelOf(s.hotel_id)),
     on_points: Boolean(s.on_points),
   }));
   const segNights = segs.reduce((n, s) => n + (s.nights ?? 0), 0);
