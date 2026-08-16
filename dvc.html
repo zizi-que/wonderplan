@@ -1040,7 +1040,14 @@ function renderRec() {
     el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', e => {
       const i = +e.target.dataset.i, f = e.target.dataset.f;
       if (f === 'actual') { const v = e.target.value.replace(/[^0-9-]/g,''); e.target.value = v; recDraft[i].actual = v; }
-      else if (f === 'use_year') recDraft[i].use_year = +e.target.value;
+      /* Re-render, exactly as the contract branch below does. The year is
+         DRAWN as a text node with the native select overlaid on top of it
+         (see the row markup above), so updating the model alone left the
+         picker saying 2027 while the row still read 2025 — the model was
+         right and the screen was lying about it.
+         Re-rendering cannot lose a half-typed balance: `actual` lives in
+         recDraft and is written straight back into the input's value. */
+      else if (f === 'use_year') { recDraft[i].use_year = +e.target.value; renderRec(); }
       else { recDraft[i].contract_id = e.target.value;
         const c = contracts.find(cc => cc.id === e.target.value);
         recDraft[i].use_year = c ? currentUY(c, TODAY) : recDraft[i].use_year; renderRec(); }
