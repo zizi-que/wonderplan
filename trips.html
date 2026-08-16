@@ -651,13 +651,15 @@ footer.footer {
 
 <!-- icon-edit 61:2434 / 61:2427 / 61:2430. viewBox starts at 0 0; the export's
      3,2 origin rides an inner <g> because <use> double-applies a non-zero one. -->
-<!-- ⚠ AWAITING EXPORT — the form band's X, board vector `245:5346` (24x24,
-     white, bound to the same token as the title beside it). `get_node` does not
-     carry vector path data, and the working agreement is explicit that Claude
-     never draws an icon, so the path comes from the design director's export.
-     The button, its 44 hit area and its handler are built and verified around
-     this slot; dropping the path in is the only remaining step. -->
-<symbol id="close" viewBox="0 0 24 24"></symbol>
+<!-- The form band's close control — the design director's export of the
+     `cancel-icon` component (`248:5536`), source kept at
+     `docs/asset/cancel-icon.svg`.
+     It is ONE path: a filled disc with the cross knocked out of it by
+     `fill-rule: evenodd`. So the ink is the disc and the X is a HOLE — the
+     band's blue shows through the cross rather than being painted. That is why
+     it takes `--surface` (Figma `color/surface`, the same variable the plan
+     title beside it is bound to) and why nothing here paints the X itself. -->
+<symbol id="cancel-icon" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12ZM9.24853 7.55147C8.7799 7.08284 8.0201 7.08284 7.55147 7.55147C7.08284 8.0201 7.08284 8.7799 7.55147 9.24853L10.3029 12L7.55147 14.7515C7.08284 15.2201 7.08284 15.9799 7.55147 16.4485C8.0201 16.9172 8.7799 16.9172 9.24853 16.4485L12 13.6971L14.7515 16.4485C15.2201 16.9172 15.9799 16.9172 16.4485 16.4485C16.9172 15.9799 16.9172 15.2201 16.4485 14.7515L13.6971 12L16.4485 9.24853C16.9172 8.7799 16.9172 8.0201 16.4485 7.55147C15.9799 7.08284 15.2201 7.08284 14.7515 7.55147L12 10.3029L9.24853 7.55147Z" fill="currentColor"/></symbol>
 <symbol id="pencil" viewBox="0 0 24 24"><g transform="translate(-3,-2)"><rect x="3" y="2" width="24" height="24" rx="12" fill="var(--pen-bg)"/><path d="M8.00049 20.5002C8.00049 20.2241 8.39223 20.0002 8.87546 20.0002H21.125C21.6083 20.0002 22 20.2241 22 20.5002C22 20.7764 21.6083 21.0002 21.125 21.0002H8.87546C8.39223 21.0002 8.00049 20.7764 8.00049 20.5002Z" fill="var(--pen-ink)"/><path d="M20.206 5.71468C19.1809 4.76276 17.5188 4.76275 16.4936 5.71466L9.64847 12.0709C9.4885 12.2194 9.37258 12.4038 9.31199 12.6062L8.03676 16.8661C7.83617 17.5362 8.5003 18.1529 9.22189 17.9666L13.8094 16.7824C14.0274 16.7262 14.226 16.6186 14.386 16.47L21.2311 10.1138C22.2563 9.16191 22.2563 7.61853 21.2311 6.6666L20.206 5.71468Z" fill="var(--pen-ink)"/></g></symbol>
 
 <!-- arrows / menu pull down 57:3731 -->
@@ -719,7 +721,7 @@ footer.footer {
              padding (335 - 19 = 316 = 292 + 24). -->
         <button class="band-close" type="button" data-cancel
                 aria-label="Close without saving">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#close"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cancel-icon"/></svg>
         </button>
       </div>
 
