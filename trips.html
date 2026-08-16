@@ -1914,6 +1914,15 @@ for (const b of form.querySelectorAll('[data-save]')) {
       console.warn('Trips: save rejected —', err.message);
       return;
     }
+    /* ⚠ HOTELS_ALL is read once at boot, but readSegments can MINT a hotel row
+       mid-save: an off-property stay resolves through ensureOffPropertyHotel.
+       Re-reading it here is what stops the card that follows from forecasting
+       against a list the new row is not in — `hotelOf` would miss, the tier
+       would come back null, and the card would show "—" for a trip the form
+       had just priced correctly. It then fixed itself on the next page load,
+       which is the worst version of the bug: it looks intermittent.
+       Cheap: one indexed getAll, once per save. */
+    HOTELS_ALL = await repo.listHotels();
     editingId = null; editingRow = null; editingExpenses = [];
     show(await renderCards());
   });
