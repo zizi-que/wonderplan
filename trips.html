@@ -173,8 +173,14 @@ html, body { height: 100%; }
    the drawn Figma values, and re-expressing them as flex gaps would mean
    inventing spacing nobody drew. Centring the frame achieves the chosen
    behaviour without touching them. */
-html { background: var(--bg); }
-body { font-family: var(--font); background: var(--bg); color: var(--ink);
+/* WHITE SURFACE behind the art, not the theme wash (the design director,
+   2026-08-16). The 1280 layer now carries the colour — its own field is bound
+   to `--bg` — so painting the page `--bg` as well is what produced the "top
+   yellow strip": theme colour showing above and beside artwork that could not
+   reach the edges. Surface behind it means anything the art does not cover
+   reads as page, not as a band of leftover colour. */
+html { background: var(--surface); }
+body { font-family: var(--font); background: var(--surface); color: var(--ink);
   width: 100%;
   display: flex; flex-direction: column; overflow: hidden; }
 button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; display: block; }
@@ -209,21 +215,24 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
 .state { display: none; position: absolute; inset: 0; }
 .state.on { display: block; }
 
-/* ══ Background (58:7109) — the horizon sweep + five deco sparkles ══
-   FULL-BLEED 2026-08-02 (the design director, reported on the live beta): `main` is capped
-   at 375 and centred, and this layer was 375 wide to match — so on any phone
-   wider than the drawn 375 the theme colour showed down both sides and the
-   white sky read as a framed panel.
+/* ══ Background (58:7109) — `cloud BG` (245:5078), 1280x913 ══
+   REDRAWN 2026-08-16. The 873 version was the second attempt at this and it
+   still had a stated limit in this very comment: "beyond 873px the theme
+   colour returns at the edges." It did, and that was reported (finding 1).
+   The first proposed fix was a white band behind the sweep; the design
+   director replaced it instead with wider ART — 1280 total, so the strip keeps
+   going on a wider screen rather than running out.
 
-   The sweep was ALREADY drawn with bleed: its path runs x −154 → 719, and the
-   old `viewBox="0 0 375 726"` was simply cropping it. Widening the box to the
-   artwork's own extent (873) and centring the layer on the viewport reveals
-   what the board draws — at 1:1, so not one drawn pixel moves and the horizon sits
-   exactly where it sat against the CTA. Nothing is invented; the crop is
-   lifted. The five sparkles are drawn inside 0–375 and stay there.
+   Every colour BINDS (her ruling, 2026-08-16): the field is `--bg`, the sky
+   band `--on-primary`, the clouds `--deco`, read from the component's own
+   variable bindings rather than matched by hex. That is what keeps this
+   themable across all 16 palettes while still being a picture — the whole
+   point of ruling the background token-bound rather than an image.
 
-   Beyond 873px the theme colour returns at the edges. That is a desktop
-   window, where the app is a centred phone column anyway.
+   ⚠ The board wrapper clips its 1280 back to 375 (`clipsContent: true`). That
+   is NOT followed here: the stated intent is "1280 wide total so the strip
+   would expand for wider screens", and clipping would reintroduce exactly the
+   bug this replaces.
 
    Widening the box alone did nothing: the layer lived INSIDE `main`, which
    clips at `overflow: hidden`, so it was still cropped to 375. It is now one
@@ -246,10 +255,15 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    lands on main's top — the horizon keeps its drawn distance from the CTA. A
    device whose top inset exceeded 82.3 would show the theme colour again;
    no current iPhone does (Dynamic Island is 59, the notch 47–50). */
-.bg { position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) - 82.3px);
-      left: calc(50% - 341.5px);          /* 187.5 (half column) + 154 (bleed) */
-      width: 873px; height: 808.3px; overflow: hidden; }
+.bg { position: fixed; top: 0;
+      /* Drawn x=0 must land on main's left edge at EVERY width — the invariant
+         the 873 version already had to hold, restated for the new art. The
+         board places `cloud BG` at x=-453 in a 375 frame, so artwork x=453 IS
+         the column's left edge: offset = half the column (187.5) + that 453.
+         Centring the element instead would be wrong for the same reason it was
+         wrong before — the artwork's own midpoint is not the column's. */
+      left: calc(50% - 640.5px);        /* 187.5 (half column) + 453 (bleed) */
+      width: 1280px; height: 913px; overflow: hidden; pointer-events: none; }
 
 /* ══════ 01. Zero (5:4085) ══════
    No copy at all: Background + one 188x48 CTA at its drawn coordinate. */
@@ -644,10 +658,21 @@ footer.footer {
 
 <svg class="defs" aria-hidden="true">
 <!-- Background 58:7120 — horizon sweep (color/surface) + 5 sparkles (color/deco) -->
-<symbol id="bg-trips" viewBox="-154 -82.3 873 808.3">
-<path d="M-154 -82.3395H719V250.73C719 221.361 693.436 197.538 661.921 197.538C661.921 172.749 640.325 152.624 613.724 152.624C606.24 152.624 599.116 154.22 592.804 157.077C580.09 134.431 554.662 118.927 525.311 118.927C500.468 118.927 478.376 130.019 464.49 147.204C456.149 140.691 445.373 136.784 433.651 136.784C410.567 136.784 391.27 151.909 386.581 172.119C382.974 171.32 379.277 170.9 375.4 170.9C363.497 170.9 352.586 174.934 344.2 181.572C338.88 162.161 319.989 147.75 297.491 147.75C276.706 147.75 259.033 159.976 252.225 177.161C245.011 173.169 236.58 170.858 227.608 170.858C219.582 170.858 212.008 172.707 205.335 175.942C199.023 157.96 180.899 144.935 159.438 144.935C152.089 144.935 145.146 146.447 138.924 149.178C127.472 123.507 100.33 105.482 68.6346 105.482C35.0456 105.482 6.50612 125.776 -3.54805 153.968C-10.2659 150.691 -17.8854 148.8 -26.0009 148.8C-52.6016 148.8 -74.1978 168.926 -74.1978 193.715C-74.1978 196.656 -73.8822 199.513 -73.2961 202.286C-80.5098 199.219 -88.4901 197.538 -96.9211 197.538C-128.436 197.538 -154 221.361 -154 250.73L-154 -82.3395Z" fill="var(--surface)"/>
-<path d="M68.169 57.3899C52.2145 57.3899 44.8345 64.8008 44.8345 80.822C44.8345 64.8008 37.4545 57.3899 21.5 57.3899C37.4545 57.3899 44.8345 49.979 44.8345 33.9578C44.8345 49.979 52.2145 57.3899 68.169 57.3899ZM328.16 114.508C315.192 114.508 309.22 120.505 309.22 133.571C309.22 120.548 303.248 114.508 290.279 114.508C303.248 114.508 309.22 108.511 309.22 95.4452C309.177 108.511 315.192 114.508 328.16 114.508ZM353.5 55.683C343.177 55.683 338.441 60.4379 338.441 70.8046C338.441 60.4807 333.706 55.683 323.383 55.683C333.706 55.683 338.441 50.928 338.441 40.5613C338.441 50.8852 343.219 55.683 353.5 55.683ZM136.168 34.6432C128.915 34.6432 125.588 37.9846 125.588 45.2669C125.588 37.9846 122.261 34.6432 115.009 34.6432C122.261 34.6432 125.588 31.3019 125.588 24.0195C125.588 31.2591 128.915 34.6432 136.168 34.6432ZM243.405 92.4713C236.153 92.4713 232.826 95.8126 232.826 103.095C232.826 95.8126 229.499 92.4713 222.246 92.4713C229.499 92.4713 232.826 89.13 232.826 81.8476C232.826 89.13 236.153 92.4713 243.405 92.4713Z" fill="var(--deco)"/>
-</symbol>
+<symbol id="bg-trips" viewBox="0 0 1280 913"><rect width="1280" height="913" transform="matrix(-1 0 0 1 1280 0)" fill="var(--bg)"/>
+<path d="M0 261.786C8.3551e-05 230.062 27.5658 204.328 61.5488 204.328C61.5488 177.551 84.8367 155.811 113.521 155.811C121.591 155.811 129.272 157.535 136.078 160.621C149.788 136.158 177.209 119.411 208.858 119.411C235.646 119.411 259.469 131.392 274.443 149.955C283.437 142.921 295.057 138.7 307.697 138.7C332.589 138.7 353.397 155.039 358.453 176.869C362.342 176.007 366.33 175.554 370.511 175.554C383.345 175.554 395.111 179.911 404.153 187.082C409.89 166.114 430.261 150.545 454.521 150.545C476.933 150.545 495.991 163.753 503.332 182.315C511.111 178.004 520.202 175.508 529.877 175.508C538.53 175.508 546.698 177.504 553.894 180.999C560.7 161.574 580.244 147.505 603.386 147.505C611.31 147.505 618.797 149.139 625.506 152.089C637.855 124.358 667.122 104.887 701.3 104.887C737.519 104.887 768.294 126.809 779.136 157.263C786.38 153.723 794.597 151.681 803.348 151.681C832.032 151.681 855.319 173.421 855.319 200.198C855.319 203.375 854.979 206.461 854.347 209.456C862.125 206.143 870.731 204.328 879.822 204.328C912.182 204.328 942.633 227.662 945.469 257.283V257.296L945.47 257.291C945.611 258.774 945.685 260.273 945.685 261.786V256.54C951.699 235.955 971.868 220.759 995.836 220.759C1018.25 220.759 1037.31 233.967 1044.65 252.529C1052.43 248.218 1061.52 245.723 1071.19 245.723C1079.85 245.723 1088.01 247.718 1095.21 251.213C1102.02 231.788 1121.56 217.719 1144.7 217.719C1152.63 217.719 1160.11 219.353 1166.82 222.303C1179.17 194.572 1208.44 175.102 1242.62 175.102C1256.08 175.102 1268.79 178.132 1280 183.501V0H0V261.786Z" fill="var(--on-primary)"/>
+<path d="M935.28 133.425C935.323 146.491 929.308 152.488 916.34 152.488C929.308 152.488 935.28 158.486 935.28 171.551C935.28 158.529 941.252 152.488 954.221 152.488C941.252 152.488 935.28 146.491 935.28 133.425Z" fill="var(--deco)"/>
+<path d="M1011.67 119.828C1011.67 127.11 1008.35 130.452 1001.09 130.452C1008.35 130.452 1011.67 133.793 1011.67 141.076C1011.67 133.793 1015 130.452 1022.25 130.452C1015 130.452 1011.67 127.11 1011.67 119.828Z" fill="var(--deco)"/>
+<path d="M502.28 95.7848C502.323 108.85 496.308 114.847 483.34 114.847C496.308 114.847 502.28 120.845 502.28 133.91C502.28 120.887 508.252 114.847 521.221 114.847C508.252 114.847 502.28 108.85 502.28 95.7848Z" fill="var(--deco)"/>
+<path d="M1199.67 71.9381C1199.67 87.9593 1192.29 95.3707 1176.33 95.3707C1192.29 95.3707 1199.66 102.781 1199.67 118.802C1199.67 102.781 1207.05 95.3707 1223 95.3707C1207.05 95.3707 1199.67 87.9593 1199.67 71.9381Z" fill="var(--deco)"/>
+<path d="M85.6738 95.8278C85.6738 103.11 82.3467 106.452 75.0947 106.452C82.3467 106.452 85.6738 109.793 85.6738 117.076C85.6738 109.793 89.0019 106.452 96.2539 106.452C89.0019 106.452 85.6738 103.11 85.6738 95.8278Z" fill="var(--deco)"/>
+<path d="M906.059 78.5416C906.059 88.8655 901.281 93.6637 891 93.6637C901.323 93.6637 906.059 98.4183 906.059 108.785C906.059 98.4612 910.794 93.6637 921.117 93.6637C910.794 93.6637 906.059 88.9083 906.059 78.5416Z" fill="var(--deco)"/>
+<path d="M578.674 82.1871C578.674 89.4694 575.347 92.8111 568.095 92.8112C575.347 92.8112 578.674 96.1521 578.674 103.434C578.674 96.152 582.002 92.8112 589.254 92.8112C582.002 92.8112 578.674 89.4695 578.674 82.1871Z" fill="var(--deco)"/>
+<path d="M273.665 47.9381C273.665 63.9593 266.286 71.3707 250.331 71.3707C266.285 71.3707 273.665 78.7813 273.665 94.8024C273.665 78.7813 281.046 71.3707 297 71.3707C281.046 71.3707 273.665 63.9593 273.665 47.9381Z" fill="var(--deco)"/>
+<path d="M1118.91 61.9996C1118.91 69.2392 1115.58 72.6237 1108.33 72.6237C1115.58 72.6237 1118.91 75.9653 1118.91 83.2477C1118.91 75.9653 1122.24 72.6237 1129.49 72.6237C1122.24 72.6236 1118.91 69.282 1118.91 61.9996Z" fill="var(--deco)"/>
+<path d="M766.665 34.2975C766.665 50.3186 759.285 57.7291 743.331 57.7291C759.286 57.7291 766.665 65.1405 766.665 81.1617C766.665 65.1405 774.046 57.7291 790 57.7291C774.046 57.7291 766.665 50.3186 766.665 34.2975Z" fill="var(--deco)"/>
+<path d="M473.059 40.901C473.059 51.2247 468.281 56.0221 458 56.0221C468.323 56.0221 473.059 60.7775 473.059 71.1442C473.059 60.8204 477.794 56.0221 488.117 56.0221C477.794 56.0221 473.059 51.2675 473.059 40.901Z" fill="var(--deco)"/>
+<path d="M192.912 37.9996C192.912 45.2392 189.584 48.6237 182.332 48.6237C189.584 48.6237 192.912 51.9653 192.912 59.2477C192.912 51.9653 196.239 48.6237 203.491 48.6237C196.239 48.6236 192.912 45.282 192.912 37.9996Z" fill="var(--deco)"/>
+<path d="M685.912 24.359C685.912 31.5985 682.584 34.983 675.332 34.983C682.584 34.983 685.912 38.3239 685.912 45.6061C685.912 38.324 689.239 34.9831 696.491 34.983C689.239 34.983 685.912 31.6413 685.912 24.359Z" fill="var(--deco)"/></symbol>
 
 <!-- icon-edit 61:2434 / 61:2427 / 61:2430. viewBox starts at 0 0; the export's
      3,2 origin rides an inner <g> because <use> double-applies a non-zero one. -->
@@ -671,7 +696,7 @@ footer.footer {
 
 <!-- The horizon sweep, ONE layer for all four states (2026-08-02). It used to
      be repeated inside each state, where `main`'s 375px clip cropped it. -->
-<svg class="bg" viewBox="-154 -82.3 873 808.3" aria-hidden="true"><use href="#bg-trips" x="-154" y="-82.3" width="873" height="808.3"/></svg>
+<svg class="bg" viewBox="0 0 1280 913" aria-hidden="true"><use href="#bg-trips"/></svg>
 
 <main>
   <!-- ══════ 01. Zero (5:4085) ══════
