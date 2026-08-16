@@ -209,6 +209,13 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
 .usage .head .trip { color: var(--dvc-primary); }
 .usage .head .days { width: 78px; color: var(--dvc-primary); }
 .icon-pencil { width: 24px; height: 24px; flex: none; display: block; filter: drop-shadow(0 1px 1.5px rgba(30,30,30,0.10)); }
+/* The pencil was drawn but inert until 2026-08-16. As a control it needs a 44
+   tap target, grown with a pseudo-element so the drawn 24 icon does not move —
+   the same trick `.delete-link` and the trip form's band close use. */
+.pencil-btn { padding: 0; border: 0; background: none; flex: none;
+  display: block; position: relative; cursor: pointer; }
+.pencil-btn::after { content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); width: 44px; height: 44px; }
 .usage .grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; row-gap: 5px; }
 .usage .grid > * { justify-self: start; width: 60px; height: 11px; text-align: center; color: var(--ink); }
 .usage .grid > .rowlabel { width: 58px; }
@@ -761,7 +768,11 @@ function renderOverview(el) {
 }
 
 /* ══ cards · points-usage ══ */
-function renderPointsUsed(el) {
+/* `editable` draws the pencil as a real control. It is on for the summary card
+   (`#pu-active`) and OFF inside the reservation screen (`#pu-resv`), where the
+   same block is a read-back of what you are already editing — an edit button
+   there would reopen the screen you are standing on. */
+function renderPointsUsed(el, { editable = false } = {}) {
   const used = trips.filter(t => reservationsForTrip(t, segments, reservations).length);
   el.innerHTML = used.map(t => {
     const resvs = reservationsForTrip(t, segments, reservations);
@@ -785,11 +796,14 @@ function renderPointsUsed(el) {
           <span class="trip t-15b txt">${esc(t.title)}&nbsp;</span>
           <span class="days t-15 txt">${nights} Days</span>
         </div>
+        ${editable ? `<button class="pencil-btn" type="button" data-edit-resv="${resvs[0].id}"
+          aria-label="Edit points logged for ${esc(t.title)}">` : ''}
         <svg class="icon-pencil" viewBox="3 2 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="3" y="2" width="24" height="24" rx="12" fill="var(--dvc-primary)"/>
           <path d="M8.00049 20.5005C8.00049 20.2243 8.39223 20.0005 8.87546 20.0005H21.125C21.6083 20.0005 22 20.2243 22 20.5005C22 20.7766 21.6083 21.0005 21.125 21.0005H8.87546C8.39223 21.0005 8.00049 20.7766 8.00049 20.5005Z" fill="#fff"/>
           <path d="M20.206 5.71492C19.1809 4.763 17.5188 4.76299 16.4936 5.71491L9.64847 12.0711C9.4885 12.2197 9.37258 12.4041 9.31199 12.6065L8.03676 16.8664C7.83617 17.5364 8.5003 18.1531 9.22189 17.9668L13.8094 16.7827C14.0274 16.7264 14.226 16.6188 14.386 16.4703L21.2311 10.1141C22.2563 9.16215 22.2563 7.61877 21.2311 6.66684L20.206 5.71492Z" fill="#fff"/>
         </svg>
+        ${editable ? `</button>` : ''}
       </div>
       <div class="grid">${rows}</div>
     </div>`;
@@ -836,14 +850,35 @@ function renderActiveCard(el) {
 }
 
 /* ══ 05 Add Reservation ══ */
-let activeSeg = null, alloc = [], allocTotal = 0;
-function openReservation(seg) {
+let activeSeg = null, alloc = [], allocTotal = 0, editingResv = null, editingPrior = null;
+/* `resv` present = EDIT: the summary card's pencil sends the member back to the
+   screen they logged the points on, prefilled with what they logged (the design
+   director, 2026-08-16).
+   The screen itself is unchanged — an edit is this form with the numbers
+   already in it, the same way an edit of a trip is the trip form prefilled. */
+function openReservation(seg, resv = null) {
   activeSeg = seg;
+  editingResv = resv;
   const trip = trips.find(t => t.id === seg.trip_id);
   $('#resv-trip').textContent = trip.title;
   $('#resv-resort').textContent = HOTELS[seg.hotel_id] ?? seg.hotel_id;
   $('#resv-dates').textContent = `from ${fmtDate(seg.check_in)} through ${fmtDate(checkOut(seg))}`;
   alloc = prefillPoints(contracts, seg, 0);   // user types the confirmation's points per contract
+  if (resv) {
+    /* Replay the ledger back into the form. Entries are stored NEGATIVE (a
+       deduction), so the sign flips coming back in, and the use year comes from
+       the entry rather than being recomputed — a member may have banked or
+       borrowed, and prefillPoints would quietly move them to the current one. */
+    for (const a of alloc) {
+      const mine = entries.filter(e => e.reservation_id === resv.id && e.contract_id === a.contract_id);
+      if (!mine.length) continue;
+      a.points = -mine.reduce((s, e) => s + e.points, 0);
+      a.use_year = mine[0].use_year;
+    }
+    editingPrior = structuredClone(alloc);    // the undo, if the rewrite fails
+  } else {
+    editingPrior = null;
+  }
   renderOverview($('#ov-resv'));
   renderPointsUsed($('#pu-resv'));
   renderAllocRows();
@@ -878,7 +913,17 @@ function syncTotal() {
   $('#alloc-total').classList.toggle('bad', !ok);
   $('#resv-save').toggleAttribute('disabled', !ok);
 }
-$('#resv-cancel').addEventListener('click', () => renderActive());
+/* Delegated: the summary card is re-rendered on every load, so a listener bound
+   to today's pencil would be lost with it. */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-edit-resv]');
+  if (!btn) return;
+  const resv = reservations.find(r => r.id === btn.dataset.editResv);
+  const seg = resv && segments.find(s => s.id === resv.segment_id);
+  if (seg) openReservation(seg, resv);
+});
+
+$('#resv-cancel').addEventListener('click', () => { editingResv = null; editingPrior = null; renderActive(); });
 $('#resv-save').addEventListener('click', async () => {
   if (!repo || !activeSeg) return;
   const btn = $('#resv-save');
@@ -889,13 +934,31 @@ $('#resv-save').addEventListener('click', async () => {
        stay on points is two reservations, exactly as the DVC website shows.
        saveReservation writes one negative ledger entry per contract, so the
        balance falls out of the ledger and is never stored. */
+    /* An edit REPLACES: one reservation per segment is the rule, so the old row
+       and its ledger entries come out before the new ones go in. saveReservation
+       would otherwise reject the segment outright and the member would be left
+       pressing a dead button — the shape of finding 4. */
+    if (editingResv) await repo.deleteReservation(editingResv.id);
     await repo.saveReservation(
       { segment_id: activeSeg.id, points_total: allocTotal, notes: null }, alloc);
   } catch (e) {
     console.warn('DVC: reservation rejected —', e.message);
+    /* ⚠ The delete above already happened. Without this, a rejection here would
+       not merely fail the edit — it would DESTROY points the member had
+       successfully logged earlier. Put them back exactly as they were. */
+    if (editingResv && editingPrior) {
+      try {
+        await repo.saveReservation(
+          { segment_id: editingResv.segment_id,
+            points_total: editingPrior.reduce((s, a) => s + (a.points || 0), 0),
+            notes: editingResv.notes ?? null },
+          editingPrior);
+      } catch (e2) { console.error('DVC: could not restore the previous points —', e2.message); }
+    }
     btn.disabled = false;
     return;
   }
+  editingResv = null; editingPrior = null;
   pullIndex = 0;
   await loadAll();
   renderActive();
@@ -1097,7 +1160,7 @@ $('#save-rec').addEventListener('click', async () => {
 function renderActive() {
   if (!contracts.length) { show('01'); return; }   /* 01 Zero: no contract yet */
   renderOverview($('#ov-active'));
-  renderPointsUsed($('#pu-active'));
+  renderPointsUsed($('#pu-active'), { editable: true });
   renderActiveCard($('#active-container'));
   show('active');
 }
