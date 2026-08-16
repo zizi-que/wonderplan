@@ -153,10 +153,37 @@ export function validateBackup(value) {
   return structuredClone(backup);
 }
 
+// The same repair as repairOrphans, applied to an INCOMING snapshot instead of
+// to a live database. Both doors need it, and for different reasons: the export
+// door heals the device you are standing at, but it cannot reach a snapshot
+// already written to Drive by a device running older code. Without this, a bad
+// file in the bridge stays a wall forever — the only way past it would be to
+// go back to the writing device and push again, which is not something a
+// receiving device can ask for.
+//
+// Same ruling, same logic: an orphaned reservation is unreattachable garbage, so
+// it is dropped rather than allowed to refuse the whole snapshot. Everything
+// else validateBackup checks still refuses loudly; this narrows the one failure
+// the app itself caused.
+export function repairSnapshot(backup) {
+  const stores = backup?.stores;
+  if (!Array.isArray(stores?.segments) || !Array.isArray(stores?.dvc_reservations)) return backup;
+  const live = new Set(stores.segments.map(s => s?.id));
+  const dead = new Set(stores.dvc_reservations.filter(r => !live.has(r?.segment_id)).map(r => r?.id));
+  if (!dead.size) return backup;
+  stores.dvc_reservations = stores.dvc_reservations.filter(r => !dead.has(r?.id));
+  if (Array.isArray(stores.dvc_point_entries))
+    stores.dvc_point_entries = stores.dvc_point_entries.filter(e => !dead.has(e?.reservation_id));
+  console.warn(`Dropped ${dead.size} orphaned reservation(s) from the incoming backup.`);
+  return backup;
+}
+
 // Validate first, write second — the reason a malformed snapshot cannot leave
 // a half-replaced database.
 export async function restoreBackup(db, value) {
-  const backup = validateBackup(value);
+  // Parsed and cloned before repair, so a caller's object is never mutated.
+  const incoming = typeof value === "string" ? JSON.parse(value) : structuredClone(value);
+  const backup = validateBackup(repairSnapshot(incoming));
   await db.replaceAll(backup.stores);
   return Object.fromEntries(BACKUP_STORES.map(store => [store, backup.stores[store].length]));
 }
