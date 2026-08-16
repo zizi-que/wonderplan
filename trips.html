@@ -1530,6 +1530,19 @@ function gate() {
     adults: form.querySelector('#f-adults').value,
     include_lodging: c.lodging, include_parks: c.parks,
     include_cruise: c.cruise, include_abd: c.abd,
+    /* ⚠ These MUST be here. The quantity rules landed in trip-gate.js on
+       2026-08-16 and THIS row was not updated with them, so every checked
+       component reported a missing quantity no matter what the member typed:
+       SAVE and CONFIRM were dead for any trip with parks, cruise or ABD, and
+       nothing on screen said why. Found in use within the hour.
+       Read from the DOM for the same reason the fields above are — `fnum` is
+       declared ~200 lines below, and reaching it from here is the temporal
+       dead zone that killed the whole form once already. `Number('')` is 0,
+       which correctly fails the `> 0` test. */
+    park_days:           c.parks  ? Number(form.querySelector('#f-parkdays').value) : null,
+    cruise_nights:       c.cruise ? Number(form.querySelector('#f-cnights').value)  : null,
+    abd_days:            c.abd    ? Number(form.querySelector('#f-abddays').value)  : null,
+    abd_estimate_amount: c.abd    ? Number(form.querySelector('#f-abdest').value)   : null,
   };
   /* liveSegments reads the stays UI without touching storage, which is what
      the gate needs: the form may describe a trip that has never been saved,
