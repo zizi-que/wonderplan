@@ -50,8 +50,16 @@ export function createRepo(db) {
       const now = new Date().toISOString();
       await db.put("trips", { ...trip, id, plan_group_id, plan_number,
         created_at: trip.created_at ?? now, updated_at: now });
-      for (const old of await db.byIndex("segments", "trip_id", id))
+      // Segments are replaced wholesale, so their ids change on EVERY save —
+      // which orphaned any reservation hanging off the old id. Cascade first.
+      // Ruling (the design director, 2026-08-16): logged points do not survive
+      // a trip edit. Preserving them by matching old segments to new ones was
+      // the alternative and was declined — the data is small and rebuildable,
+      // and "the same stay" is a judgement the form cannot make.
+      for (const old of await db.byIndex("segments", "trip_id", id)) {
+        await this.deleteReservationForSegment(old.id);
         await db.delete("segments", old.id);
+      }
       let seq = 1;
       for (const seg of segments)
         await db.put("segments", { id: uuid(), trip_id: id, seq: seq++,
@@ -83,8 +91,10 @@ export function createRepo(db) {
     async segmentsOf(tripId) { return db.byIndex("segments", "trip_id", tripId); },
 
     async deleteTrip(id) {
-      for (const seg of await db.byIndex("segments", "trip_id", id))
+      for (const seg of await db.byIndex("segments", "trip_id", id)) {
+        await this.deleteReservationForSegment(seg.id);
         await db.delete("segments", seg.id);
+      }
       for (const d of await db.byIndex("trip_discounts", "trip_id", id))
         await db.delete("trip_discounts", d.id);
       await db.delete("trips", id);
@@ -272,6 +282,22 @@ export function createRepo(db) {
       for (const e of await db.byIndex("dvc_point_entries", "reservation_id", id))
         await db.delete("dvc_point_entries", e.id);
       await db.delete("dvc_reservations", id);
+    },
+
+    // The cascade the FK comment above has always promised, and which nothing
+    // called until 2026-08-16. Both routes that remove a segment go through it
+    // now (saveTrip, deleteTrip); unchecking on_points arrives via saveTrip,
+    // since that replaces the whole segment list.
+    //
+    // What the gap cost: an orphaned reservation kept its ledger entries — they
+    // hang off reservation_id, which still resolved — so the points stayed spent
+    // while the stay dropped out of the `reserved` set, reappeared in Track Your
+    // Points and could be logged AGAIN. It was silent in the UI and only ever
+    // caught at the backup door, where validateBackup refuses a dangling
+    // segment_id. That refusal is what broke desktop→phone sync.
+    async deleteReservationForSegment(segment_id) {
+      for (const r of await db.byIndex("dvc_reservations", "segment_id", segment_id))
+        await this.deleteReservation(r.id);
     },
 
     // Manual ledger entry (Reconcile delta, banking/borrowing) — no reservation_id.
