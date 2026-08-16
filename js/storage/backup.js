@@ -38,7 +38,34 @@ const isObject = value => value != null && typeof value === "object" && !Array.i
 const sortById = rows => rows.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
 const fail = message => { throw new Error(`invalid backup: ${message}`); };
 
+// A backup cannot export a graph that will not validate. Under the cascade
+// ruling (the design director, 2026-08-16) an orphaned reservation is garbage by
+// definition — its segment is gone, and a reservation stores only segment_id, so
+// nothing on disk records which stay it was. It cannot be repaired, only dropped.
+//
+// This exists because the cascade in repo.js governs removals only from the day
+// it landed. Any database edited before then already carries orphans, and each
+// one blocks BOTH Drive sync and file export — the entire safety net — with a
+// raw validator string as the only symptom. Self-healing at the export door
+// beats asking a person to run a repair script against their own IndexedDB.
+//
+// The points return to the balance, because balance() is derived from the ledger
+// and never stored. The stay becomes loggable again, which is the correct state:
+// it genuinely has no reservation any more.
+export async function repairOrphans(db) {
+  const live = new Set((await db.getAll("segments")).map(s => s.id));
+  const dead = (await db.getAll("dvc_reservations")).filter(r => !live.has(r.segment_id));
+  if (!dead.length) return 0;
+  const ids = new Set(dead.map(r => r.id));
+  for (const entry of await db.getAll("dvc_point_entries"))
+    if (ids.has(entry.reservation_id)) await db.delete("dvc_point_entries", entry.id);
+  for (const row of dead) await db.delete("dvc_reservations", row.id);
+  console.warn(`Dropped ${dead.length} orphaned reservation(s); their points returned to the balance.`);
+  return dead.length;
+}
+
 export async function createBackup(db, { createdAt = new Date().toISOString(), meta = {} } = {}) {
+  await repairOrphans(db);
   const stores = Object.fromEntries(await Promise.all(BACKUP_STORES.map(async store => [
     store,
     sortById(await db.getAll(store)),
