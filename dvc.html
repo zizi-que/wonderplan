@@ -216,7 +216,8 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
   display: block; position: relative; cursor: pointer; }
 .pencil-btn::after { content: ''; position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%); width: 44px; height: 44px; }
-.pu-note { color: var(--ink-deep); margin-top: 4px; }
+/* 303 = the card's 335 less its 16 side padding; the board lets it FILL. */
+.cta-help { color: var(--ink); text-align: center; align-self: stretch; }
 .usage .grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; row-gap: 5px; }
 .usage .grid > * { justify-self: start; width: 60px; height: 11px; text-align: center; color: var(--ink); }
 .usage .grid > .rowlabel { width: 58px; }
@@ -611,6 +612,25 @@ footer.footer {
             <button class="cta cta-fill" style="width:146px" id="resv-save"><span class="txt">LOG POINTS</span></button>
           </div>
         </div>
+        <!-- cta-help (251:5879) — the mirror of `trips.html:1360`, "Point
+               details are managed in the DVC tab.", pointing back the other way
+               (the design director, 2026-08-16): "I like how Trips controls the
+               DVC section, but it doesn't come across right away."
+               Her wording, through two passes. It names the actual control
+               rather than gesturing at "editing", says WHERE that control is,
+               and leads with the task a member arrives with — they are hunting
+               for the undo, not for the model. "Inventory" is deliberate: it is
+               what a DVC member already calls their points, so the line borrows
+               their vocabulary instead of ours.
+               ⚠ It is drawn HERE, under the CTAs, not under the Points Used
+               summary where it was first built. Her placement is the better one:
+               this is the screen a member reaches in order to CHANGE an entry,
+               so the way to remove one belongs beside the way to rewrite it.
+               One sentence rather than a REMOVE control, which was weighed and
+               declined — all three ways a record is undone are one event, and
+               the cascade already treats them identically. -->
+        <p class="cta-help t-12 txt">To remove this entry, uncheck
+          &ldquo;Staying on DVC points&rdquo; in Trips. The points will return to inventory.</p>
       </div>
     </div>
   </section>
@@ -808,26 +828,8 @@ function renderPointsUsed(el, { editable = false } = {}) {
       </div>
       <div class="grid">${rows}</div>
     </div>`;
-  }).join('') + (editable && used.length ? NOTE : '');
+  }).join('');
 }
-
-/* The mirror of `trips.html:1360` — "Point details are managed in the DVC tab."
-   — pointing back the other way (the design director, 2026-08-16): "I like how
-   Trips controls the DVC section, but it doesn't come across right away."
-   Her wording. It names the actual control rather than gesturing at "editing",
-   says WHERE that control is, and leads with the task a member arrives with —
-   they are looking for the undo, not for the model. "Inventory" is deliberate:
-   it is what a DVC member already calls their points, so the line borrows their
-   vocabulary instead of ours. It covers all three ways a
-   points record is undone — different property, wrong allocation, switch to
-   cash — because they are ONE event: the stay changed, so its points are no
-   longer valid.
-   Rendered only when something is logged; there is nothing to undo otherwise.
-   ⚠ t-12, not the Trips mirror's t-9: this screen has no 9px size defined, and
-   a two-clause sentence asked to be EASIER to read is not the place to import
-   one. Board frame pending — size is the one thing chosen without it. */
-const NOTE = `<p class="pu-note t-12 txt">To remove this entry, uncheck
-  &ldquo;Staying on DVC points&rdquo; in Trips. The points will return to inventory.</p>`;
 
 /* ══ DVC-cards · no-trop (03) / log-points (04) ══ */
 let pullIndex = 0;
