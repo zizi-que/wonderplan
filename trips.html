@@ -290,12 +290,25 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    main's true centre — the drawn 32/16 vertical padding is asymmetric and is
    kept, since it is what guarantees the minimum inset on a short screen. */
 .container { position: absolute; left: 0; width: 375px; height: 100%;
-  display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center;
+  display: grid; grid-template-rows: 1fr minmax(0, auto) 1fr; justify-items: center;
   padding: 32px 20px 16px; gap: 16px; }
 [data-state="02"]  .container { top: 0; }
 [data-state="02a"] .container { top: 0.2px; }
 
-.cards { grid-row: 2; }
+/* Three or more upcoming trips is the case the board does not draw — it draws
+   exactly two. The list SCROLLS, which is the ruling Home already took (the
+   design director, 2026-07-28): a plain scroll, no card limit, and deliberately
+   no "+2 more" affordance, because no such control is drawn anywhere.
+   Trips never got that fix, so it kept `.slice(0, 2)` and simply dropped the
+   third trip — Home showed it and Trips did not, which is how it was found.
+   `min-height: 0` is what lets a grid item scroll at all, and `flex: none` on
+   the cards is the trap Home documented: flex items shrink by default, so a
+   third card squeezed all three instead of overflowing, and nothing scrolled
+   because there was nothing to scroll. The scrollbar gutter is removed for the
+   same reason as Home's — 335 is a drawn width. */
+.cards { grid-row: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none; }
+.cards > * { flex: none; }
 .add-wrap { grid-row: 3; align-self: start; width: 185px; display: flex;
   justify-content: center; align-items: flex-start; padding-top: 64px; }
 
@@ -629,7 +642,13 @@ select.input.is-chosen { color: var(--ink); }
 
 /* ══ Footer · variant Trips (41:1009) ══
    Active tab paints --primary/--deco; inactive --dvc-primary/--dvc-bg. */
-footer.footer { flex: none; height: var(--footer-h); background: var(--surface);
+/* `position: relative` + z-index so the footer paints ABOVE the fixed `.bg`
+   layer. The background is positioned and the footer was not, so the footer
+   lost regardless of DOM order — invisible until 2026-08-16, when the layer
+   grew from 808 to 913 tall and finally reached it. Reported as "the footer
+   white strip is placed behind the background strip". */
+footer.footer { position: relative; z-index: 1;
+  flex: none; height: var(--footer-h); background: var(--surface);
   border-top: 1.900338px solid var(--deco); display: flex; justify-content: center; }
 .tab { position: relative; width: 75px; height: 83.901894px;
   display: block; text-decoration: none; -webkit-tap-highlight-color: transparent; }
@@ -1196,13 +1215,14 @@ async function renderCards() {
      fewer items, not a new state. Nothing here invents a variant. */
   let stack, state;
   if (booked.length >= 2) {
-    stack = [toCard(booked[0], 'next'), toCard(booked[1], 'coming')];  state = '02';
+    stack = [toCard(booked[0], 'next'), ...booked.slice(1).map(t => toCard(t, 'coming')),
+             ...planning.map(t => toCard(t, 'planning'))];  state = '02';
   } else if (booked.length === 1 && planning.length) {
-    stack = [toCard(booked[0], 'next'), toCard(planning[0], 'planning')]; state = '02a';
+    stack = [toCard(booked[0], 'next'), ...planning.map(t => toCard(t, 'planning'))]; state = '02a';
   } else if (booked.length === 1) {
     stack = [toCard(booked[0], 'next')]; state = '02';
   } else {
-    stack = planning.slice(0, 2).map(t => toCard(t, 'planning')); state = '02a';
+    stack = planning.map(t => toCard(t, 'planning')); state = '02a';
   }
   document.querySelector(`[data-cards="${state}"]`).innerHTML = stack.map(cardHTML).join('');
   return state;
