@@ -594,10 +594,20 @@ select.input.is-chosen { color: var(--ink); }
 /* Split-stay (78:3651) — hotel card + a mini from/to row */
 .split { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .split > * { align-self: stretch; }
-.mini-row { display: flex; align-items: center; gap: 8px; height: var(--mini-h); }
+/* THE SPLIT-STAY FIELDS TAKE `--input-h`, NOT `--mini-h` (the design director,
+   2026-08-16): "fields above and below are the same height as well — that was
+   the design intention." They were borrowing `--mini-h`, which is the CHIP
+   token (`size/mini-cta-chip`), so they rendered 32 against every other field's
+   48. Chips keep 32; only the fields move.
+   ⓘ This also retires the tap-target note that flagged this row at 40/39
+   against the 44 bar. It was recorded as needing a drawn change, and the drawn
+   answer turns out to be "they were always meant to match the fields" — 48
+   clears 44 outright. The row was the only one flagged because the audit
+   measured it, not because it differed from its neighbours by intent. */
+.mini-row { display: flex; align-items: center; gap: 8px; height: var(--input-h); }
 .mini-row > .div { flex: 1 1 0; display: flex; align-items: center; gap: 6px; }
 .mini-row .label { flex: none; }
-.mini-row .input { height: var(--mini-h); border-radius: var(--radius-chip);
+.mini-row .input { height: var(--input-h); border-radius: var(--radius-chip);
   flex: 1 1 auto; padding: 0 16px; font-weight: 400; font-size: 15px; }
 /* Split-stay From/To are DATE PICKERS (the design director, 2026-08-02). They shipped as
    `type="text" inputmode="numeric"` needing a hand-typed `2026-12-18` — and an
@@ -609,7 +619,7 @@ select.input.is-chosen { color: var(--ink); }
    date input at zero opacity — so the drawn pill is untouched: same 32 height,
    same chip radius, same 15px muted ink, same 16px padding. Only the calendar
    glyph is absent, because the board does not draw one on the mini row. */
-.date-field--mini { height: var(--mini-h); border-radius: var(--radius-chip);
+.date-field--mini { height: var(--input-h); border-radius: var(--radius-chip);
   flex: 1 1 auto; padding: 0 16px; gap: 0; }
 .date-field--mini .date-val { font-size: 15px; }
 
