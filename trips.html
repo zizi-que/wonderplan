@@ -308,8 +308,20 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
 .cards { grid-row: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   scrollbar-width: none; }
 .cards > * { flex: none; }
-.add-wrap { grid-row: 3; align-self: start; width: 185px; display: flex;
-  justify-content: center; align-items: flex-start; padding-top: 64px; }
+/* PINNED TO THE FOOTER, not to the stack (the design director, 2026-08-16).
+   The board rides the CTA 64px below the last card, which works while the stack
+   is the two cards it draws. With a scrolling list that number is pinned at the
+   top and the bottom gap is whatever happens to be left — measured at 80 above
+   / 16 below with two cards, 80 / 31 with three. The CTA moved every time a
+   trip was added, and read as static-but-lopsided.
+   Anchoring to the bottom of the row inverts it: the gap to the footer is the
+   container's own drawn 16 bottom padding and never changes, while the slack
+   collects above the CTA where nothing is drawn. A control that holds still is
+   easier to hit than one that shifts as the list grows.
+   ⚠ The drawn 64 below the last card stops being literal — board amendment
+   owed, and it is only true at the card count the board happens to draw. */
+.add-wrap { grid-row: 3; align-self: end; width: 185px; display: flex;
+  justify-content: center; align-items: flex-end; }
 
 /* ══ cards · category=trips ══
    booked-next-trip 61:2405 · booked-coming-up 61:2507 · planning-not-booked
