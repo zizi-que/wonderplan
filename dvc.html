@@ -815,7 +815,7 @@ function renderPointsUsed(el, { editable = false } = {}) {
       <div class="head">
         <div class="who">
           <span class="trip t-15b txt">${esc(t.title)}&nbsp;</span>
-          <span class="days t-15 txt">${nights} Day${nights === 1 ? '' : 's'}</span>
+          <span class="days t-15 txt">${nights} Day${nights < 2 ? '' : 's'}</span>
         </div>
         ${editable ? `<button class="pencil-btn" type="button" data-edit-resv="${resvs[0].id}"
           aria-label="Edit points logged for ${esc(t.title)}">` : ''}

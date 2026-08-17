@@ -714,12 +714,13 @@ const plannedYear = tally(booked.filter(t =>
 /* ── render ─────────────────────────────────────────────────────────────
    PLURALISED 2026-08-16 (the design director): "Trip vs Trips is still not
    normalized — card rendering 2 Trip not 2 Trips."
-   These were held singular because the board draws "0 Day / 0 Trip", and
-   pluralisation is copy, which is hers. The board's zero case happens to be
-   correct English, so nothing looked wrong until a count reached 2. Rendering
-   as drawn was right; it just meant the defect could only surface in use.
-   Standard rule: 1 is singular, everything else including 0 takes the s. */
-const plural = (n, word) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
+   THE RULE IS HERS, and it is not the English default: "0 and 1 pairs with
+   Trip, 2 and more pairs with Trips." Standard English takes the plural at zero
+   ("0 trips"), which is what a first pass shipped and what she corrected. Her
+   rule is the one the board already drew — "0 Day / 0 Trip" — so no board
+   amendment is owed; the code was the only thing out of step. Copy is hers, and
+   this is copy. */
+const plural = (n, word) => `${n} ${word}${Number(n) < 2 ? '' : 's'}`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 
 const daysCardHTML = () => `
