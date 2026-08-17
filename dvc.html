@@ -216,6 +216,7 @@ main { flex: 1; overflow-y: auto; overflow-x: clip; display: flex; flex-directio
   display: block; position: relative; cursor: pointer; }
 .pencil-btn::after { content: ''; position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%); width: 44px; height: 44px; }
+.pu-note { color: var(--ink-deep); margin-top: 4px; }
 .usage .grid { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; row-gap: 5px; }
 .usage .grid > * { justify-self: start; width: 60px; height: 11px; text-align: center; color: var(--ink); }
 .usage .grid > .rowlabel { width: 58px; }
@@ -807,8 +808,26 @@ function renderPointsUsed(el, { editable = false } = {}) {
       </div>
       <div class="grid">${rows}</div>
     </div>`;
-  }).join('');
+  }).join('') + (editable && used.length ? NOTE : '');
 }
+
+/* The mirror of `trips.html:1360` — "Point details are managed in the DVC tab."
+   — pointing back the other way (the design director, 2026-08-16): "I like how
+   Trips controls the DVC section, but it doesn't come across right away."
+   Her wording. It names the actual control rather than gesturing at "editing",
+   says WHERE that control is, and leads with the task a member arrives with —
+   they are looking for the undo, not for the model. "Inventory" is deliberate:
+   it is what a DVC member already calls their points, so the line borrows their
+   vocabulary instead of ours. It covers all three ways a
+   points record is undone — different property, wrong allocation, switch to
+   cash — because they are ONE event: the stay changed, so its points are no
+   longer valid.
+   Rendered only when something is logged; there is nothing to undo otherwise.
+   ⚠ t-12, not the Trips mirror's t-9: this screen has no 9px size defined, and
+   a two-clause sentence asked to be EASIER to read is not the place to import
+   one. Board frame pending — size is the one thing chosen without it. */
+const NOTE = `<p class="pu-note t-12 txt">To remove this entry, uncheck
+  &ldquo;Staying on DVC points&rdquo; in Trips. The points will return to inventory.</p>`;
 
 /* ══ DVC-cards · no-trop (03) / log-points (04) ══ */
 let pullIndex = 0;
