@@ -135,7 +135,6 @@
 /* ══ Structural tokens — Figma variables, values verified in the frame reads ══ */
 :root {
   --font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-count: "42dot Sans", var(--font);   /* next-trip countdown only */
   --radius-card: 14px;                 /* radius/card */
   --radius-input: 10px;                /* radius/input */
   --radius-chip: 7px;                  /* radius/chip */
@@ -362,18 +361,22 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    The count-row keeps the drawn 16, so its compensator tracks the gap. */
 .tcard__body { align-self: stretch; display: flex; flex-direction: column;
   align-items: flex-start; gap: 9px; padding-left: 20px; }
-.tcard__body .trip-name { margin-top: 7px; }   /* 9 + 7 = the drawn 16 */
-.count-row { display: flex; align-items: flex-end; }   /* counter MAX */
-/* the countdown is a pinned cap box like every other text node here */
-.count { text-box: trim-both cap alphabetic; }
-.tcard--next     .count { font-family: var(--font-count); font-weight: 800;
-  font-size: 104.75px; line-height: 199.56883px; height: 74px; }
-.tcard--coming   .count { font-weight: 700; font-size: 80px; line-height: 120%; height: 58px; }
-.tcard--planning .count { font-weight: 700; font-size: 64px; line-height: 120%; height: 46px; }
+/* THE COUNTDOWN IS GONE FROM TRIPS (the design director, 2026-08-16): it is a
+   HOME idea — anticipation — and on Trips it was the loudest element on a card
+   whose job is "which trip, and what will it cost". With both screens leading
+   on the same number the two read as the same list twice.
+   Two alternatives were rendered against real data and both lost on evidence,
+   not taste: folding "124 days" into the dates line WRAPS at 335 and costs the
+   height back, and promoting the forecast to hero makes a partial forecast a
+   giant em dash — rule 5 renders honestly and it looks like breakage.
+   Cards lose about a third of their height, which is what makes the scrolling
+   list readable rather than merely possible.
+   The 7px stays: 9 + 7 was the drawn 16 under the counter, and it now sets the
+   name off the header by the same amount. This is exactly the render that was
+   approved, so it is left alone rather than re-derived. */
+.tcard__body .trip-name { margin-top: 7px; }
 .trip-name, .trip-dates, .trip-money { width: 308.380920px; }   /* board's fixed box */
 
-.tcard--next .count, .tcard--next .count-unit,
-.tcard--coming .count, .tcard--coming .count-unit { color: var(--primary); }
 .tcard--next .trip-name, .tcard--coming .trip-name { color: var(--primary); }
 /* --ink, not --dvc-primary (the design director, 2026-07-28): the dates and money lines take
    the same ink Home's dates line uses, so a trip card reads identically on
@@ -381,7 +384,6 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    three agree. Board still draws --dvc-primary here — amend the frame. */
 .tcard--next .trip-dates, .tcard--next .trip-money,
 .tcard--coming .trip-dates, .tcard--coming .trip-money { color: var(--ink); }
-.tcard--planning .count, .tcard--planning .count-unit,
 .tcard--planning .trip-name, .tcard--planning .trip-dates,
 .tcard--planning .trip-money { color: var(--ink); }
 
@@ -1089,7 +1091,6 @@ const T0 = (() => { const d = new Date();
   return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); })();   /* today, UTC-normalised */
 const at = d => Date.parse(d + 'T00:00:00Z');
 const usDate = d => { const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y}`; };
-const countdown = d => Math.ceil((at(d) - T0) / DAY);
 const nightsBetween = (a, b) => Math.round((at(b) - at(a)) / DAY);
 /* The split-stay pill's EMPTY face (the design director, 2026-08-02): "tomorrow", computed
    when the row is drawn, replacing the board's hard-coded 2026-12-18/12-30.
@@ -1157,10 +1158,6 @@ function cardHTML(t) {
         </button>
       </div>
       <div class="tcard__body">
-        <div class="count-row">
-          <span class="count">${t.days}</span>
-          <span class="count-unit t-19b txt">days until</span>
-        </div>
         <span class="trip-name t-17b txt">${t.name}</span>
         <span class="trip-dates t-17 txt">from ${t.from} to ${t.to}</span>
         <!-- "Budget" capitalised (the design director, 2026-07-28) — it matches Forecast
@@ -1179,7 +1176,6 @@ function toCard(t, kind) {
                        cruise: t.include_cruise, abd: t.include_abd }),
     name: t.title || 'Untitled trip',
     from: usDate(t.start_date), to: usDate(t.end_date),
-    days: countdown(t.start_date),
     forecast: t.__forecast ?? null,   /* computed in renderCards (chunk 6) */
     budget: t.budget_amount,
   };
