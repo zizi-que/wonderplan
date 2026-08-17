@@ -712,8 +712,14 @@ const plannedYear = tally(booked.filter(t =>
   at(t.start_date) >= Date.UTC(yr, 0, 1) && at(t.start_date) < Date.UTC(yr + 1, 0, 1)));
 
 /* ── render ─────────────────────────────────────────────────────────────
-   Unit words stay singular ("0 Day / 0 Trip") because that is what the board
-   draws; pluralisation is copy, and copy is the design director's. */
+   PLURALISED 2026-08-16 (the design director): "Trip vs Trips is still not
+   normalized — card rendering 2 Trip not 2 Trips."
+   These were held singular because the board draws "0 Day / 0 Trip", and
+   pluralisation is copy, which is hers. The board's zero case happens to be
+   correct English, so nothing looked wrong until a count reached 2. Rendering
+   as drawn was right; it just meant the defect could only surface in use.
+   Standard rule: 1 is singular, everything else including 0 takes the s. */
+const plural = (n, word) => `${n} ${word}${Number(n) === 1 ? '' : 's'}`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 
 const daysCardHTML = () => `
@@ -755,8 +761,8 @@ document.querySelector('[data-stack="02a"]').innerHTML =
   upcoming.map(tripCardHTML).join('') + daysCardHTML();
 
 document.querySelectorAll('.days-card').forEach(card => {
-  card.querySelector('.l1').textContent = `Planned this year: ${plannedYear.d} Day / ${plannedYear.n} Trip`;
-  card.querySelector('.l2').textContent = `Tracked all time: ${trackedAll.d} Day / ${trackedAll.n} Trip`;
+  card.querySelector('.l1').textContent = `Planned this year: ${plural(plannedYear.d, 'Day')} / ${plural(plannedYear.n, 'Trip')}`;
+  card.querySelector('.l2').textContent = `Tracked all time: ${plural(trackedAll.d, 'Day')} / ${plural(trackedAll.n, 'Trip')}`;
 });
 
 /* ── theme picker (state 03) ────────────────────────────────────────────
