@@ -277,20 +277,37 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    CTA follows it. The board pinned the column to a fixed 726 with the cards at
    its top; on a phone in standalone the screen gives `main` 673, so the card
    read as jammed against the header with a field of empty colour under it.
-   Chosen over centring the card+CTA group as one — that leaves the card ~64px
-   high of centre, which is the thing she was reacting to.
-
-   Grid rather than flex because a 1fr/auto/1fr track split centres the CARD
-   exactly, whatever its height, while flex `auto` margins can only centre the
-   whole group. `.add-wrap` rides in the trailing track, aligned to its start,
-   so it still sits 16 + 64 below the last card exactly as drawn.
+   ⚠ SUPERSEDED 2026-08-16 — the board now draws cards and CTA as ONE centred
+   flow (`Frame 58`, 251:5547), and the reasoning below belongs to the layout it
+   replaced. Kept because it records why the group was NOT centred before: at a
+   64px gap the card sat ~64 high of centre. The redraw closes that by taking
+   the gap to 36.
 
    The column now fills `main` instead of asserting 726. Cards land 8px below
    main's true centre — the drawn 32/16 vertical padding is asymmetric and is
    kept, since it is what guarantees the minimum inset on a short screen. */
 .container { position: absolute; left: 0; width: 375px; height: 100%;
-  display: grid; grid-template-rows: 1fr minmax(0, auto) 1fr; justify-items: center;
-  padding: 32px 20px 16px; gap: 16px; }
+  display: flex; flex-direction: column; justify-content: flex-end;
+  align-items: center; padding: 32px 20px 16px; gap: 16px; }
+/* ══ Frame 58 (251:5547) — cards and CTA are ONE flow ══
+   REDRAWN 2026-08-16: "CTA will flow along with the cards." The board makes the
+   two a single VERTICAL column that FILLs the container and CENTRES its
+   contents, so the CTA is the last item in the stack rather than a thing pinned
+   somewhere else. Everything above — the 1fr/auto/1fr grid, the footer pin —
+   is retired by it.
+   ⓘ The comment this replaces rejected exactly this arrangement: centring the
+   card+CTA group as one left the card ~64px high of centre. That was true of
+   the 64px gap it was written against; the new frame takes it to 36 (`space/5`),
+   which is what makes the centred group sit right.
+   Auto margins, not `justify-content: center`, for the reason Home documents
+   one screen over: a centred column that OVERFLOWS puts its first item above
+   the scroll origin where nothing can reach it, while an auto margin simply
+   collapses to 0 the moment the content stops fitting. */
+.flow { flex: 1 1 auto; min-height: 0; width: var(--col);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.flow > :first-child { margin-top: auto; }
+.flow > :last-child  { margin-bottom: auto; }
 [data-state="02"]  .container { top: 0; }
 [data-state="02a"] .container { top: 0.2px; }
 
@@ -305,9 +322,7 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    third card squeezed all three instead of overflowing, and nothing scrolled
    because there was nothing to scroll. The scrollbar gutter is removed for the
    same reason as Home's — 335 is a drawn width. */
-.cards { grid-row: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: none; }
-.cards > * { flex: none; }
+.cards > * { flex: none; }   /* flex items shrink by default; cards must overflow, not squeeze */
 /* PINNED TO THE FOOTER, not to the stack (the design director, 2026-08-16).
    The board rides the CTA 64px below the last card, which works while the stack
    is the two cards it draws. With a scrolling list that number is pinned at the
@@ -320,8 +335,8 @@ main { flex: 1; min-height: 0; position: relative; overflow: hidden;
    easier to hit than one that shifts as the list grows.
    ⚠ The drawn 64 below the last card stops being literal — board amendment
    owed, and it is only true at the card count the board happens to draw. */
-.add-wrap { grid-row: 3; align-self: end; width: 185px; display: flex;
-  justify-content: center; align-items: flex-end; }
+.add-wrap { flex: none; width: 185px; display: flex; justify-content: center;
+  padding-top: 36px; }   /* Frame 2 (251:5638), paddingTop bound to space/5 */
 
 /* ══ cards · category=trips ══
    booked-next-trip 61:2405 · booked-coming-up 61:2507 · planning-not-booked
@@ -743,11 +758,13 @@ footer.footer {
   <!-- ══════ 02. Active (5:4602) ══════ next trip + coming up -->
   <section class="state" data-state="02">
     <div class="container">
-      <div class="cards" data-cards="02"></div>
-      <div class="add-wrap">
-        <button class="cta" type="button" data-open-form style="width:185px">
-          <span class="t-17b txt">ADD MORE TRIPS</span>
-        </button>
+      <div class="flow">
+        <div class="cards" data-cards="02"></div>
+        <div class="add-wrap">
+          <button class="cta" type="button" data-open-form style="width:185px">
+            <span class="t-17b txt">ADD MORE TRIPS</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -755,11 +772,13 @@ footer.footer {
   <!-- ══════ 02a. Active (58:7315) ══════ next trip + planning in progress -->
   <section class="state" data-state="02a">
     <div class="container">
-      <div class="cards" data-cards="02a"></div>
-      <div class="add-wrap">
-        <button class="cta" type="button" data-open-form style="width:185px">
-          <span class="t-17b txt">ADD MORE TRIPS</span>
-        </button>
+      <div class="flow">
+        <div class="cards" data-cards="02a"></div>
+        <div class="add-wrap">
+          <button class="cta" type="button" data-open-form style="width:185px">
+            <span class="t-17b txt">ADD MORE TRIPS</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
