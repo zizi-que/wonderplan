@@ -899,10 +899,12 @@ footer.footer {
                    value="0" autocomplete="off">
           </div>
           <div class="div" style="display:flex;flex-direction:column;gap:6px">
-            <!-- BOARD COPY BUG: this label reads "Cruise nights" a second time
-                 on 59:1729 while the chips below it are stateroom categories.
-                 Rendered as drawn; raised for the board audit. -->
-            <span class="label t-15 txt">Cruise nights</span>
+            <!-- "Stateroom category" (the design director, 2026-08-16). The board
+                 read "Cruise nights" here a second time, duplicating the pulldown
+                 label above while the chips below are stateroom categories. It was
+                 shipped as drawn and raised for the board audit; the board is now
+                 corrected and the build follows it. -->
+            <span class="label t-15 txt">Stateroom category</span>
             <div class="chip-grid" role="group" aria-label="Stateroom" data-chips="cabin" data-single>
               <button class="chip t-15 txt" type="button" aria-pressed="false" value="inside">Inside</button>
               <button class="chip t-15 txt" type="button" aria-pressed="false" value="oceanview">Oceanview</button>
